@@ -1,13 +1,14 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 02.03.2021
+ *  @date 30.03.2021
  */
 
 #pragma once
 
 #include <array>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <sys/epoll.h>
 #include <thread>
@@ -16,7 +17,6 @@
 
 #include "net/fwd.hpp"
 #include "net/operation.hpp"
-#include "net/pipe_socket.hpp"
 
 namespace net {
 
@@ -25,9 +25,7 @@ static const size_t max_epoll_events = 32;
 class multiplexer {
   using pollset = std::array<epoll_event, max_epoll_events>;
   using epoll_fd = int;
-  using event_mask = uint32_t;
-  using event_map = std::unordered_map<int, event_mask>;
-  using callback_map = std::unordered_map<int, socket_manager_ptr>;
+  using manager_map = std::unordered_map<int, socket_manager_ptr>;
 
 public:
   multiplexer() : running_(true) {
@@ -45,41 +43,45 @@ public:
     mpx_thread_id_ = mpx_thread_.get_id();
   }
 
+  void register_new_manager(int fd) {
+  }
+
   /// Registers `mgr` for read events.
   /// @thread-safe
-  void register_reading(const socket_manager_ptr& mgr);
+  void register_reading(socket sock) {
+    add(sock.id, operation::read);
+  }
 
   /// Registers `mgr` for write events.
   /// @thread-safe
-  void register_writing(const socket_manager_ptr& mgr);
-
-  void add_fd(int fd, uint32_t initial) {
-    mod(fd, EPOLL_CTL_ADD, initial);
-    event_masks_[fd] = initial;
+  void register_writing(socket sock) {
+    add(sock.id, operation::write);
   }
 
   void add(int fd, operation op) {
-    const auto old = event_masks_[fd];
+    auto& mgr = managers_[fd];
+    const auto old = mgr->mask();
     auto mask = old | op;
     if (mask != old)
       mod(fd, EPOLL_CTL_MOD, mask);
-    event_masks_[fd] = mask;
+    mgr->mask_add(op);
   }
 
   void del(int fd, operation op) {
-    const auto old = event_masks_[fd];
+    auto& mgr = managers_[fd];
+    const auto old = mgr->mask();
     auto mask = old & ~op;
     if (mask != old)
       mod(fd, EPOLL_CTL_MOD, mask);
-    event_masks_[fd] = mask;
+    mgr->mask_del(op);
   }
 
 private:
-  void mod(int fd, int operation, uint32_t events) {
+  void mod(int fd, int op, operation events) {
     epoll_event event = {};
-    event.events = events;
+    event.events = static_cast<uint32_t>(events);
     event.data.fd = fd;
-    if (epoll_ctl(epoll_fd_, operation, fd, &event) < 0) {
+    if (epoll_ctl(epoll_fd_, op, fd, &event) < 0) {
       std::cerr << "epoll_ctl: " << strerror(errno) << std::endl;
       abort();
     }
@@ -104,24 +106,25 @@ private:
             std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
                       << std::endl;
             del(i, operation::read_write);
-          } else if (pollset_[i].events & operation::read) {
-            // incoming data
-          } else if (pollset_[i].events & operation::write) {
-            // socket can write!
+            // TODO: delete all references to handler!
+          } else if ((pollset_[i].events & operation::read)
+                     == operation::read) {
+            managers_[i]->handle_read_event();
+          } else if ((pollset_[i].events & operation::write)
+                     == operation::write) {
+            managers_[i]->handle_write_event();
           }
         }
       }
     }
   }
 
-  pipe_socket write_socket_;
   epoll_fd epoll_fd_;
   pollset pollset_;
-  event_map event_masks_;
-  callback_map callbacks_;
+  manager_map managers_;
 
-  std::thread mpx_thread_;
   bool running_;
+  std::thread mpx_thread_;
   std::thread::id mpx_thread_id_;
 };
 

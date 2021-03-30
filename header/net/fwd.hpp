@@ -11,6 +11,7 @@
 namespace net {
 
 class socket_manager;
+class multiplexer;
 
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
 

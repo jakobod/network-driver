@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-project(raw_sockets)
+project(epoll_benchmark)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -14,18 +14,19 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 include_directories(header)
 
 set(SRC_FILES
-        src/packet.cpp
-        src/raw_socket.cpp
-        src/ethernet.cpp
-        src/payload.cpp
-        src/pipe_socket.cpp
-        src/socket.cpp)
+    src/net/acceptor.cpp
+    src/net/pipe_socket.cpp
+    src/net/raw_socket.cpp
+    src/net/socket_manager.cpp
+    src/net/socket.cpp
+    src/packet/packet.cpp
+    src/packet/payload.cpp)
 
 find_package(Threads REQUIRED)
 
-add_executable(raw_sockets
-        main.cpp
-        ${SRC_FILES})
+add_executable(epoll_benchmark
+               main.cpp
+               ${SRC_FILES})
 
-target_link_libraries(raw_sockets
-        ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(epoll_benchmark
+                      ${CMAKE_THREAD_LIBS_INIT})

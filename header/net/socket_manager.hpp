@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "net/multiplexer.hpp"
+#include "net/fwd.hpp"
 #include "net/operation.hpp"
 #include "net/socket.hpp"
 
@@ -22,7 +22,16 @@ public:
 
   ~socket_manager();
 
+  void init() {
+    register_reading();
+  }
+
   // -- properties -------------------------------------------------------------
+
+  /// Returns the handle.
+  socket handle() const noexcept {
+    return handle_;
+  }
 
   /// Returns registered operations (read, write, or both).
   operation mask() const noexcept {
@@ -47,16 +56,16 @@ public:
 
   // -- event handling ---------------------------------------------------------
 
-  bool handle_read_event();
+  virtual bool handle_read_event() = 0;
 
-  bool handle_write_event();
+  virtual bool handle_write_event() = 0;
 
 private:
   socket handle_;
 
   operation mask_;
 
-  multiplexer* parent_;
+  multiplexer* mpx;
 };
 
 } // namespace net

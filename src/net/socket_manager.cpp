@@ -11,10 +11,14 @@
 
 #include "net/socket_manager.hpp"
 
+#include <memory>
+
+#include "net/multiplexer.hpp"
+
 namespace net {
 
-socket_manager::socket_manager(socket handle, multiplexer* parent)
-  : handle_(handle), mask_(operation::none), parent_(parent) {
+socket_manager::socket_manager(socket handle, multiplexer* mpx)
+  : handle_(handle), mask_(operation::none), mpx_(mpx) {
   // nop
 }
 
@@ -41,13 +45,13 @@ bool socket_manager::mask_del(operation flag) noexcept {
 void socket_manager::register_reading() {
   if ((mask() & operation::read) == operation::read)
     return;
-  parent_->register_reading(this);
+  mpx_->register_reading(this);
 }
 
 void socket_manager::register_writing() {
   if ((mask() & operation::write) == operation::write)
     return;
-  parent_->register_writing(this);
+  mpx_->register_writing(this);
 }
 
 bool handle_read_event() {
