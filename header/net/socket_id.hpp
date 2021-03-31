@@ -7,6 +7,8 @@
  *  https://github.com/actor-framework/incubator
  */
 
+#pragma once
+
 namespace net {
 
 using socket_id = int;

@@ -4,22 +4,27 @@
  *  @date 30.03.2021
  */
 
-#pragma once
-
 #include "net/multiplexer.hpp"
 
+#include "net/acceptor.hpp"
 #include "net/socket_manager.hpp"
 
 namespace net {
 
 multiplexer::multiplexer() : running_(true) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
-  if (epoll_fd_ < 0)
+  if (epoll_fd_ < 0) {
     std::cerr << "creating epoll fd failed" << std::endl;
+    abort();
+  }
 }
 
 multiplexer::~multiplexer() {
   ::close(epoll_fd_);
+}
+
+void multiplexer::init() {
+  // create an acceptor and add it to the pollset.
 }
 
 void multiplexer::start() {
@@ -27,32 +32,36 @@ void multiplexer::start() {
   mpx_thread_id_ = mpx_thread_.get_id();
 }
 
-/// Registers `mgr` for read events.
-/// @thread-safe
-void multiplexer::register_reading(const socket_manager& mgr) {
-  add(mgr.handle().id, operation::read);
+void multiplexer::register_new_socket_manager(
+  [[maybe_unused]] socket_manager_ptr mgr) {
+  // managers_.insert(mgr->handle(), std::move(mgr));
+  // mgr->register_reading();
 }
 
-/// Registers `mgr` for write events.
-/// @thread-safe
-void multiplexer::register_writing(const socket_manager& mgr) {
-  add(mgr.handle().id, operation::write);
+void multiplexer::register_reading(socket sock) {
+  add(sock.id, operation::read);
+}
+
+void multiplexer::register_writing(socket sock) {
+  add(sock.id, operation::write);
 }
 
 void multiplexer::add(int fd, operation op) {
-  const auto old = event_masks_[fd];
+  auto& mgr = managers_[fd];
+  const auto old = mgr->mask();
   auto mask = old | op;
   if (mask != old)
     mod(fd, EPOLL_CTL_MOD, mask);
-  event_masks_[fd] = mask;
+  mgr->mask_add(op);
 }
 
 void multiplexer::del(int fd, operation op) {
-  const auto old = event_masks_[fd];
+  auto& mgr = managers_[fd];
+  const auto old = mgr->mask();
   auto mask = old & ~op;
   if (mask != old)
     mod(fd, EPOLL_CTL_MOD, mask);
-  event_masks_[fd] = mask;
+  mgr->mask_del(op);
 }
 
 void multiplexer::mod(int fd, int op, operation events) {
@@ -86,10 +95,10 @@ void multiplexer::run() {
           del(i, operation::read_write);
           // TODO: delete all references to handler!
         } else if ((pollset_[i].events & operation::read) == operation::read) {
-          callbacks_[i]->handle_read_event();
+          managers_[i]->handle_read_event();
         } else if ((pollset_[i].events & operation::write)
                    == operation::write) {
-          callbacks_[i]->handle_write_event();
+          managers_[i]->handle_write_event();
         }
       }
     }

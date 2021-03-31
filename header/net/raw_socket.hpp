@@ -4,6 +4,8 @@
  *  @date 18.02.2021
  */
 
+#pragma once
+
 #include <linux/if_packet.h>
 #include <sys/socket.h>
 

@@ -9,22 +9,20 @@
 #include "net/socket_manager.hpp"
 
 #include "net/fwd.hpp"
+#include "net/tcp_accept_socket.hpp"
 
 namespace net {
 
 /// Manages the lifetime of a socket.
 class acceptor : public socket_manager {
 public:
-  acceptor();
+  acceptor(tcp_accept_socket handle, multiplexer* mpx);
 
   // -- properties -------------------------------------------------------------
 
-  bool handle_read_event(multiplexer* mpx);
+  bool handle_read_event();
 
-  bool handle_write_event(multiplexer*);
-
-private:
-  multiplexer* mpx_;
+  bool handle_write_event();
 };
 
 } // namespace net

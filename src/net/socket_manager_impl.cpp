@@ -15,8 +15,13 @@
 
 namespace net {
 
-socket_manager_impl::socket_manager_impl() {
+socket_manager_impl::socket_manager_impl(socket handle, multiplexer* mpx)
+  : socket_manager(handle, mpx) {
   // nop
+}
+
+void init() {
+  register_reading();
 }
 
 bool socket_manager_impl::handle_read_event() {

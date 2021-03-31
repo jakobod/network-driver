@@ -22,11 +22,14 @@ public:
 
   ~socket_manager();
 
-  void init() {
-    register_reading();
-  }
+  virtual void init() = 0;
 
   // -- properties -------------------------------------------------------------
+
+  /// Returns a ptr to the multiplexer
+  multiplexer* mpx() {
+    return mpx_;
+  }
 
   /// Returns the handle.
   socket handle() const noexcept {
@@ -65,7 +68,7 @@ private:
 
   operation mask_;
 
-  multiplexer* mpx;
+  multiplexer* mpx_;
 };
 
 } // namespace net

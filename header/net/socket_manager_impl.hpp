@@ -20,7 +20,9 @@ class socket_manager_impl : public socket_manager {
 public:
   // -- constructors -----------------------------------------------------------
 
-  socket_manager_impl();
+  socket_manager_impl(socket handle, multiplexer* mpx);
+
+  void init() override;
 
   // -- event handling ---------------------------------------------------------
 

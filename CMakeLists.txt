@@ -15,10 +15,15 @@ include_directories(header)
 
 set(SRC_FILES
     src/net/acceptor.cpp
+    src/net/multiplexer.cpp
     src/net/pipe_socket.cpp
     src/net/raw_socket.cpp
+    src/net/socket_manager_impl.cpp
     src/net/socket_manager.cpp
     src/net/socket.cpp
+    src/net/stream_socket.cpp
+    src/net/tcp_accept_socket.cpp
+    src/net/tcp_stream_socket.cpp
     src/packet/packet.cpp
     src/packet/payload.cpp)
 

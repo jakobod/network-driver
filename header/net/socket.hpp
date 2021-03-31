@@ -31,17 +31,23 @@ struct socket {
 
   socket& operator=(const socket& other) noexcept = default;
 
-  bool operator==(const int other_id) const {
-    return id == other_id;
+  bool operator==(const socket other) const {
+    return id == other.id;
   }
 
-  bool operator!=(const int other_id) const {
-    return id != other_id;
+  bool operator!=(const socket other) const {
+    return id != other.id;
   }
 };
 
 /// Denotes the invalid socket.
 constexpr auto invalid_socket = socket{invalid_socket_id};
+
+/// Converts between different socket types.
+template <class To, class From>
+To socket_cast(From x) {
+  return To{x.id};
+}
 
 /// Closes socket `x`.
 void close(socket x);

@@ -7,7 +7,8 @@
 #pragma once
 
 #include <iostream>
-#include <unistd.h>
+
+#include "net/socket.hpp"
 
 static constexpr int invalid_fd = -1;
 
@@ -21,22 +22,23 @@ public:
   }
 
   ~socket_guard() {
-    if (sock_ != invalid_fd) {
-      ::close(sock_);
+    if (sock_ != net::invalid_socket) {
+      net::close(sock_);
     }
   }
 
-  int release() {
+  Socket release() {
     auto sock = sock_;
-    sock_ = invalid_fd;
+    sock_.id = invalid_fd;
     return sock;
   }
 
-  int operator*() {
+  Socket operator*() {
     return sock_;
   }
 
-  bool operator==(Socket other) {
+  template <class Other>
+  bool operator==(const Other& other) {
     return sock_ == other;
   }
 

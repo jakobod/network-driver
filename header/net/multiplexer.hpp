@@ -28,101 +28,45 @@ class multiplexer {
   using manager_map = std::unordered_map<int, socket_manager_ptr>;
 
 public:
-  multiplexer() : running_(true) {
-    epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
-    if (epoll_fd_ < 0)
-      std::cerr << "creating epoll fd failed" << std::endl;
-  }
+  // -- constructors, destructors ----------------------------------------------
+  multiplexer();
+  ~multiplexer();
 
-  ~multiplexer() {
-    ::close(epoll_fd_);
-  }
+  /// Initializes the multiplexer.
+  void init();
 
-  void start() {
-    mpx_thread_ = std::thread(&multiplexer::run, this);
-    mpx_thread_id_ = mpx_thread_.get_id();
-  }
+  /// Creates a thread that runs this multiplexer indefinately.
+  void start();
 
-  void register_new_manager(int fd) {
-  }
+  // -- Interface functions ----------------------------------------------------
+
+  /// Adds a new socket manager to the multiplexer.
+  /// @warning Takes ownership of the passed `mgr`
+  void register_new_socket_manager(socket_manager_ptr mgr);
 
   /// Registers `mgr` for read events.
-  /// @thread-safe
-  void register_reading(socket sock) {
-    add(sock.id, operation::read);
-  }
+  void register_reading(socket sock);
 
   /// Registers `mgr` for write events.
-  /// @thread-safe
-  void register_writing(socket sock) {
-    add(sock.id, operation::write);
-  }
-
-  void add(int fd, operation op) {
-    auto& mgr = managers_[fd];
-    const auto old = mgr->mask();
-    auto mask = old | op;
-    if (mask != old)
-      mod(fd, EPOLL_CTL_MOD, mask);
-    mgr->mask_add(op);
-  }
-
-  void del(int fd, operation op) {
-    auto& mgr = managers_[fd];
-    const auto old = mgr->mask();
-    auto mask = old & ~op;
-    if (mask != old)
-      mod(fd, EPOLL_CTL_MOD, mask);
-    mgr->mask_del(op);
-  }
+  void register_writing(socket sock);
 
 private:
-  void mod(int fd, int op, operation events) {
-    epoll_event event = {};
-    event.events = static_cast<uint32_t>(events);
-    event.data.fd = fd;
-    if (epoll_ctl(epoll_fd_, op, fd, &event) < 0) {
-      std::cerr << "epoll_ctl: " << strerror(errno) << std::endl;
-      abort();
-    }
-  }
+  /// Adds an fd for operation `op`.
+  void add(int fd, operation op);
 
-  void run() {
-    while (running_) {
-      auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                                   static_cast<int>(pollset_.size()), -1);
-      if (num_events < 0) {
-        switch (errno) {
-          case EINTR:
-            continue;
-          default:
-            std::cerr << "epoll_wait failed: " << strerror(errno) << std::endl;
-            running_ = false;
-            break;
-        }
-      } else {
-        for (int i = 0; i < num_events; ++i) {
-          if (pollset_[i].events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
-            std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
-                      << std::endl;
-            del(i, operation::read_write);
-            // TODO: delete all references to handler!
-          } else if ((pollset_[i].events & operation::read)
-                     == operation::read) {
-            managers_[i]->handle_read_event();
-          } else if ((pollset_[i].events & operation::write)
-                     == operation::write) {
-            managers_[i]->handle_write_event();
-          }
-        }
-      }
-    }
-  }
+  /// Deletes an fd for operation `op`.
+  void del(int fd, operation op);
 
+  void mod(int fd, int op, operation events);
+
+  void run();
+
+  // epoll variables
   epoll_fd epoll_fd_;
   pollset pollset_;
   manager_map managers_;
 
+  // thread variables
   bool running_;
   std::thread mpx_thread_;
   std::thread::id mpx_thread_id_;
