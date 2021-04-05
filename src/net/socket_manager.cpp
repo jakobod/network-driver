@@ -7,8 +7,6 @@
  *  https://github.com/actor-framework/incubator
  */
 
-#pragma once
-
 #include "net/socket_manager.hpp"
 
 #include <memory>
@@ -45,6 +43,7 @@ bool socket_manager::mask_del(operation flag) noexcept {
 void socket_manager::register_reading() {
   if ((mask() & operation::read) == operation::read)
     return;
+
   mpx_->register_reading(handle());
 }
 
@@ -52,16 +51,6 @@ void socket_manager::register_writing() {
   if ((mask() & operation::write) == operation::write)
     return;
   mpx_->register_writing(handle());
-}
-
-bool handle_read_event() {
-  // TODO: read from the socket
-  return false;
-}
-
-bool handle_write_event() {
-  // TODO: write from the socket
-  return false;
 }
 
 } // namespace net

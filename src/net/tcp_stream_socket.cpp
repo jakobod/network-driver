@@ -25,7 +25,7 @@ tcp_stream_socket make_connected_tcp_stream_socket(const std::string ip,
   }
   tcp_stream_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
   auto guard = detail::make_socket_guard(sock);
-  if (sock == invalid_socket_id) {
+  if (sock == invalid_socket) {
     std::cerr << "socket creation failed..." << std::endl;
     abort();
   }

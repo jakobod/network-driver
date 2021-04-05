@@ -56,7 +56,7 @@ constexpr operation operator~(operation x) {
   return static_cast<operation>(~static_cast<uint32_t>(x));
 }
 
-std::string to_string(operation op) {
+/*std::string to_string(operation op) {
   switch (op) {
     case operation::read:
       return "read";
@@ -65,6 +65,6 @@ std::string to_string(operation op) {
     default:
       return "unknown operation";
   }
-}
+}*/
 
 } // namespace net

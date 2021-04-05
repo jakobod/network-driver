@@ -17,19 +17,26 @@ namespace detail {
 template <class Socket>
 class socket_guard {
 public:
+  static_assert(std::is_base_of_v<net::socket, Socket>,
+                "Template argument is NOT a socket!");
+
   socket_guard(Socket sock) : sock_(sock) {
     // nop
   }
 
+  socket_guard() : socket_guard(-1) {
+    // nop
+  }
+
   ~socket_guard() {
-    if (sock_ != net::invalid_socket) {
-      net::close(sock_);
-    }
+    // if (sock_ != net::invalid_socket) {
+    //   net::close(sock_);
+    // }
   }
 
   Socket release() {
     auto sock = sock_;
-    sock_.id = invalid_fd;
+    // sock_.id = invalid_fd;
     return sock;
   }
 

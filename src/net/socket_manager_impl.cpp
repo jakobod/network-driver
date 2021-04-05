@@ -7,8 +7,6 @@
  *  https://github.com/actor-framework/incubator
  */
 
-#pragma once
-
 #include "net/socket_manager_impl.hpp"
 
 #include <memory>
@@ -20,8 +18,12 @@ socket_manager_impl::socket_manager_impl(socket handle, multiplexer* mpx)
   // nop
 }
 
-void init() {
-  register_reading();
+socket_manager_impl::~socket_manager_impl() {
+  // nop
+}
+
+void socket_manager_impl::init() {
+  // register_reading();
 }
 
 bool socket_manager_impl::handle_read_event() {

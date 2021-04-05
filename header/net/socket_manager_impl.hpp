@@ -22,6 +22,8 @@ public:
 
   socket_manager_impl(socket handle, multiplexer* mpx);
 
+  ~socket_manager_impl();
+
   void init() override;
 
   // -- event handling ---------------------------------------------------------

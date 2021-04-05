@@ -14,8 +14,6 @@
 
 namespace net {
 
-static constexpr int max_conn_backlog = 10;
-
 tcp_accept_socket make_tcp_accept_socket(uint16_t port) {
   sockaddr_in servaddr = {};
   if (port == 0) {

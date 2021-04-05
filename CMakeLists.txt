@@ -17,6 +17,7 @@ set(SRC_FILES
     src/net/acceptor.cpp
     src/net/multiplexer.cpp
     src/net/pipe_socket.cpp
+    src/net/pollset_updater.cpp
     src/net/raw_socket.cpp
     src/net/socket_manager_impl.cpp
     src/net/socket_manager.cpp

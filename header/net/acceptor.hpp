@@ -20,9 +20,9 @@ public:
 
   // -- properties -------------------------------------------------------------
 
-  bool handle_read_event();
+  bool handle_read_event() override;
 
-  bool handle_write_event();
+  bool handle_write_event() override;
 };
 
 } // namespace net

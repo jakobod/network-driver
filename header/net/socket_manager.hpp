@@ -20,7 +20,7 @@ class socket_manager {
 public:
   socket_manager(socket handle, multiplexer* parent);
 
-  ~socket_manager();
+  virtual ~socket_manager();
 
   virtual void init() = 0;
 

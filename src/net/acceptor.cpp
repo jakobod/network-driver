@@ -34,7 +34,7 @@ bool acceptor::handle_read_event() {
   return true;
 }
 
-bool handle_write_event() {
+bool acceptor::handle_write_event() {
   std::cerr << "acceptor should NOT receive write events!" << std::endl;
   return false;
 }
