@@ -8,6 +8,7 @@
 
 #include <cstdint>
 
+#include "detail/error.hpp"
 #include "net/fwd.hpp"
 #include "net/socket.hpp"
 
@@ -22,7 +23,12 @@ struct tcp_accept_socket : socket {
   using super::super;
 };
 
-tcp_accept_socket make_tcp_accept_socket(uint16_t port);
+detail::error_or<std::pair<tcp_accept_socket, uint16_t>>
+make_tcp_accept_socket(uint16_t port);
+
+detail::error_or<uint16_t> port_of(tcp_accept_socket x);
+
+bool reuseaddr(socket x, bool new_value);
 
 tcp_stream_socket accept(tcp_accept_socket sock);
 

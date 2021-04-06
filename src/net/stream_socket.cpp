@@ -16,13 +16,6 @@ namespace net {
 
 constexpr int no_sigpipe_io_flag = MSG_NOSIGNAL;
 
-/// Calls a C functions and returns an error if `var op rhs` returns `true`.
-#define CAF_NET_SYSCALL(funname, var, op, rhs, expr)                           \
-  auto var = expr;                                                             \
-  if (var op rhs)                                                              \
-  return make_error(sec::network_syscall_failed, funname,                      \
-                    last_socket_error_as_string())
-
 bool keepalive(stream_socket x, bool new_value) {
   int value = new_value ? 1 : 0;
   auto res = setsockopt(x.id, SOL_SOCKET, SO_KEEPALIVE, &value,

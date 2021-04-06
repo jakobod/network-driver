@@ -14,6 +14,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 include_directories(header)
 
 set(SRC_FILES
+    src/detail/error_code.cpp
     src/net/acceptor.cpp
     src/net/multiplexer.cpp
     src/net/pipe_socket.cpp

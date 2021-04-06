@@ -30,6 +30,9 @@ bool keepalive(stream_socket x, bool new_value);
 /// Enables or disables Nagle's algorithm on `x`.
 bool nodelay(stream_socket x, bool new_value);
 
+/// Enables or disables reuseaddr on `x`.
+bool reuseaddr(socket x, bool new_value);
+
 /// Receives data from `x`.
 ptrdiff_t read(stream_socket x, detail::byte_span buf);
 
