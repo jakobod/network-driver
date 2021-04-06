@@ -9,6 +9,7 @@
 
 #include "detail/error.hpp"
 #include "detail/socket_guard.hpp"
+#include "net/multiplexer.hpp"
 #include "net/socket.hpp"
 #include "net/stream_socket.hpp"
 #include "net/tcp_accept_socket.hpp"
@@ -43,6 +44,18 @@ void test_connect() {
   std::cerr << "all fine!" << std::endl;
 }
 
+void test_mpx() {
+  net::multiplexer mpx;
+  if (auto err = mpx.init())
+    exit(err);
+  mpx.start();
+
+  std::cout << "waiting for user input" << std::endl;
+  char dummy;
+  std::cin >> dummy;
+  std::cout << "done" << std::endl;
+}
+
 int main() {
-  test_connect();
+  test_mpx();
 }

@@ -16,6 +16,7 @@ include_directories(header)
 set(SRC_FILES
     src/detail/error_code.cpp
     src/net/acceptor.cpp
+    src/net/operation.cpp
     src/net/multiplexer.cpp
     src/net/pipe_socket.cpp
     src/net/pollset_updater.cpp

@@ -10,13 +10,14 @@
 #include "net/socket.hpp"
 
 #include <cstring>
-#include <fcntl.h>
+#include <iostream>
+#include <net/socket_sys_includes.hpp>
 #include <sys/ioctl.h>
-#include <unistd.h>
 
 namespace net {
 
 void close(socket sock) {
+  std::cerr << "closing socket " << sock.id << std::endl;
   ::close(sock.id);
 }
 

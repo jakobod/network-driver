@@ -29,15 +29,15 @@ public:
   }
 
   ~socket_guard() {
-    // if (sock_ != net::invalid_socket) {
-    //   net::close(sock_);
-    // }
+    if (sock_ != net::invalid_socket) {
+      net::close(sock_);
+    }
   }
 
   Socket release() {
-    auto sock = sock_;
-    // sock_.id = invalid_fd;
-    return sock;
+    auto ret = sock_;
+    sock_.id = invalid_fd;
+    return ret;
   }
 
   Socket operator*() {

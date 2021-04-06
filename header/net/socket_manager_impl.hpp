@@ -24,8 +24,6 @@ public:
 
   ~socket_manager_impl();
 
-  void init() override;
-
   // -- event handling ---------------------------------------------------------
 
   bool handle_read_event() override;

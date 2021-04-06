@@ -22,8 +22,6 @@ public:
 
   virtual ~socket_manager();
 
-  virtual void init() = 0;
-
   // -- properties -------------------------------------------------------------
 
   /// Returns a ptr to the multiplexer

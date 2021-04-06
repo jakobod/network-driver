@@ -6,6 +6,7 @@
 
 #include "net/acceptor.hpp"
 
+#include <iostream>
 #include <memory>
 
 #include "net/multiplexer.hpp"
@@ -23,6 +24,7 @@ acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx)
 // -- properties -------------------------------------------------------------
 
 bool acceptor::handle_read_event() {
+  std::cerr << "acceptor: read_event()" << std::endl;
   auto accept_socket = socket_cast<tcp_accept_socket>(handle());
   auto accepted = accept(accept_socket);
   if (accepted == invalid_socket) {
@@ -30,7 +32,7 @@ bool acceptor::handle_read_event() {
     return false;
   }
   auto mgr = std::make_shared<socket_manager_impl>(accepted, mpx());
-  mpx()->register_new_socket_manager(std::move(mgr));
+  mpx()->add(std::move(mgr), operation::read);
   return true;
 }
 

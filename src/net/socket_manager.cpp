@@ -9,6 +9,7 @@
 
 #include "net/socket_manager.hpp"
 
+#include <iostream>
 #include <memory>
 
 #include "net/multiplexer.hpp"
@@ -43,14 +44,15 @@ bool socket_manager::mask_del(operation flag) noexcept {
 void socket_manager::register_reading() {
   if ((mask() & operation::read) == operation::read)
     return;
-
-  mpx_->register_reading(handle());
+  std::cerr << "registering manager for reading!" << std::endl;
+  mpx_->enable(*this, operation::read);
 }
 
 void socket_manager::register_writing() {
   if ((mask() & operation::write) == operation::write)
     return;
-  mpx_->register_writing(handle());
+  std::cerr << "registering manager for writing!" << std::endl;
+  mpx_->enable(*this, operation::write);
 }
 
 } // namespace net

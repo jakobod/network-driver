@@ -7,14 +7,11 @@
 #pragma once
 
 #include <array>
-#include <cstring>
-#include <functional>
-#include <iostream>
 #include <sys/epoll.h>
 #include <thread>
-#include <unistd.h>
 #include <unordered_map>
 
+#include "detail/error.hpp"
 #include "net/fwd.hpp"
 #include "net/operation.hpp"
 
@@ -29,34 +26,31 @@ class multiplexer {
 
 public:
   // -- constructors, destructors ----------------------------------------------
+
   multiplexer();
+
   ~multiplexer();
 
   /// Initializes the multiplexer.
-  void init();
+  detail::error init();
 
   /// Creates a thread that runs this multiplexer indefinately.
   void start();
 
   // -- Interface functions ----------------------------------------------------
 
-  /// Adds a new socket manager to the multiplexer.
-  /// @warning Takes ownership of the passed `mgr`
-  void register_new_socket_manager(socket_manager_ptr mgr);
+  /// Adds a new fd to the multiplexer for operation `initial`.
+  void add(socket_manager_ptr mgr, operation initial);
 
-  /// Registers `mgr` for read events.
-  void register_reading(socket sock);
+  void enable(socket_manager&, operation op);
 
-  /// Registers `mgr` for write events.
-  void register_writing(socket sock);
+  void disable(socket_manager& mgr, operation op);
 
 private:
-  /// Adds an fd for operation `op`.
-  void add(int fd, operation op);
+  /// Deletes an existing fd.
+  void del(socket handle);
 
-  /// Deletes an fd for operation `op`.
-  void del(int fd, operation op);
-
+  /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
 
   void run();
