@@ -16,6 +16,7 @@ class socket_manager_factory;
 
 struct socket;
 struct stream_socket;
+struct pipe_socket;
 struct tcp_stream_socket;
 struct tcp_accept_socket;
 

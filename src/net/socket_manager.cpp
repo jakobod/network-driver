@@ -41,13 +41,6 @@ bool socket_manager::mask_del(operation flag) noexcept {
   return true;
 }
 
-void socket_manager::register_reading() {
-  if ((mask() & operation::read) == operation::read)
-    return;
-  std::cerr << "registering manager for reading!" << std::endl;
-  mpx_->enable(*this, operation::read);
-}
-
 void socket_manager::register_writing() {
   if ((mask() & operation::write) == operation::write)
     return;

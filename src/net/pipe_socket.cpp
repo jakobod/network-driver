@@ -12,15 +12,19 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "detail/error.hpp"
+
 namespace net {
 
-pipe_socket_pair make_pipe() {
+detail::error_or<pipe_socket_pair> make_pipe() {
   socket_id pipefds[2];
   if (pipe(pipefds) != 0) {
-    std::cerr << "make_pipe failed: " << last_socket_error_as_string()
-              << std::endl;
-    abort();
+    std::cout << "make_pipe: " + last_socket_error_as_string() << std::endl;
+    return detail::error(detail::socket_operation_failed,
+                         "make_pipe: " + last_socket_error_as_string());
   }
+  std::cout << "pipefd0 = " << pipefds[0] << " pipefd1 = " << pipefds[1]
+            << std::endl;
   return std::make_pair(pipe_socket{pipefds[0]}, pipe_socket{pipefds[1]});
 }
 

@@ -14,6 +14,8 @@
 #include "detail/error.hpp"
 #include "net/fwd.hpp"
 #include "net/operation.hpp"
+#include "net/pipe_socket.hpp"
+#include "net/pollset_updater.hpp"
 
 namespace net {
 
@@ -37,6 +39,15 @@ public:
   /// Creates a thread that runs this multiplexer indefinately.
   void start();
 
+  /// Shuts the multiplexer down!
+  void shutdown();
+
+  /// Joins with the multiplexer.
+  void join() {
+    if (mpx_thread_.joinable())
+      mpx_thread_.join();
+  }
+
   // -- Error Handling ---------------------------------------------------------
 
   void handle_error(detail::error err);
@@ -48,11 +59,18 @@ public:
 
   void enable(socket_manager&, operation op);
 
-  void disable(socket_manager& mgr, operation op);
+  /// Disables an operation `op` for socket manager `mgr`.
+  /// If `mgr` is not registered for any operation after disabling it, it is
+  /// removed if `remove` is set.
+  void disable(socket_manager& mgr, operation op, bool remove = true);
 
 private:
-  /// Deletes an existing fd.
+  /// Deletes an existing socket_manager using its key `handle`.
   void del(socket handle);
+
+  /// Deletes an existing socket_manager using an iterator `it` to the
+  /// manager_map.
+  manager_map::iterator del(manager_map::iterator it);
 
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
@@ -60,12 +78,17 @@ private:
   /// Main multiplexing loop.
   void run();
 
+  // pipe for synchronous access to mpx
+  pipe_socket pipe_writer_;
+  pipe_socket pipe_reader_;
+
   // epoll variables
   epoll_fd epoll_fd_;
   pollset pollset_;
   manager_map managers_;
 
   // thread variables
+  bool shutting_down_;
   bool running_;
   std::thread mpx_thread_;
   std::thread::id mpx_thread_id_;

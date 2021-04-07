@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "detail/byte_container.hpp"
+#include "detail/error.hpp"
 #include "net/socket.hpp"
 
 namespace net {
@@ -28,7 +29,7 @@ using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
 
 /// Creates two connected sockets. The first socket is the read handle and the
 /// second socket is the write handle.
-pipe_socket_pair make_pipe();
+detail::error_or<pipe_socket_pair> make_pipe();
 
 /// Transmits data from `x` to its peer.
 ptrdiff_t write(pipe_socket x, detail::byte_span buf);

@@ -16,11 +16,13 @@
 
 namespace net {
 
-multiplexer::multiplexer() : epoll_fd_(invalid_socket_id), running_(false) {
+multiplexer::multiplexer()
+  : epoll_fd_(invalid_socket_id), shutting_down_(false), running_(false) {
   // nop
 }
 
 multiplexer::~multiplexer() {
+  close(pipe_writer_);
   ::close(epoll_fd_);
 }
 
@@ -28,6 +30,15 @@ detail::error multiplexer::init(socket_manager_factory_ptr factory) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
     return detail::error(detail::runtime_error, "creating epoll fd failed");
+  // Create pollset updater
+  auto pipe_res = make_pipe();
+  if (auto err = std::get_if<detail::error>(&pipe_res))
+    return *err;
+  auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
+  pipe_reader_ = pipe_fds.first;
+  pipe_writer_ = pipe_fds.second;
+  add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
+  // Create Acceptor
   auto res = net::make_tcp_accept_socket(0);
   if (auto err = std::get_if<detail::error>(&res))
     return *err;
@@ -42,17 +53,47 @@ detail::error multiplexer::init(socket_manager_factory_ptr factory) {
 }
 
 void multiplexer::start() {
-  running_ = true;
-  mpx_thread_ = std::thread(&multiplexer::run, this);
-  mpx_thread_id_ = mpx_thread_.get_id();
+  if (!running_) {
+    running_ = true;
+    mpx_thread_ = std::thread(&multiplexer::run, this);
+    mpx_thread_id_ = mpx_thread_.get_id();
+  }
+}
+
+void multiplexer::shutdown() {
+  if (std::this_thread::get_id() == mpx_thread_id_) {
+    // disable all managers for reading!
+    for (auto it = managers_.begin(); it != managers_.end(); ++it) {
+      std::cerr << "ROUND ------------------------- " << std::endl;
+      std::cerr << "managers_.size() " << managers_.size() << std::endl;
+      std::cerr << "mgr_ptr = " << it->second << std::endl;
+      auto& mgr = it->second;
+      if (mgr->handle() != pipe_reader_) {
+        disable(*mgr, operation::read, false);
+        if (mgr->mask() == operation::none)
+          it = del(it);
+      }
+    }
+    shutting_down_ = true;
+    running_ = false;
+  } else if (!shutting_down_) {
+    std::byte code{pollset_updater::shutdown_code};
+    auto res = write(pipe_writer_, detail::byte_span(&code, 1));
+    std::cerr << "wrote " << res
+              << " bytes to the pipe_socket with fd = " << pipe_writer_.id
+              << std::endl;
+    if (res != 1) {
+      std::cerr << "ERROR: " << last_socket_error_as_string() << std::endl;
+      abort();
+    }
+  }
 }
 
 // -- Error handling -----------------------------------------------------------
 
 void multiplexer::handle_error(detail::error err) {
-  // TODO: This should actually do a complete shutdown of the multiplexer!
-  std::cerr << err << std::endl;
-  abort();
+  std::cerr << "ERROR: " << err << std::endl;
+  shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
@@ -63,7 +104,7 @@ void multiplexer::add(socket_manager_ptr mgr, operation initial) {
   std::cerr << "ADD op = " << to_string(initial)
             << " on fd = " << mgr->handle().id << std::endl;
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
-  managers_.emplace(std::make_pair(mgr->handle().id, std::move(mgr)));
+  managers_.emplace(mgr->handle().id, std::move(mgr));
 }
 
 void multiplexer::enable(socket_manager& mgr, operation op) {
@@ -74,13 +115,13 @@ void multiplexer::enable(socket_manager& mgr, operation op) {
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
 }
 
-void multiplexer::disable(socket_manager& mgr, operation op) {
+void multiplexer::disable(socket_manager& mgr, operation op, bool remove) {
   if (!mgr.mask_del(op))
     return;
   std::cerr << "DISABLE op = " << to_string(op)
             << " on fd = " << mgr.handle().id << std::endl;
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
-  if (mgr.mask() == operation::none)
+  if (remove && mgr.mask() == operation::none)
     del(mgr.handle());
 }
 
@@ -88,10 +129,24 @@ void multiplexer::del(socket handle) {
   mod(handle.id, EPOLL_CTL_DEL, operation::none);
   managers_.erase(handle.id);
   std::cerr << "deleted fd = " << handle.id << std::endl;
+  // pollset updater is left!
+  if (shutting_down_ && managers_.empty())
+    running_ = false;
+}
+
+multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
+  auto fd = it->second->handle().id;
+  mod(fd, EPOLL_CTL_DEL, operation::none);
+  auto new_it = managers_.erase(it);
+  std::cerr << "deleted fd = " << fd << std::endl;
+  // pollset updater is left!
+  if (shutting_down_ && managers_.empty())
+    running_ = false;
+  return new_it;
 }
 
 void multiplexer::mod(int fd, int op, operation events) {
-  std::cout << "mod: fd = " << fd << " op = " << op << std::endl;
+  std::cerr << "mod: fd = " << fd << " op = " << op << std::endl;
   epoll_event event = {};
   event.events = static_cast<uint32_t>(events);
   event.data.fd = fd;
@@ -102,7 +157,7 @@ void multiplexer::mod(int fd, int op, operation events) {
 
 void multiplexer::run() {
   while (running_) {
-    std::cout << "waiting on epoll_wait" << std::endl;
+    std::cerr << "waiting on epoll_wait" << std::endl;
     auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
                                  static_cast<int>(pollset_.size()), -1);
     if (num_events < 0) {
@@ -120,7 +175,6 @@ void multiplexer::run() {
           std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
                     << std::endl;
           del(socket{pollset_[i].data.fd});
-          // TODO: delete all references to handler!
         } else if ((pollset_[i].events & operation::read) == operation::read) {
           auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
           if (!mgr->handle_read_event())

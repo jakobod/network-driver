@@ -30,8 +30,10 @@ public:
   }
 
   /// Returns the handle.
-  socket handle() const noexcept {
-    return handle_;
+  /// @param Socket
+  template <class Socket = socket>
+  Socket handle() const noexcept {
+    return socket_cast<Socket>(handle_);
   }
 
   /// Returns registered operations (read, write, or both).
@@ -40,13 +42,9 @@ public:
   }
 
   /// Adds given flag(s) to the event mask.
-  /// @returns `false` if `mask() | flag == mask()`, `true` otherwise.
-  /// @pre `flag != operation::none`
   bool mask_add(operation flag) noexcept;
 
   /// Tries to clear given flag(s) from the event mask.
-  /// @returns `false` if `mask() & ~flag == mask()`, `true` otherwise.
-  /// @pre `flag != operation::none`
   bool mask_del(operation flag) noexcept;
 
   // -- event loop management --------------------------------------------------

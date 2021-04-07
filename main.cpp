@@ -22,7 +22,7 @@ struct dummy_factory : public net::socket_manager_factory {
   net::socket_manager_ptr make(net::socket handle,
                                net::multiplexer* mpx) override {
     std::cout << "factory created new socket manager" << std::endl;
-    return std::make_shared<net::socket_manager_impl>(handle, mpx);
+    return std::make_shared<net::socket_manager_impl>(handle, mpx, true);
   }
 };
 
@@ -65,6 +65,12 @@ void test_mpx() {
   std::cout << "waiting for user input" << std::endl;
   std::string dummy;
   std::getline(std::cin, dummy);
+
+  std::cout << "shutting down the multiplexer" << std::endl;
+  mpx.shutdown();
+  std::cout << "joining now!" << std::endl;
+  mpx.join();
+  std::cout << "Done and joined. BYEEEEE!" << std::endl;
 }
 
 int main() {
