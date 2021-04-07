@@ -12,6 +12,7 @@ namespace net {
 
 class socket_manager;
 class multiplexer;
+class socket_manager_factory;
 
 struct socket;
 struct stream_socket;
@@ -19,5 +20,6 @@ struct tcp_stream_socket;
 struct tcp_accept_socket;
 
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
+using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
 
 } // namespace net

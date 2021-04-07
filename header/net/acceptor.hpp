@@ -16,13 +16,17 @@ namespace net {
 /// Manages the lifetime of a socket.
 class acceptor : public socket_manager {
 public:
-  acceptor(tcp_accept_socket handle, multiplexer* mpx);
+  acceptor(tcp_accept_socket handle, multiplexer* mpx,
+           socket_manager_factory_ptr factory);
 
   // -- properties -------------------------------------------------------------
 
   bool handle_read_event() override;
 
   bool handle_write_event() override;
+
+private:
+  socket_manager_factory_ptr factory_;
 };
 
 } // namespace net

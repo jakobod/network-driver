@@ -29,11 +29,8 @@ socket_manager_impl::~socket_manager_impl() {
 bool socket_manager_impl::handle_read_event() {
   // TODO: Dummy implementation!
   detail::byte_array<2048> buf;
-  auto ret = read(socket_cast<tcp_stream_socket>(handle()), buf);
-  std::string_view str{reinterpret_cast<char*>(buf.data()),
-                       static_cast<size_t>(ret)};
-  std::cerr << str << std::endl;
-  return true; // FALSE JUST IN CASE OF ERROR!
+  read(socket_cast<tcp_stream_socket>(handle()), buf);
+  return true;
 }
 
 bool socket_manager_impl::handle_write_event() {

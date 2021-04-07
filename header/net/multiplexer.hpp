@@ -32,10 +32,14 @@ public:
   ~multiplexer();
 
   /// Initializes the multiplexer.
-  detail::error init();
+  detail::error init(socket_manager_factory_ptr factory);
 
   /// Creates a thread that runs this multiplexer indefinately.
   void start();
+
+  // -- Error Handling ---------------------------------------------------------
+
+  void handle_error(detail::error err);
 
   // -- Interface functions ----------------------------------------------------
 
@@ -53,6 +57,7 @@ private:
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
 
+  /// Main multiplexing loop.
   void run();
 
   // epoll variables

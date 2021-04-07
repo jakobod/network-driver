@@ -5,15 +5,26 @@
  */
 
 #include <iostream>
+#include <string>
 #include <variant>
 
 #include "detail/error.hpp"
 #include "detail/socket_guard.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket.hpp"
+#include "net/socket_manager_factory.hpp"
+#include "net/socket_manager_impl.hpp"
 #include "net/stream_socket.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
+
+struct dummy_factory : public net::socket_manager_factory {
+  net::socket_manager_ptr make(net::socket handle,
+                               net::multiplexer* mpx) override {
+    std::cout << "factory created new socket manager" << std::endl;
+    return std::make_shared<net::socket_manager_impl>(handle, mpx);
+  }
+};
 
 [[noreturn]] void exit(std::string msg = "") {
   std::cerr << msg << std::endl;
@@ -46,14 +57,14 @@ void test_connect() {
 
 void test_mpx() {
   net::multiplexer mpx;
-  if (auto err = mpx.init())
+  auto factory = std::make_shared<dummy_factory>();
+  if (auto err = mpx.init(std::move(factory)))
     exit(err);
   mpx.start();
 
   std::cout << "waiting for user input" << std::endl;
-  char dummy;
-  std::cin >> dummy;
-  std::cout << "done" << std::endl;
+  std::string dummy;
+  std::getline(std::cin, dummy);
 }
 
 int main() {

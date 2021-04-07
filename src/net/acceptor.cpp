@@ -10,14 +10,16 @@
 #include <memory>
 
 #include "net/multiplexer.hpp"
+#include "net/socket_manager_factory.hpp"
 #include "net/socket_manager_impl.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
 namespace net {
 
-acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx)
-  : socket_manager(handle, mpx) {
+acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx,
+                   socket_manager_factory_ptr factory)
+  : socket_manager(handle, mpx), factory_(std::move(factory)) {
   // nop
 }
 
@@ -27,11 +29,15 @@ bool acceptor::handle_read_event() {
   std::cerr << "acceptor: read_event()" << std::endl;
   auto accept_socket = socket_cast<tcp_accept_socket>(handle());
   auto accepted = accept(accept_socket);
-  if (accepted == invalid_socket) {
-    std::cerr << "accepting failed!" << std::endl;
-    return false;
-  }
-  auto mgr = std::make_shared<socket_manager_impl>(accepted, mpx());
+  if (!nonblocking(accepted, true))
+    mpx()->handle_error(
+      detail::error(detail::socket_operation_failed,
+                    "nonblocking failed " + last_socket_error_as_string()));
+  if (accepted == invalid_socket)
+    mpx()->handle_error(
+      detail::error(detail::socket_operation_failed,
+                    "accepting failed: " + last_socket_error_as_string()));
+  auto mgr = factory_->make(accepted, mpx());
   mpx()->add(std::move(mgr), operation::read);
   return true;
 }

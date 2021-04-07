@@ -24,7 +24,7 @@ multiplexer::~multiplexer() {
   ::close(epoll_fd_);
 }
 
-detail::error multiplexer::init() {
+detail::error multiplexer::init(socket_manager_factory_ptr factory) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
     return detail::error(detail::runtime_error, "creating epoll fd failed");
@@ -36,7 +36,8 @@ detail::error multiplexer::init() {
   auto accept_socket = accept_socket_pair.first;
   std::cerr << "acceptor is listening on port: " << accept_socket_pair.second
             << " socket_id = " << accept_socket.id << std::endl;
-  add(std::make_shared<acceptor>(accept_socket, this), operation::read);
+  add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
+      operation::read);
   return detail::none;
 }
 
@@ -44,6 +45,14 @@ void multiplexer::start() {
   running_ = true;
   mpx_thread_ = std::thread(&multiplexer::run, this);
   mpx_thread_id_ = mpx_thread_.get_id();
+}
+
+// -- Error handling -----------------------------------------------------------
+
+void multiplexer::handle_error(detail::error err) {
+  // TODO: This should actually do a complete shutdown of the multiplexer!
+  std::cerr << err << std::endl;
+  abort();
 }
 
 // -- Interface functions ------------------------------------------------------
@@ -87,7 +96,8 @@ void multiplexer::mod(int fd, int op, operation events) {
   event.events = static_cast<uint32_t>(events);
   event.data.fd = fd;
   if (epoll_ctl(epoll_fd_, op, fd, &event) < 0)
-    std::cerr << "epoll_ctl: " << strerror(errno) << std::endl;
+    handle_error(detail::error(detail::runtime_error,
+                               "epoll_ctl: " + std::string(strerror(errno))));
 }
 
 void multiplexer::run() {
