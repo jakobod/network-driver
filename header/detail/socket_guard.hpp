@@ -29,9 +29,8 @@ public:
   }
 
   ~socket_guard() {
-    if (sock_ != net::invalid_socket) {
+    if (sock_ != net::invalid_socket)
       net::close(sock_);
-    }
   }
 
   Socket release() {
@@ -41,6 +40,10 @@ public:
   }
 
   Socket operator*() {
+    return sock_;
+  }
+
+  Socket operator->() {
     return sock_;
   }
 

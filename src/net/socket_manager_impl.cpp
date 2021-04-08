@@ -41,7 +41,8 @@ bool socket_manager_impl::handle_read_event() {
         return true;
       } else {
         mpx()->handle_error(detail::error(detail::socket_operation_failed,
-                                          last_socket_error_as_string()));
+                                          "socket_manager.read(): "
+                                            + last_socket_error_as_string()));
         return false;
       }
     }
@@ -65,9 +66,12 @@ bool socket_manager_impl::handle_write_event() {
   } else if (written < 0) {
     if (last_socket_error_is_temporary())
       return true;
+    else if (last_socket_error() == EPIPE)
+      return false;
     else
       mpx()->handle_error(detail::error(detail::socket_operation_failed,
-                                        last_socket_error_as_string()));
+                                        "socket_manager.write(): "
+                                          + last_socket_error_as_string()));
   }
   return false;
 }

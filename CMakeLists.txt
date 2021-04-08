@@ -15,6 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 include_directories(header)
 
 set(SRC_FILES
+    src/benchmark/tcp_stream_writer.cpp
     src/detail/error_code.cpp
     src/net/acceptor.cpp
     src/net/operation.cpp
@@ -36,6 +37,5 @@ find_package(Threads REQUIRED)
 add_executable(epoll_benchmark
                main.cpp
                ${SRC_FILES})
-
 target_link_libraries(epoll_benchmark
                       ${CMAKE_THREAD_LIBS_INIT})

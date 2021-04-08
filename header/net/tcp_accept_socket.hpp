@@ -23,8 +23,9 @@ struct tcp_accept_socket : socket {
   using super::super;
 };
 
-detail::error_or<std::pair<tcp_accept_socket, uint16_t>>
-make_tcp_accept_socket(uint16_t port);
+using acceptor_pair = std::pair<tcp_accept_socket, uint16_t>;
+
+detail::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port);
 
 detail::error_or<uint16_t> port_of(tcp_accept_socket x);
 

@@ -6,18 +6,15 @@
 
 #pragma once
 
-#include <arpa/inet.h>
 #include <cstring>
 #include <iostream>
 #include <linux/if_packet.h>
 #include <net/ethernet.h>
-#include <net/mac_address.hpp>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
 #include <span>
 
 #include "detail/byte_container.hpp"
 #include "net/mac_address.hpp"
+#include "net/socket_sys_includes.hpp"
 
 namespace udp {
 
