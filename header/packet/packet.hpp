@@ -14,10 +14,10 @@
 #include <net/mac_address.hpp>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <span>
 
 #include "detail/byte_container.hpp"
 #include "net/mac_address.hpp"
-
 
 namespace udp {
 
@@ -138,4 +138,4 @@ private:
   size_t payload_size_;
 };
 
-} // namespace packet
+} // namespace udp

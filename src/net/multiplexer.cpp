@@ -62,11 +62,9 @@ void multiplexer::start() {
 
 void multiplexer::shutdown() {
   if (std::this_thread::get_id() == mpx_thread_id_) {
+    std::cerr << "shutdown() called by multiplexer" << std::endl;
     // disable all managers for reading!
     for (auto it = managers_.begin(); it != managers_.end(); ++it) {
-      std::cerr << "ROUND ------------------------- " << std::endl;
-      std::cerr << "managers_.size() " << managers_.size() << std::endl;
-      std::cerr << "mgr_ptr = " << it->second << std::endl;
       auto& mgr = it->second;
       if (mgr->handle() != pipe_reader_) {
         disable(*mgr, operation::read, false);
@@ -77,14 +75,13 @@ void multiplexer::shutdown() {
     shutting_down_ = true;
     running_ = false;
   } else if (!shutting_down_) {
+    std::cerr << "shutdown() called by outstanding" << std::endl;
     std::byte code{pollset_updater::shutdown_code};
     auto res = write(pipe_writer_, detail::byte_span(&code, 1));
-    std::cerr << "wrote " << res
-              << " bytes to the pipe_socket with fd = " << pipe_writer_.id
-              << std::endl;
     if (res != 1) {
-      std::cerr << "ERROR: " << last_socket_error_as_string() << std::endl;
-      abort();
+      std::cerr << "ERROR could not write to pipe: "
+                << last_socket_error_as_string() << std::endl;
+      abort(); // Can't be handled by shutting down, if shutdown fails.
     }
   }
 }

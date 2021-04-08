@@ -7,9 +7,9 @@
 #pragma once
 
 #include <linux/if_packet.h>
-#include <sys/socket.h>
 
 #include "detail/byte_container.hpp"
+#include "detail/error.hpp"
 #include "net/socket.hpp"
 
 namespace net {
@@ -20,7 +20,7 @@ struct raw_socket : socket {
   using super::super;
 };
 
-raw_socket make_raw_socket();
+detail::error_or<raw_socket> make_raw_socket();
 
 ssize_t sendto(raw_socket sock, sockaddr_ll socket_address,
                detail::byte_span data);

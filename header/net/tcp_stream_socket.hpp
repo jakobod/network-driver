@@ -11,6 +11,11 @@
 
 #include "net/stream_socket.hpp"
 
+#include <cstdint>
+#include <string>
+
+#include "detail/error.hpp"
+
 namespace net {
 
 /// Represents a TCP connection.
@@ -21,7 +26,7 @@ struct tcp_stream_socket : stream_socket {
 };
 
 /// Create a `tcp_stream_socket` connected to `auth`.
-tcp_stream_socket make_connected_tcp_stream_socket(const std::string hostname,
-                                                   uint16_t port);
+detail::error_or<tcp_stream_socket>
+make_connected_tcp_stream_socket(const std::string hostname, uint16_t port);
 
 } // namespace net

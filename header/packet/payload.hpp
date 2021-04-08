@@ -23,13 +23,10 @@ public:
     return payload_size_;
   }
 
-  size_t append(detail::byte_span payload) {
+  ssize_t append(detail::byte_span payload) {
     auto space_left = data_.size() - payload_size_;
-    if (payload.size() > space_left) {
-      std::cerr << "payload too large! " << payload.size() << " vs. "
-                << data_.size() << " left";
-      abort();
-    }
+    if (payload.size() > space_left)
+      return -1;
     memcpy(data_.data(), payload.data(), payload.size());
     payload_size_ += payload.size();
     return payload_size_;
