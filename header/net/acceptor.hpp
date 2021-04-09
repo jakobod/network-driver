@@ -8,7 +8,7 @@
 
 #include "net/socket_manager.hpp"
 
-#include "net/fwd.hpp"
+#include "fwd.hpp"
 #include "net/tcp_accept_socket.hpp"
 
 namespace net {

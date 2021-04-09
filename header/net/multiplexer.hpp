@@ -12,7 +12,7 @@
 #include <unordered_map>
 
 #include "detail/error.hpp"
-#include "net/fwd.hpp"
+#include "fwd.hpp"
 #include "net/operation.hpp"
 #include "net/pipe_socket.hpp"
 #include "net/pollset_updater.hpp"
@@ -29,7 +29,7 @@ class multiplexer {
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  multiplexer();
+  multiplexer(benchmark::result_ptr results);
 
   ~multiplexer();
 
@@ -43,10 +43,7 @@ public:
   void shutdown();
 
   /// Joins with the multiplexer.
-  void join() {
-    if (mpx_thread_.joinable())
-      mpx_thread_.join();
-  }
+  void join();
 
   // -- Error Handling ---------------------------------------------------------
 
@@ -77,6 +74,9 @@ private:
 
   /// Main multiplexing loop.
   void run();
+
+  // Benchmark results
+  benchmark::result_ptr results_;
 
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_;

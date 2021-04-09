@@ -9,7 +9,7 @@
 #include <array>
 #include <cstdint>
 
-#include "net/fwd.hpp"
+#include "fwd.hpp"
 #include "net/socket_manager.hpp"
 
 namespace net {

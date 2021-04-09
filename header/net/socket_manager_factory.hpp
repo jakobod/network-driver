@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "net/fwd.hpp"
+#include "fwd.hpp"
 
 namespace net {
 

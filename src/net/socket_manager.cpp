@@ -44,7 +44,6 @@ bool socket_manager::mask_del(operation flag) noexcept {
 void socket_manager::register_writing() {
   if ((mask() & operation::write) == operation::write)
     return;
-  std::cerr << "registering manager for writing!" << std::endl;
   mpx_->enable(*this, operation::write);
 }
 

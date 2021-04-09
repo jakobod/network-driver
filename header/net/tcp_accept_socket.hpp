@@ -9,7 +9,7 @@
 #include <cstdint>
 
 #include "detail/error.hpp"
-#include "net/fwd.hpp"
+#include "fwd.hpp"
 #include "net/socket.hpp"
 
 namespace net {

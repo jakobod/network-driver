@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "net/fwd.hpp"
+#include "fwd.hpp"
 #include "net/operation.hpp"
 #include "net/socket.hpp"
 

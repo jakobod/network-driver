@@ -4,27 +4,39 @@
  *  @date 25.03.2021
  */
 
+#include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <variant>
 
+#include "benchmark/result.hpp"
+#include "benchmark/socket_manager_impl.hpp"
 #include "benchmark/tcp_stream_writer.hpp"
 #include "detail/error.hpp"
 #include "detail/socket_guard.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket.hpp"
 #include "net/socket_manager_factory.hpp"
-#include "net/socket_manager_impl.hpp"
 #include "net/stream_socket.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
 struct dummy_factory : public net::socket_manager_factory {
+  dummy_factory(benchmark::result_ptr results) : results_(std::move(results)) {
+    // nop
+  }
+
   net::socket_manager_ptr make(net::socket handle,
                                net::multiplexer* mpx) override {
     std::cout << "factory created new socket manager" << std::endl;
-    return std::make_shared<net::socket_manager_impl>(handle, mpx, true);
+    return std::make_shared<benchmark::socket_manager_impl>(handle, mpx,
+                                                            results_);
   }
+
+private:
+  benchmark::result_ptr results_;
 };
 
 template <class What>
@@ -33,31 +45,24 @@ template <class What>
   abort();
 }
 
-void test_connect() {
-  auto res = net::make_tcp_accept_socket(0);
-  if (auto err = std::get_if<detail::error>(&res))
-    exit(*err);
-  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
-  auto accept_socket_guard
-    = detail::make_socket_guard(accept_socket_pair.first);
-  std::cerr << "socket is bound to port: " << accept_socket_pair.second
-            << std::endl;
-  if (accept_socket_guard == net::invalid_socket)
-    exit("failed to create accept socket");
-  std::cerr << "waiting for an incoming connection" << std::endl;
-  auto guard = detail::make_socket_guard(net::accept(*accept_socket_guard));
-  std::cerr << "accepted!" << std::endl;
-  if (guard == net::invalid_socket)
-    exit("accepted invalid socket");
-  std::cerr << "all fine!" << std::endl;
-}
-
 void run_server() {
-  net::multiplexer mpx;
-  auto factory = std::make_shared<dummy_factory>();
+  using namespace std::chrono;
+  auto results = std::make_shared<benchmark::result>();
+  net::multiplexer mpx(results);
+  auto factory = std::make_shared<dummy_factory>(results);
   if (auto err = mpx.init(std::move(factory)))
     exit(err);
   mpx.start();
+
+  bool running = true;
+  auto printer = [&]() {
+    while (running) {
+      auto now = system_clock::now();
+      std::this_thread::sleep_until(now + seconds(1));
+      std::cout << *results << std::endl;
+    }
+  };
+  std::thread printer_t(printer);
 
   std::cout << "waiting for user input" << std::endl;
   std::string dummy;
@@ -68,37 +73,16 @@ void run_server() {
   std::cout << "joining now!" << std::endl;
   mpx.join();
   std::cout << "Done and joined. BYEEEEE!" << std::endl;
+  running = false;
+  printer_t.join();
 }
 
 void run_client(std::string host, uint16_t port, size_t amount) {
-  // auto res = net::make_tcp_accept_socket();
-  // if (auto err = std::get_if<detail::error>(&res))
-  //   exit(*err);
-  // auto accept_socket_pair = std::get<net::acceptor_pair>(res);
-  // auto acceptor_guard = detail::make_socket_guard(accept_socket_pair.first);
-  // std::cerr << "Acceptor listening on port: " << accept_socket_pair.second
-  //           << " fd = " << (*acceptor_guard).id << std::endl;
-  // auto connection_res = net::make_connected_tcp_stream_socket(
-  //   "127.0.0.1", accept_socket_pair.second);
-  // if (auto err = std::get_if<detail::error>(&connection_res))
-  //   exit(*err);
-  // auto connected_guard = detail::make_socket_guard(
-  //   std::get<net::tcp_stream_socket>(connection_res));
-  // auto accepted_guard = detail::make_socket_guard(accept(*acceptor_guard));
-  // if (accepted_guard == net::invalid_socket)
-  //   exit("accept returned an invalid socket!");
-  // std::cout << "Works like a charm!" << std::endl;
   benchmark::tcp_stream_writer writer(amount);
   if (auto err = writer.init(host, port))
     exit(err);
   writer.start();
-  std::cout << "waiting for user input" << std::endl;
-  std::string dummy;
-  std::getline(std::cin, dummy);
-  writer.stop();
-  std::cerr << "joining now!" << std::endl;
   writer.join();
-  std::cerr << "DONE!" << std::endl;
 }
 
 int main(int argc, char** argv) {

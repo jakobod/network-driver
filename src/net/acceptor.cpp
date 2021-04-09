@@ -9,9 +9,9 @@
 #include <iostream>
 #include <memory>
 
+#include "benchmark/socket_manager_impl.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
-#include "net/socket_manager_impl.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
@@ -26,7 +26,6 @@ acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx,
 // -- properties -------------------------------------------------------------
 
 bool acceptor::handle_read_event() {
-  std::cerr << "acceptor: read_event()" << std::endl;
   auto accept_socket = socket_cast<tcp_accept_socket>(handle());
   auto accepted = accept(accept_socket);
   if (!nonblocking(accepted, true))
@@ -43,7 +42,8 @@ bool acceptor::handle_read_event() {
 }
 
 bool acceptor::handle_write_event() {
-  std::cerr << "acceptor should NOT receive write events!" << std::endl;
+  mpx()->handle_error(detail::error(
+    detail::runtime_error, "acceptor should NOT receive write events!"));
   return false;
 }
 

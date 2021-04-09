@@ -6,19 +6,22 @@
 
 #pragma once
 
+#include "benchmark/result.hpp"
 #include "detail/byte_container.hpp"
+#include "fwd.hpp"
 #include "net/multiplexer.hpp"
 #include "net/operation.hpp"
 #include "net/socket.hpp"
 #include "net/socket_manager.hpp"
 
-namespace net {
+namespace benchmark {
 
-class socket_manager_impl : public socket_manager {
+class socket_manager_impl : public net::socket_manager {
 public:
   // -- constructors -----------------------------------------------------------
 
-  socket_manager_impl(socket handle, multiplexer* mpx, bool mirror);
+  socket_manager_impl(net::socket handle, net::multiplexer* mpx,
+                      result_ptr result);
 
   ~socket_manager_impl();
 
@@ -31,9 +34,7 @@ public:
 private:
   bool mirror_;
   detail::byte_buffer write_buffer_;
-  size_t received_bytes_;
-  size_t sent_bytes_;
-  size_t num_handled_events_;
+  result_ptr results_;
 };
 
-} // namespace net
+} // namespace benchmark
