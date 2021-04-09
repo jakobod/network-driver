@@ -17,8 +17,10 @@
 namespace net {
 
 void close(socket sock) {
-  std::cerr << "closing socket " << sock.id << std::endl;
-  ::close(sock.id);
+  if (sock != invalid_socket)
+    ::close(sock.id);
+  else
+    std::cerr << "tried to close an invalid socket" << std::endl;
 }
 
 int last_socket_error() {

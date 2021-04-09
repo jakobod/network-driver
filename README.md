@@ -1,15 +1,23 @@
 # raw-sockets
 
 # Reference
-- https://www.vankuik.nl/2012-02-09_Writing_ethernet_packets_on_OS_X_and_BSD
-
+- https://idea.popcount.org/2017-02-20-epoll-is-fundamentally-broken-12/
+- https://idea.popcount.org/2017-03-20-epoll-is-fundamentally-broken-22/
 
 # TODO
-- Way to securely shutdown the multiplexer!
-- Thread safe access to multiplexer!
-
-Reading and writing should be nonblocking!
-
 - io_uring implementation
 
 - Think about how to benchmark
+- Measure all things individually
+  - Latency
+  - Throughput
+
+- Include Drivers for different benchmarks
+  - Driver types
+    - Max-out driver
+    - Max-connection driver
+    - max throughput driver
+    - only reading
+    - only writing
+    - bursts of connections/data
+    - fluctuating load

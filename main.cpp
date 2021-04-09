@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstdint>
 #include <iostream>
+#include <random>
 #include <string>
 #include <variant>
 
@@ -30,7 +31,6 @@ struct dummy_factory : public net::socket_manager_factory {
 
   net::socket_manager_ptr make(net::socket handle,
                                net::multiplexer* mpx) override {
-    std::cout << "factory created new socket manager" << std::endl;
     return std::make_shared<benchmark::socket_manager_impl>(handle, mpx,
                                                             results_);
   }
@@ -77,19 +77,28 @@ void run_server() {
   printer_t.join();
 }
 
-void run_client(std::string host, uint16_t port, size_t amount) {
-  benchmark::tcp_stream_writer writer(amount);
-  if (auto err = writer.init(host, port))
-    exit(err);
-  writer.start();
-  writer.join();
+void run_client(const std::string host, const uint16_t port,
+                size_t num_writers) {
+  std::random_device rd;
+  std::vector<std::shared_ptr<benchmark::tcp_stream_writer>> writers;
+  for (size_t i = 0; i < num_writers; ++i) {
+    auto writer = std::make_shared<benchmark::tcp_stream_writer>(
+      host, port, std::mt19937{rd()});
+    writers.emplace_back(std::move(writer));
+    if (auto err = writers.back()->init())
+      exit(err);
+  }
+  for (const auto& writer : writers)
+    writer->start();
+  for (const auto& writer : writers)
+    writer->join();
 }
 
 int main(int argc, char** argv) {
   bool is_server = true;
   std::string host = "";
   uint16_t port = 0;
-  size_t amount = 0;
+  size_t num_writers = 1;
 
   for (int i = 0; i < argc; ++i) {
     switch (argv[i][1]) {
@@ -105,15 +114,16 @@ int main(int argc, char** argv) {
       case 'h':
         host = std::string(argv[++i]);
         break;
-      case 'a':
-        amount = std::stoi(std::string(argv[++i]));
+      case 'n':
+        num_writers = std::stoi(std::string(argv[++i]));
         break;
       default:
         break;
     }
   }
+
   if (is_server)
     run_server();
   else
-    run_client(host, port, amount);
+    run_client(host, port, num_writers);
 }

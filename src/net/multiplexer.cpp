@@ -130,6 +130,7 @@ void multiplexer::del(socket handle) {
   managers_.erase(handle.id);
   if (shutting_down_ && managers_.empty())
     running_ = false;
+  results_->count_closed();
 }
 
 multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
@@ -138,6 +139,7 @@ multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
   auto new_it = managers_.erase(it);
   if (shutting_down_ && managers_.empty())
     running_ = false;
+  results_->count_closed();
   return new_it;
 }
 
