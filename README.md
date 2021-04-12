@@ -5,6 +5,7 @@
 - https://idea.popcount.org/2017-03-20-epoll-is-fundamentally-broken-22/
 
 # TODO
+- [ ] set nonblocking on all sockets in the multiplexer
 - [ ] io_uring implementation
 
 - [ ] Think about how to benchmark
