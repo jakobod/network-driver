@@ -5,14 +5,15 @@
 - https://idea.popcount.org/2017-03-20-epoll-is-fundamentally-broken-22/
 
 # TODO
-- io_uring implementation
+- [ ] set nonblocking on all sockets in the multiplexer
+- [ ] io_uring implementation
 
-- Think about how to benchmark
-- Measure all things individually
-  - Latency
-  - Throughput
+- [ ] Think about how to benchmark
+- [ ] Measure all things individually
+  - [ ] Latency
+  - [ ] Throughput
 
-- Include Drivers for different benchmarks
+- [ ] Include Drivers for different benchmarks
   - Driver types
     - Max-out driver
     - Max-connection driver
