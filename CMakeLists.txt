@@ -15,6 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 include_directories(header)
 
 set(SRC_FILES
+    src/benchmark/driver.cpp
     src/benchmark/tcp_stream_writer.cpp
     src/benchmark/socket_manager_impl.cpp
     src/detail/error_code.cpp

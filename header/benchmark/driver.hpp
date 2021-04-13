@@ -6,9 +6,12 @@
 
 #pragma once
 
+#include <random>
 #include <vector>
 
-#include "benchmark/tcp_stream_writer.hpp"s
+#include "benchmark/tcp_stream_writer.hpp"
+#include "detail/error.hpp"
+#include "fwd.hpp"
 
 namespace benchmark {
 
@@ -16,10 +19,24 @@ class driver {
 public:
   // -- constructors -----------------------------------------------------------
 
-  driver(size_t num_writers);
+  driver();
+
+  detail::error init(const std::string host, const uint16_t port,
+                     size_t num_writers);
+
+  void run();
+
+  // -- thread functions -------------------------------------------------------
+
+  void start();
+
+  void stop();
+
+  void join();
 
 private:
-  std::vector<tcp_stream_writer> writers;
+  std::random_device rd_;
+  std::vector<tcp_stream_writer_ptr> writers_;
 };
 
 } // namespace benchmark

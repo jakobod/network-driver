@@ -12,6 +12,7 @@
 #include <string>
 #include <variant>
 
+#include "benchmark/driver.hpp"
 #include "benchmark/result.hpp"
 #include "benchmark/socket_manager_impl.hpp"
 #include "benchmark/tcp_stream_writer.hpp"
@@ -79,19 +80,11 @@ void run_server() {
 
 void run_client(const std::string host, const uint16_t port,
                 size_t num_writers) {
-  std::random_device rd;
-  std::vector<std::shared_ptr<benchmark::tcp_stream_writer>> writers;
-  for (size_t i = 0; i < num_writers; ++i) {
-    auto writer = std::make_shared<benchmark::tcp_stream_writer>(
-      host, port, std::mt19937{rd()});
-    writers.emplace_back(std::move(writer));
-    if (auto err = writers.back()->init())
-      exit(err);
-  }
-  for (const auto& writer : writers)
-    writer->start();
-  for (const auto& writer : writers)
-    writer->join();
+  benchmark::driver driver;
+  if (auto err = driver.init(host, port, num_writers))
+    exit(err);
+  driver.start();
+  driver.join();
 }
 
 int main(int argc, char** argv) {

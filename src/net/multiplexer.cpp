@@ -186,6 +186,7 @@ void multiplexer::run() {
       }
     }
   }
+  std::cerr << "multiplexer done" << std::endl;
 }
 
 } // namespace net

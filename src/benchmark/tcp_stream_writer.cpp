@@ -39,7 +39,6 @@ void tcp_stream_writer::run() {
   auto check_error = [&](tcp_stream_writer::state res) {
     switch (res) {
       case tcp_stream_writer::state::done:
-        std::cout << "res = tcp_stream_writer::state::done" << std::endl;
         reconnect();
         break;
       case tcp_stream_writer::state::error:
@@ -69,6 +68,8 @@ void tcp_stream_writer::stop() {
 void tcp_stream_writer::join() {
   if (writer_thread_.joinable())
     writer_thread_.join();
+  else
+    std::cerr << "thread not joinable!" << std::endl;
 }
 
 detail::error tcp_stream_writer::connect() {

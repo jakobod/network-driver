@@ -27,8 +27,11 @@ using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
 
 namespace benchmark {
 
+class tcp_stream_writer;
+
 struct result;
 
 using result_ptr = std::shared_ptr<result>;
+using tcp_stream_writer_ptr = std::shared_ptr<tcp_stream_writer>;
 
 } // namespace benchmark
