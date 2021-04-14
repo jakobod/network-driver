@@ -15,7 +15,6 @@
 #include "benchmark/driver.hpp"
 #include "benchmark/result.hpp"
 #include "benchmark/socket_manager_impl.hpp"
-#include "benchmark/tcp_stream_writer.hpp"
 #include "detail/error.hpp"
 #include "detail/socket_guard.hpp"
 #include "net/multiplexer.hpp"
@@ -56,14 +55,13 @@ void run_server() {
   mpx.start();
 
   bool running = true;
-  auto printer = [&]() {
+  std::thread printer_t([&]() {
     while (running) {
       auto now = system_clock::now();
       std::this_thread::sleep_until(now + seconds(1));
       std::cout << *results << std::endl;
     }
-  };
-  std::thread printer_t(printer);
+  });
 
   std::cout << "waiting for user input" << std::endl;
   std::string dummy;

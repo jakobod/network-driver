@@ -16,7 +16,7 @@ detail::error driver::init(const std::string host, const uint16_t port,
                            size_t num_writers) {
   for (size_t i = 0; i < num_writers; ++i) {
     writers_.emplace_back(
-      std::make_shared<tcp_stream_writer>(host, port, std::mt19937{rd_()}));
+      std::make_shared<tcp_stream_client>(host, port, std::mt19937{rd_()}));
     if (auto err = writers_.back()->init())
       return err;
   }

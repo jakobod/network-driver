@@ -114,6 +114,7 @@ void multiplexer::add(socket_manager_ptr mgr, operation initial) {
 void multiplexer::enable(socket_manager& mgr, operation op) {
   if (!mgr.mask_add(op))
     return;
+  std::cerr << "ENABLING SOCKET_MANAGER FOR WRITING" << std::endl;
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
 }
 

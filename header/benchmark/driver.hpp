@@ -9,7 +9,7 @@
 #include <random>
 #include <vector>
 
-#include "benchmark/tcp_stream_writer.hpp"
+#include "benchmark/tcp_stream_client.hpp"
 #include "detail/error.hpp"
 #include "fwd.hpp"
 
@@ -36,7 +36,7 @@ public:
 
 private:
   std::random_device rd_;
-  std::vector<tcp_stream_writer_ptr> writers_;
+  std::vector<tcp_stream_client_ptr> writers_;
 };
 
 } // namespace benchmark

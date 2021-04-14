@@ -16,7 +16,7 @@ include_directories(header)
 
 set(SRC_FILES
     src/benchmark/driver.cpp
-    src/benchmark/tcp_stream_writer.cpp
+    src/benchmark/tcp_stream_client.cpp
     src/benchmark/socket_manager_impl.cpp
     src/detail/error_code.cpp
     src/net/acceptor.cpp
