@@ -33,6 +33,7 @@ public:
 
 private:
   bool mirror_;
+  detail::byte_array<8096> read_buf_;
   detail::byte_buffer write_buffer_;
   result_ptr results_;
 };

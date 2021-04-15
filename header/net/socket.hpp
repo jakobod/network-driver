@@ -52,6 +52,9 @@ To socket_cast(From x) {
 /// Closes socket `x`.
 void close(socket x);
 
+/// Shuts down socket `x`.
+void shutdown(socket sock, int how);
+
 /// Returns the last socket error in this thread as an integer.
 int last_socket_error();
 

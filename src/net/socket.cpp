@@ -23,6 +23,11 @@ void close(socket sock) {
     std::cerr << "tried to close an invalid socket" << std::endl;
 }
 
+void shutdown(socket sock, int how) {
+  if (sock != invalid_socket)
+    ::shutdown(sock.id, how);
+}
+
 int last_socket_error() {
   return errno;
 }

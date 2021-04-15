@@ -54,6 +54,8 @@ private:
 
   detail::error connect();
 
+  void disconnect();
+
   detail::error reconnect();
 
   state read();
@@ -62,9 +64,17 @@ private:
 
   // -- epoll management -------------------------------------------------------
 
+  bool mask_add(net::operation flag);
+
+  bool mask_del(net::operation flag);
+
   void add(net::socket handle);
 
   void del(net::socket handle);
+
+  void enable(net::socket handle, net::operation op);
+
+  void disable(net::socket handle, net::operation op);
 
   void mod(int fd, int op, net::operation events);
 
@@ -81,9 +91,10 @@ private:
 
   // read and write state
   detail::byte_array<8096> data_;
+  size_t write_goal_;
   size_t written_;
   size_t received_;
-  size_t write_goal_;
+  net::operation event_mask_;
 
   // thread state
   bool running_;

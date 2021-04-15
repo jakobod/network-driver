@@ -27,9 +27,8 @@ socket_manager_impl::~socket_manager_impl() {
 
 bool socket_manager_impl::handle_read_event() {
   static constexpr int max_reads = 20;
-  detail::byte_array<2048> buf;
   for (int i = 0; i < max_reads; ++i) {
-    auto res = read(handle<tcp_stream_socket>(), buf);
+    auto res = read(handle<tcp_stream_socket>(), read_buf_);
     if (res == 0)
       return false;
     if (res < 0) {
@@ -43,7 +42,8 @@ bool socket_manager_impl::handle_read_event() {
       }
     }
     results_->add_received_bytes(res);
-    write_buffer_.insert(write_buffer_.begin(), buf.begin(), buf.begin() + res);
+    write_buffer_.insert(write_buffer_.begin(), read_buf_.begin(),
+                         read_buf_.begin() + res);
     register_writing();
   }
   return true;
