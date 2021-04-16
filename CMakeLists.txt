@@ -36,7 +36,7 @@ set(SRC_FILES
 find_package(Threads REQUIRED)
 
 add_executable(epoll_benchmark
-               main.cpp
+               src/main.cpp
                ${SRC_FILES})
 target_link_libraries(epoll_benchmark
                       ${CMAKE_THREAD_LIBS_INIT})

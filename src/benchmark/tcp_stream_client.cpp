@@ -30,7 +30,7 @@ tcp_stream_client::tcp_stream_client(const std::string ip, const uint16_t port,
     event_mask_(operation::none),
     running_(false),
     mt_(std::move(mt)),
-    dist_(0, 100'000'000) {
+    dist_(0, 100'000'000'000'000'000) {
   write_goal_ = dist_(mt_);
 }
 
@@ -68,22 +68,22 @@ void tcp_stream_client::run() {
           std::cerr << "epoll_wait failed: socket = " << i
                     << net::last_socket_error_as_string() << std::endl;
           stop();
-        } else if ((pollset_[i].events & operation::read) == operation::read) {
-          auto read_res = read();
-          if (read_res == state::error || read_res == state::disconnected) {
-            stop();
-          } else if (read_res == state::done) {
-            std::cout << "done reading" << std::endl;
-            disable(handle_, operation::read);
+        } else {
+          if ((pollset_[i].events & operation::read) == operation::read) {
+            auto read_res = read();
+            if (read_res == state::error || read_res == state::disconnected) {
+              stop();
+            } else if (read_res == state::done) {
+              disable(handle_, operation::read);
+            }
           }
-        } else if ((pollset_[i].events & operation::write)
-                   == operation::write) {
-          auto write_res = write();
-          if (write_res == state::error || write_res == state::disconnected) {
-            stop();
-          } else if (write_res == state::done) {
-            std::cout << "done writing" << std::endl;
-            disable(handle_, operation::write);
+          if ((pollset_[i].events & operation::write) == operation::write) {
+            auto write_res = write();
+            if (write_res == state::error || write_res == state::disconnected) {
+              stop();
+            } else if (write_res == state::done) {
+              disable(handle_, operation::write);
+            }
           }
         }
       }
@@ -116,7 +116,6 @@ void tcp_stream_client::join() {
 // -- Private member functions -------------------------------------------------
 
 detail::error tcp_stream_client::connect() {
-  std::cerr << "connect()" << std::endl;
   auto connection_res = net::make_connected_tcp_stream_socket(ip_, port_);
   if (auto err = std::get_if<detail::error>(&connection_res))
     return *err;
@@ -126,7 +125,6 @@ detail::error tcp_stream_client::connect() {
 }
 
 void tcp_stream_client::disconnect() {
-  std::cerr << "disconnect()" << std::endl;
   del(handle_);
   shutdown(handle_, SHUT_RDWR);
   close(handle_);
@@ -149,7 +147,7 @@ tcp_stream_client::state tcp_stream_client::read() {
       if (received_ >= write_goal_ && received_ == written_)
         return state::done;
     } else if (read_result == 0) {
-      std::cout << "server disconnected" << std::endl;
+      std::cerr << "server disconnected" << std::endl;
       return state::disconnected;
     } else {
       if (!net::last_socket_error_is_temporary()) {

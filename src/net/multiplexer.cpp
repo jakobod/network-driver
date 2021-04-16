@@ -103,9 +103,7 @@ void multiplexer::join() {
 
 void multiplexer::handle_error(detail::error err) {
   std::cerr << "ERROR: " << err << std::endl;
-  // shutdown();
-  abort();
-  // TODO: THIS SHOULD NOT BE THE HANDLING OF ERRORS.
+  shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
@@ -178,26 +176,29 @@ void multiplexer::run() {
           std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
                     << std::endl;
           del(socket{pollset_[i].data.fd});
-        } else if ((pollset_[i].events & operation::read) == operation::read) {
-          results_->count_read_event();
-          auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-          if (!mgr->handle_read_event())
-            disable(*mgr, operation::read);
-        } else if ((pollset_[i].events & operation::write)
-                   == operation::write) {
-          results_->count_write_event();
-          auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-          if (!mgr->handle_write_event())
-            disable(*mgr, operation::write);
+          continue;
+        } else {
+          if ((pollset_[i].events & operation::read) == operation::read) {
+            results_->count_read_event();
+            auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
+            if (!mgr->handle_read_event())
+              disable(*mgr, operation::read);
+          }
+          if ((pollset_[i].events & operation::write) == operation::write) {
+            results_->count_write_event();
+            auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
+            if (!mgr->handle_write_event())
+              disable(*mgr, operation::write);
+          }
         }
       }
       auto now = std::chrono::steady_clock::now();
       if (block_until <= now) {
         block_until += 1000ms;
         std::cerr << *results_ << std::endl;
-        for (const auto& p : managers_)
-          std::cerr << *p.second << std::endl;
-        std::cerr << std::endl;
+        // for (const auto& p : managers_)
+        //   std::cerr << *p.second << std::endl;
+        // std::cerr << std::endl;
       }
     }
   }

@@ -52,14 +52,11 @@ bool socket_manager_impl::handle_read_event() {
 bool socket_manager_impl::handle_write_event() {
   for (int i = 0; i < 20; ++i) {
     auto write_res = write(handle<tcp_stream_socket>(), write_buffer_);
-    std::cout << "write returned " << write_res << std::endl;
     if (write_res > 0) {
       write_buffer_.erase(write_buffer_.begin(),
                           write_buffer_.begin() + write_res);
       // results_->add_sent_bytes(written);
       written_ += write_res;
-      std::cout << "write_buffer.empty() = " << write_buffer_.empty()
-                << std::endl;
       return !write_buffer_.empty();
     } else if (write_res <= 0) {
       if (last_socket_error_is_temporary())
