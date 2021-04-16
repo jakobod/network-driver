@@ -13,11 +13,12 @@ driver::driver() {
 }
 
 detail::error driver::init(const std::string host, const uint16_t port,
-                           size_t num_writers) {
+                           size_t byte_per_sec, size_t num_writers) {
+  auto byte_per_sec_per_writer = byte_per_sec / num_writers;
   for (size_t i = 0; i < num_writers; ++i) {
     writers_.emplace_back(
-      std::make_shared<tcp_stream_client>(host, port, std::mt19937{rd_()}));
-    if (auto err = writers_.back()->init())
+      std::make_shared<tcp_stream_client>(byte_per_sec_per_writer));
+    if (auto err = writers_.back()->init(host, port))
       return err;
   }
   return detail::none;

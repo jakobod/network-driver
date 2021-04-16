@@ -25,18 +25,20 @@
 #include "net/tcp_stream_socket.hpp"
 
 struct dummy_factory : public net::socket_manager_factory {
-  dummy_factory(benchmark::result_ptr results) : results_(std::move(results)) {
+  dummy_factory(benchmark::result_ptr results, bool mirror)
+    : results_(std::move(results)), mirror_(mirror) {
     // nop
   }
 
   net::socket_manager_ptr make(net::socket handle,
                                net::multiplexer* mpx) override {
     return std::make_shared<benchmark::socket_manager_impl>(handle, mpx,
-                                                            results_);
+                                                            mirror_, results_);
   }
 
 private:
   benchmark::result_ptr results_;
+  const bool mirror_;
 };
 
 template <class What>
@@ -45,11 +47,11 @@ template <class What>
   abort();
 }
 
-void run_server() {
+void run_server(bool mirror) {
   using namespace std::chrono;
   auto results = std::make_shared<benchmark::result>();
   net::multiplexer mpx(results);
-  auto factory = std::make_shared<dummy_factory>(results);
+  auto factory = std::make_shared<dummy_factory>(results, mirror);
   if (auto err = mpx.init(std::move(factory)))
     exit(err);
   mpx.start();
@@ -66,9 +68,9 @@ void run_server() {
 }
 
 void run_client(const std::string host, const uint16_t port,
-                size_t num_writers) {
+                size_t byte_per_sec, size_t num_writers) {
   benchmark::driver driver;
-  if (auto err = driver.init(host, port, num_writers))
+  if (auto err = driver.init(host, port, byte_per_sec, num_writers))
     exit(err);
   driver.start();
   driver.join();
@@ -78,6 +80,8 @@ int main(int argc, char** argv) {
   bool is_server = true;
   std::string host = "";
   uint16_t port = 0;
+  bool mirror = false;
+  size_t byte_per_sec = 1;
   size_t num_writers = 1;
 
   for (int i = 0; i < argc; ++i) {
@@ -94,16 +98,24 @@ int main(int argc, char** argv) {
       case 'h':
         host = std::string(argv[++i]);
         break;
+      case 'm':
+        mirror = true;
+        break;
       case 'n':
         num_writers = std::stoi(std::string(argv[++i]));
+        break;
+      case 'b':
+        byte_per_sec = std::stoll(std::string(argv[++i]));
         break;
       default:
         break;
     }
   }
 
-  if (is_server)
-    run_server();
-  else
-    run_client(host, port, num_writers);
+  if (is_server) {
+    run_server(mirror);
+  } else {
+    std::cout << "byte_per_second = " << byte_per_sec << std::endl;
+    run_client(host, port, byte_per_sec, num_writers);
+  }
 }

@@ -157,10 +157,14 @@ void multiplexer::mod(int fd, int op, operation events) {
 }
 
 void multiplexer::run() {
-  auto block_until = std::chrono::steady_clock::now() + 1000ms;
+  using namespace std::chrono;
+  auto block_until = steady_clock::now() + 1000ms;
   while (running_) {
+    auto next_wakeup
+      = duration_cast<milliseconds>(block_until - steady_clock::now());
     auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                                 static_cast<int>(pollset_.size()), 1000);
+                                 static_cast<int>(pollset_.size()),
+                                 next_wakeup.count());
     if (num_events < 0) {
       switch (errno) {
         case EINTR:
@@ -192,8 +196,7 @@ void multiplexer::run() {
           }
         }
       }
-      auto now = std::chrono::steady_clock::now();
-      if (block_until <= now) {
+      if (block_until <= steady_clock::now()) {
         block_until += 1000ms;
         std::cerr << *results_ << std::endl;
         // for (const auto& p : managers_)

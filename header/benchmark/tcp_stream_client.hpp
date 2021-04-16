@@ -18,18 +18,18 @@
 namespace benchmark {
 
 class tcp_stream_client {
-  static constexpr size_t max_epoll_events = 10;
+  static constexpr size_t max_epoll_events = 1;
   using pollset = std::array<epoll_event, max_epoll_events>;
   using epoll_fd = int;
 
 public:
   tcp_stream_client() = default;
 
-  tcp_stream_client(const std::string ip, const uint16_t port, std::mt19937 mt);
+  tcp_stream_client(const size_t byte_per_second);
 
   ~tcp_stream_client();
 
-  detail::error init();
+  detail::error init(const std::string ip, const uint16_t port);
 
   // -- thread functions -------------------------------------------------------
 
@@ -51,17 +51,15 @@ private:
     disconnected,
   };
 
-  // -- Private member functions -----------------------------------------------
+  // -- Connection management --------------------------------------------------
 
-  detail::error connect();
-
-  void disconnect();
-
-  detail::error reconnect();
+  detail::error connect(const std::string ip, const uint16_t port);
 
   state read();
 
   state write();
+
+  void reset();
 
   // -- epoll management -------------------------------------------------------
 
@@ -82,8 +80,6 @@ private:
   // -- members ----------------------------------------------------------------
 
   // Remote node identifiers
-  const std::string ip_;
-  const uint16_t port_;
   net::tcp_stream_socket handle_;
 
   // epoll variables
@@ -92,7 +88,7 @@ private:
 
   // read and write state
   detail::byte_array<8096> data_;
-  size_t write_goal_;
+  const size_t byte_per_second_;
   size_t written_;
   size_t received_;
   net::operation event_mask_;
@@ -100,10 +96,6 @@ private:
   // thread state
   bool running_;
   std::thread writer_thread_;
-
-  // Random state
-  std::mt19937 mt_;
-  std::uniform_int_distribution<size_t> dist_;
 };
 
 } // namespace benchmark

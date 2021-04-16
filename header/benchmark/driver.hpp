@@ -22,7 +22,7 @@ public:
   driver();
 
   detail::error init(const std::string host, const uint16_t port,
-                     size_t num_writers);
+                     size_t byte_per_sec, size_t num_writers);
 
   void run();
 

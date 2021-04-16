@@ -22,7 +22,7 @@ class socket_manager_impl : public net::socket_manager {
 public:
   // -- constructors -----------------------------------------------------------
 
-  socket_manager_impl(net::socket handle, net::multiplexer* mpx,
+  socket_manager_impl(net::socket handle, net::multiplexer* mpx, bool mirror,
                       result_ptr result);
 
   ~socket_manager_impl();
@@ -37,18 +37,10 @@ public:
     return "socket_manager_impl";
   }
 
-  virtual std::string additional_info() const {
-    std::stringstream ss;
-    ss << "written = " << written_ << ", received = " << received_;
-    return ss.str();
-  }
-
 private:
   bool mirror_ = true;
-  size_t written_ = 0;
-  size_t received_ = 0;
-  detail::byte_array<8096> read_buf_;
-  detail::byte_buffer write_buffer_;
+  size_t byte_diff_ = 0;
+  detail::byte_array<8096> buf_;
   result_ptr results_ = nullptr;
 };
 

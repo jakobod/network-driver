@@ -16,8 +16,8 @@ namespace benchmark {
 using namespace net;
 
 socket_manager_impl::socket_manager_impl(net::socket handle, multiplexer* mpx,
-                                         result_ptr results)
-  : socket_manager(handle, mpx), results_(std::move(results)) {
+                                         bool mirror, result_ptr results)
+  : socket_manager(handle, mpx), mirror_(mirror), results_(std::move(results)) {
   // nop
 }
 
@@ -27,7 +27,7 @@ socket_manager_impl::~socket_manager_impl() {
 
 bool socket_manager_impl::handle_read_event() {
   for (int i = 0; i < 20; ++i) {
-    auto read_res = read(handle<tcp_stream_socket>(), read_buf_);
+    auto read_res = read(handle<tcp_stream_socket>(), buf_);
     if (read_res == 0)
       return false;
     if (read_res < 0) {
@@ -40,24 +40,23 @@ bool socket_manager_impl::handle_read_event() {
         return false;
       }
     }
-    // results_->add_received_bytes(res);
-    received_ += read_res;
-    write_buffer_.insert(write_buffer_.begin(), read_buf_.begin(),
-                         read_buf_.begin() + read_res);
-    register_writing();
+    byte_diff_ += read_res;
+    results_->add_received_bytes(read_res);
+    if (mirror_)
+      register_writing();
   }
   return true;
 }
 
 bool socket_manager_impl::handle_write_event() {
   for (int i = 0; i < 20; ++i) {
-    auto write_res = write(handle<tcp_stream_socket>(), write_buffer_);
+    auto num_bytes = std::min(byte_diff_, buf_.size());
+    auto write_res = write(handle<tcp_stream_socket>(),
+                           std::span(buf_.data(), num_bytes));
     if (write_res > 0) {
-      write_buffer_.erase(write_buffer_.begin(),
-                          write_buffer_.begin() + write_res);
-      // results_->add_sent_bytes(written);
-      written_ += write_res;
-      return !write_buffer_.empty();
+      byte_diff_ -= write_res;
+      results_->add_sent_bytes(write_res);
+      return byte_diff_ == 0;
     } else if (write_res <= 0) {
       if (last_socket_error_is_temporary())
         return true;
