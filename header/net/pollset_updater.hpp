@@ -35,6 +35,10 @@ public:
   bool handle_read_event() override;
 
   bool handle_write_event() override;
+
+  virtual std::string me() const {
+    return "pollset_updater";
+  }
 };
 
 } // namespace net

@@ -54,15 +54,6 @@ void run_server() {
     exit(err);
   mpx.start();
 
-  bool running = true;
-  std::thread printer_t([&]() {
-    while (running) {
-      auto now = system_clock::now();
-      std::this_thread::sleep_until(now + seconds(1));
-      std::cout << *results << std::endl;
-    }
-  });
-
   std::cout << "waiting for user input" << std::endl;
   std::string dummy;
   std::getline(std::cin, dummy);
@@ -72,8 +63,6 @@ void run_server() {
   std::cout << "joining now!" << std::endl;
   mpx.join();
   std::cout << "Done and joined. BYEEEEE!" << std::endl;
-  running = false;
-  printer_t.join();
 }
 
 void run_client(const std::string host, const uint16_t port,

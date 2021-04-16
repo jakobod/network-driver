@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <random>
 #include <sys/epoll.h>
 #include <thread>
@@ -17,7 +18,7 @@
 namespace benchmark {
 
 class tcp_stream_client {
-  static constexpr size_t max_epoll_events = 2;
+  static constexpr size_t max_epoll_events = 10;
   using pollset = std::array<epoll_event, max_epoll_events>;
   using epoll_fd = int;
 

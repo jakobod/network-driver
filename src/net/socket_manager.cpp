@@ -22,6 +22,7 @@ socket_manager::socket_manager(socket handle, multiplexer* mpx)
 }
 
 socket_manager::~socket_manager() {
+  shutdown(handle_, SHUT_RDWR);
   close(handle_);
 }
 

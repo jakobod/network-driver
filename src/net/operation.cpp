@@ -14,6 +14,8 @@ std::string to_string(operation op) {
       return "read";
     case operation::write:
       return "write";
+    case operation::read_write:
+      return "read_write";
     default:
       return "unknown operation";
   }

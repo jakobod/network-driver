@@ -25,6 +25,10 @@ public:
 
   bool handle_write_event() override;
 
+  virtual std::string me() const {
+    return "acceptor";
+  }
+
 private:
   socket_manager_factory_ptr factory_;
 };

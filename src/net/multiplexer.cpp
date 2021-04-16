@@ -6,6 +6,7 @@
 
 #include "net/multiplexer.hpp"
 
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <utility>
@@ -16,6 +17,8 @@
 #include "net/socket_sys_includes.hpp"
 
 namespace net {
+
+using std::chrono::operator""ms;
 
 multiplexer::multiplexer(benchmark::result_ptr results)
   : results_(std::move(results)),
@@ -40,6 +43,7 @@ detail::error multiplexer::init(socket_manager_factory_ptr factory) {
     return *err;
   auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
   pipe_reader_ = pipe_fds.first;
+
   pipe_writer_ = pipe_fds.second;
   add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
   // Create Acceptor
@@ -99,7 +103,9 @@ void multiplexer::join() {
 
 void multiplexer::handle_error(detail::error err) {
   std::cerr << "ERROR: " << err << std::endl;
-  shutdown();
+  // shutdown();
+  abort();
+  // TODO: THIS SHOULD NOT BE THE HANDLING OF ERRORS.
 }
 
 // -- Interface functions ------------------------------------------------------
@@ -114,7 +120,6 @@ void multiplexer::add(socket_manager_ptr mgr, operation initial) {
 void multiplexer::enable(socket_manager& mgr, operation op) {
   if (!mgr.mask_add(op))
     return;
-  std::cerr << "ENABLING SOCKET_MANAGER FOR WRITING" << std::endl;
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
 }
 
@@ -154,9 +159,10 @@ void multiplexer::mod(int fd, int op, operation events) {
 }
 
 void multiplexer::run() {
+  auto block_until = std::chrono::steady_clock::now() + 1000ms;
   while (running_) {
     auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                                 static_cast<int>(pollset_.size()), -1);
+                                 static_cast<int>(pollset_.size()), 1000);
     if (num_events < 0) {
       switch (errno) {
         case EINTR:
@@ -184,6 +190,14 @@ void multiplexer::run() {
           if (!mgr->handle_write_event())
             disable(*mgr, operation::write);
         }
+      }
+      auto now = std::chrono::steady_clock::now();
+      if (block_until <= now) {
+        block_until += 1000ms;
+        std::cerr << *results_ << std::endl;
+        for (const auto& p : managers_)
+          std::cerr << *p.second << std::endl;
+        std::cerr << std::endl;
       }
     }
   }

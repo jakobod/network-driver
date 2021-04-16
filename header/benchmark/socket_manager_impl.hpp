@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <sstream>
+
 #include "benchmark/result.hpp"
 #include "detail/byte_container.hpp"
 #include "fwd.hpp"
@@ -31,11 +33,23 @@ public:
 
   bool handle_write_event() override;
 
+  virtual std::string me() const {
+    return "socket_manager_impl";
+  }
+
+  virtual std::string additional_info() const {
+    std::stringstream ss;
+    ss << "written = " << written_ << ", received = " << received_;
+    return ss.str();
+  }
+
 private:
-  bool mirror_;
+  bool mirror_ = true;
+  size_t written_ = 0;
+  size_t received_ = 0;
   detail::byte_array<8096> read_buf_;
   detail::byte_buffer write_buffer_;
-  result_ptr results_;
+  result_ptr results_ = nullptr;
 };
 
 } // namespace benchmark

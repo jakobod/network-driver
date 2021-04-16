@@ -26,12 +26,11 @@ socket_manager_impl::~socket_manager_impl() {
 }
 
 bool socket_manager_impl::handle_read_event() {
-  static constexpr int max_reads = 20;
-  for (int i = 0; i < max_reads; ++i) {
-    auto res = read(handle<tcp_stream_socket>(), read_buf_);
-    if (res == 0)
+  for (int i = 0; i < 20; ++i) {
+    auto read_res = read(handle<tcp_stream_socket>(), read_buf_);
+    if (read_res == 0)
       return false;
-    if (res < 0) {
+    if (read_res < 0) {
       if (last_socket_error_is_temporary()) {
         return true;
       } else {
@@ -41,28 +40,30 @@ bool socket_manager_impl::handle_read_event() {
         return false;
       }
     }
-    results_->add_received_bytes(res);
+    // results_->add_received_bytes(res);
+    received_ += read_res;
     write_buffer_.insert(write_buffer_.begin(), read_buf_.begin(),
-                         read_buf_.begin() + res);
+                         read_buf_.begin() + read_res);
     register_writing();
   }
   return true;
 }
 
 bool socket_manager_impl::handle_write_event() {
-  static constexpr int max_writes = 20;
-  for (int i = 0; i < max_writes; ++i) {
-    auto written = write(handle<tcp_stream_socket>(), write_buffer_);
-    if (written > 0) {
+  for (int i = 0; i < 20; ++i) {
+    auto write_res = write(handle<tcp_stream_socket>(), write_buffer_);
+    std::cout << "write returned " << write_res << std::endl;
+    if (write_res > 0) {
       write_buffer_.erase(write_buffer_.begin(),
-                          write_buffer_.begin() + written);
-      results_->add_sent_bytes(written);
+                          write_buffer_.begin() + write_res);
+      // results_->add_sent_bytes(written);
+      written_ += write_res;
+      std::cout << "write_buffer.empty() = " << write_buffer_.empty()
+                << std::endl;
       return !write_buffer_.empty();
-    } else if (written < 0) {
+    } else if (write_res <= 0) {
       if (last_socket_error_is_temporary())
         return true;
-      else if (last_socket_error() == EPIPE)
-        return false;
       else
         mpx()->handle_error(detail::error(detail::socket_operation_failed,
                                           "socket_manager.write(): "

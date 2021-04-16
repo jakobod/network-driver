@@ -17,6 +17,7 @@ namespace benchmark {
 
 using detail::none;
 using net::operation;
+using std::chrono::operator""ms;
 
 tcp_stream_client::tcp_stream_client(const std::string ip, const uint16_t port,
                                      std::mt19937 mt)
@@ -44,16 +45,13 @@ detail::error tcp_stream_client::init() {
   return connect();
 }
 
-// -- thread functions -------------------------------------------------------
+// -- thread functions ---------------------------------------------------------
 
 void tcp_stream_client::run() {
+  auto block_until = std::chrono::steady_clock::now() + 1000ms;
   while (running_) {
-    std::cerr << "waiting on epoll_wait --------------------------------------"
-              << std::endl;
     auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                                 static_cast<int>(pollset_.size()), -1);
-    std::cerr << "epoll_wait returned -------------------------------------"
-              << std::endl;
+                                 static_cast<int>(pollset_.size()), 1000);
     if (num_events < 0) {
       switch (errno) {
         case EINTR:
@@ -72,25 +70,30 @@ void tcp_stream_client::run() {
           stop();
         } else if ((pollset_[i].events & operation::read) == operation::read) {
           auto read_res = read();
-          if (read_res == state::error)
+          if (read_res == state::error || read_res == state::disconnected) {
             stop();
-          if (read_res == state::done) {
+          } else if (read_res == state::done) {
             std::cout << "done reading" << std::endl;
             disable(handle_, operation::read);
           }
         } else if ((pollset_[i].events & operation::write)
                    == operation::write) {
           auto write_res = write();
-          if (write_res == state::error)
+          if (write_res == state::error || write_res == state::disconnected) {
             stop();
-          if (write_res == state::done) {
+          } else if (write_res == state::done) {
             std::cout << "done writing" << std::endl;
             disable(handle_, operation::write);
           }
         }
       }
-      std::cerr << "wrote " << written_ << " bytes | received " << received_
-                << " bytes" << std::endl;
+      auto now = std::chrono::steady_clock::now();
+      if (block_until <= now) {
+        std::cerr << "wrote " << written_ << " bytes | received " << received_
+                  << " bytes | registered for " << to_string(event_mask_)
+                  << std::endl;
+        block_until += 1000ms;
+      }
     }
   }
   std::cerr << "tcp_stream_client done" << std::endl;
@@ -110,7 +113,7 @@ void tcp_stream_client::join() {
     writer_thread_.join();
 }
 
-// -- Private member functions -----------------------------------------------
+// -- Private member functions -------------------------------------------------
 
 detail::error tcp_stream_client::connect() {
   std::cerr << "connect()" << std::endl;
@@ -133,46 +136,51 @@ detail::error tcp_stream_client::reconnect() {
   std::cerr << "reconnect()" << std::endl;
   disconnect();
   written_ = 0;
+  received_ = 0;
   write_goal_ = dist_(mt_);
   return connect();
 }
 
 tcp_stream_client::state tcp_stream_client::read() {
-  auto read_result = net::read(handle_, data_);
-  if (read_result > 0) {
-    received_ += read_result;
-    if (received_ >= write_goal_)
-      return state::done;
-  } else if (read_result == 0) {
-    std::cout << "server disconnected" << std::endl;
-    return state::disconnected;
-  } else {
-    if (!net::last_socket_error_is_temporary()) {
-      std::cerr << "ERROR read failed: " << net::last_socket_error_as_string()
-                << std::endl;
-      return state::error;
+  for (int i = 0; i < 20; ++i) {
+    auto read_result = net::read(handle_, data_);
+    if (read_result > 0) {
+      received_ += read_result;
+      if (received_ >= write_goal_ && received_ == written_)
+        return state::done;
+    } else if (read_result == 0) {
+      std::cout << "server disconnected" << std::endl;
+      return state::disconnected;
+    } else {
+      if (!net::last_socket_error_is_temporary()) {
+        std::cerr << "ERROR read failed: " << net::last_socket_error_as_string()
+                  << std::endl;
+        return state::error;
+      }
     }
   }
   return state::go_on;
 }
 
 tcp_stream_client::state tcp_stream_client::write() {
-  auto write_res = net::write(handle_, data_);
-  if (write_res >= 0) {
-    written_ += write_res;
-    if (written_ >= write_goal_)
-      return state::done;
-  } else if (write_res < 0) {
-    if (!net::last_socket_error_is_temporary()) {
-      std::cerr << "ERROR write failed: " << net::last_socket_error_as_string()
-                << std::endl;
-      return state::error;
+  for (int i = 0; i < 20; ++i) {
+    auto write_res = net::write(handle_, data_);
+    if (write_res >= 0) {
+      written_ += write_res;
+      if (written_ >= write_goal_)
+        return state::done;
+    } else if (write_res < 0) {
+      if (!net::last_socket_error_is_temporary()) {
+        std::cerr << "ERROR write failed: "
+                  << net::last_socket_error_as_string() << std::endl;
+        return state::error;
+      }
     }
   }
   return state::go_on;
 }
 
-// -- epoll management -------------------------------------------------------
+// -- epoll management ---------------------------------------------------------
 
 bool tcp_stream_client::mask_add(operation flag) {
   if ((event_mask_ & flag) == flag)
