@@ -9,7 +9,6 @@
 #include <iostream>
 #include <memory>
 
-#include "benchmark/socket_manager_impl.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/tcp_accept_socket.hpp"

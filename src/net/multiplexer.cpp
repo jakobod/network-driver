@@ -11,20 +11,14 @@
 #include <iostream>
 #include <utility>
 
-#include "benchmark/result.hpp"
 #include "net/acceptor.hpp"
 #include "net/socket_manager.hpp"
 #include "net/socket_sys_includes.hpp"
 
 namespace net {
 
-using std::chrono::operator""ms;
-
-multiplexer::multiplexer(benchmark::result_ptr results)
-  : results_(std::move(results)),
-    epoll_fd_(invalid_socket_id),
-    shutting_down_(false),
-    running_(false) {
+multiplexer::multiplexer()
+  : epoll_fd_(invalid_socket_id), shutting_down_(false), running_(false) {
   // nop
 }
 
@@ -134,7 +128,6 @@ void multiplexer::del(socket handle) {
   managers_.erase(handle.id);
   if (shutting_down_ && managers_.empty())
     running_ = false;
-  results_->count_closed();
 }
 
 multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
@@ -143,7 +136,6 @@ multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
   auto new_it = managers_.erase(it);
   if (shutting_down_ && managers_.empty())
     running_ = false;
-  results_->count_closed();
   return new_it;
 }
 
@@ -157,14 +149,14 @@ void multiplexer::mod(int fd, int op, operation events) {
 }
 
 void multiplexer::run() {
-  using namespace std::chrono;
-  auto block_until = steady_clock::now() + 1000ms;
+  // using namespace std::chrono;
+  // auto block_until = steady_clock::now() + 1000ms;
   while (running_) {
-    auto next_wakeup
-      = duration_cast<milliseconds>(block_until - steady_clock::now());
+    // auto next_wakeup
+    //   = duration_cast<milliseconds>(block_until - steady_clock::now());
     auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                                 static_cast<int>(pollset_.size()),
-                                 next_wakeup.count());
+                                 static_cast<int>(pollset_.size()), -1);
+    //  next_wakeup.count());
     if (num_events < 0) {
       switch (errno) {
         case EINTR:
@@ -183,26 +175,24 @@ void multiplexer::run() {
           continue;
         } else {
           if ((pollset_[i].events & operation::read) == operation::read) {
-            results_->count_read_event();
             auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
             if (!mgr->handle_read_event())
               disable(*mgr, operation::read);
           }
           if ((pollset_[i].events & operation::write) == operation::write) {
-            results_->count_write_event();
             auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
             if (!mgr->handle_write_event())
               disable(*mgr, operation::write);
           }
         }
       }
-      if (block_until <= steady_clock::now()) {
-        block_until += 1000ms;
-        std::cerr << *results_ << std::endl;
-        // for (const auto& p : managers_)
-        //   std::cerr << *p.second << std::endl;
-        // std::cerr << std::endl;
-      }
+      // if (block_until <= steady_clock::now()) {
+      //   block_until += 1000ms;
+      //   std::cerr << *results_ << std::endl;
+      //   // for (const auto& p : managers_)
+      //   //   std::cerr << *p.second << std::endl;
+      //   // std::cerr << std::endl;
+      // }
     }
   }
   std::cerr << "multiplexer done" << std::endl;

@@ -29,7 +29,7 @@ class multiplexer {
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  multiplexer(benchmark::result_ptr results);
+  multiplexer();
 
   ~multiplexer();
 
@@ -74,9 +74,6 @@ private:
 
   /// Main multiplexing loop.
   void run();
-
-  // Benchmark results
-  benchmark::result_ptr results_;
 
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_;
