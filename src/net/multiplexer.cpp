@@ -37,7 +37,6 @@ detail::error multiplexer::init(socket_manager_factory_ptr factory) {
     return *err;
   auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
   pipe_reader_ = pipe_fds.first;
-
   pipe_writer_ = pipe_fds.second;
   add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
   // Create Acceptor
