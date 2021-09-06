@@ -1,6 +1,6 @@
 # -- project setup -------------------------------------------------------------
 
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(lib_net CXX)
 
 include(FetchContent)
