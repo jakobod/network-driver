@@ -17,8 +17,7 @@
 
 namespace net {
 
-detail::error_or<std::pair<tcp_accept_socket, uint16_t>>
-make_tcp_accept_socket(uint16_t port) {
+detail::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port) {
   sockaddr_in servaddr = {};
   tcp_accept_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
   auto guard = detail::make_socket_guard(sock);

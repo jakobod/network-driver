@@ -4,7 +4,7 @@
  *  @date 30.03.2021
  */
 
-#include "net/multiplexer.hpp"
+#include "net/epoll_multiplexer.hpp"
 
 #include <chrono>
 #include <cstring>
@@ -17,17 +17,17 @@
 
 namespace net {
 
-multiplexer::multiplexer()
+epoll_multiplexer::epoll_multiplexer()
   : epoll_fd_(invalid_socket_id), shutting_down_(false), running_(false) {
   // nop
 }
 
-multiplexer::~multiplexer() {
+epoll_multiplexer::~epoll_multiplexer() {
   close(pipe_writer_);
   ::close(epoll_fd_);
 }
 
-detail::error multiplexer::init(socket_manager_factory_ptr factory) {
+detail::error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
     return detail::error(detail::runtime_error, "creating epoll fd failed");
@@ -53,17 +53,17 @@ detail::error multiplexer::init(socket_manager_factory_ptr factory) {
   return detail::none;
 }
 
-void multiplexer::start() {
+void epoll_multiplexer::start() {
   if (!running_) {
     running_ = true;
-    mpx_thread_ = std::thread(&multiplexer::run, this);
+    mpx_thread_ = std::thread(&epoll_multiplexer::run, this);
     mpx_thread_id_ = mpx_thread_.get_id();
   }
 }
 
-void multiplexer::shutdown() {
+void epoll_multiplexer::shutdown() {
   if (std::this_thread::get_id() == mpx_thread_id_) {
-    std::cerr << "shutdown() called by multiplexer" << std::endl;
+    std::cerr << "shutdown() called by epoll_multiplexer" << std::endl;
     // disable all managers for reading!
     for (auto it = managers_.begin(); it != managers_.end(); ++it) {
       auto& mgr = it->second;
@@ -87,34 +87,35 @@ void multiplexer::shutdown() {
   }
 }
 
-void multiplexer::join() {
+void epoll_multiplexer::join() {
   if (mpx_thread_.joinable())
     mpx_thread_.join();
 }
 
 // -- Error handling -----------------------------------------------------------
 
-void multiplexer::handle_error(detail::error err) {
+void epoll_multiplexer::handle_error(detail::error err) {
   std::cerr << "ERROR: " << err << std::endl;
   shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
 
-void multiplexer::add(socket_manager_ptr mgr, operation initial) {
+void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
   if (!mgr->mask_add(initial))
     return;
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
   managers_.emplace(mgr->handle().id, std::move(mgr));
 }
 
-void multiplexer::enable(socket_manager& mgr, operation op) {
+void epoll_multiplexer::enable(socket_manager& mgr, operation op) {
   if (!mgr.mask_add(op))
     return;
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
 }
 
-void multiplexer::disable(socket_manager& mgr, operation op, bool remove) {
+void epoll_multiplexer::disable(socket_manager& mgr, operation op,
+                                bool remove) {
   if (!mgr.mask_del(op))
     return;
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
@@ -122,14 +123,15 @@ void multiplexer::disable(socket_manager& mgr, operation op, bool remove) {
     del(mgr.handle());
 }
 
-void multiplexer::del(socket handle) {
+void epoll_multiplexer::del(socket handle) {
   mod(handle.id, EPOLL_CTL_DEL, operation::none);
   managers_.erase(handle.id);
   if (shutting_down_ && managers_.empty())
     running_ = false;
 }
 
-multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
+epoll_multiplexer::manager_map::iterator
+epoll_multiplexer::del(manager_map::iterator it) {
   auto fd = it->second->handle().id;
   mod(fd, EPOLL_CTL_DEL, operation::none);
   auto new_it = managers_.erase(it);
@@ -138,7 +140,7 @@ multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
   return new_it;
 }
 
-void multiplexer::mod(int fd, int op, operation events) {
+void epoll_multiplexer::mod(int fd, int op, operation events) {
   epoll_event event = {};
   event.events = static_cast<uint32_t>(events);
   event.data.fd = fd;
@@ -147,7 +149,7 @@ void multiplexer::mod(int fd, int op, operation events) {
                                "epoll_ctl: " + std::string(strerror(errno))));
 }
 
-void multiplexer::run() {
+void epoll_multiplexer::run() {
   // using namespace std::chrono;
   // auto block_until = steady_clock::now() + 1000ms;
   while (running_) {
@@ -194,7 +196,7 @@ void multiplexer::run() {
       // }
     }
   }
-  std::cerr << "multiplexer done" << std::endl;
+  std::cerr << "epoll_multiplexer done" << std::endl;
 }
 
 } // namespace net

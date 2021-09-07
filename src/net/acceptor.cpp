@@ -25,16 +25,16 @@ acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx,
 // -- properties -------------------------------------------------------------
 
 bool acceptor::handle_read_event() {
-  auto accept_socket = socket_cast<tcp_accept_socket>(handle());
-  auto accepted = accept(accept_socket);
-  if (!nonblocking(accepted, true))
-    mpx()->handle_error(
-      detail::error(detail::socket_operation_failed,
-                    "nonblocking failed " + last_socket_error_as_string()));
+  auto hdl = handle<tcp_accept_socket>();
+  auto accepted = accept(hdl);
   if (accepted == invalid_socket)
     mpx()->handle_error(
       detail::error(detail::socket_operation_failed,
                     "accepting failed: " + last_socket_error_as_string()));
+  if (!nonblocking(accepted, true))
+    mpx()->handle_error(
+      detail::error(detail::socket_operation_failed,
+                    "nonblocking failed " + last_socket_error_as_string()));
   auto mgr = factory_->make(accepted, mpx());
   mpx()->add(std::move(mgr), operation::read);
   return true;

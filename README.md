@@ -22,3 +22,13 @@
     - only writing
     - bursts of connections/data
     - fluctuating load
+
+- Tests
+  - acceptor
+  - epoll_multiplexer
+  - pipe_socket
+  - pollset_updater
+  - raw_socket
+  - stream_socket
+  - tcp_accept_socket
+  - tcp_stream_socket

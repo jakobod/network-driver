@@ -36,7 +36,7 @@ set(LIB_NET_SOURCES
   src/detail/error_code.cpp
   src/net/acceptor.cpp
   src/net/operation.cpp
-  src/net/multiplexer.cpp
+  src/net/epoll_multiplexer.cpp
   src/net/pipe_socket.cpp
   src/net/pollset_updater.cpp
   src/net/raw_socket.cpp
@@ -75,8 +75,11 @@ enable_testing()
 
 add_executable(
   lib_net_test
-  test/mock.cpp
+  test/acceptor.cpp
+  test/tcp_stream_socket.cpp
 )
+
+target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
 
 target_link_libraries(
   lib_net_test

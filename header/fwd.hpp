@@ -20,18 +20,15 @@ struct pipe_socket;
 struct tcp_stream_socket;
 struct tcp_accept_socket;
 
+enum class operation : uint32_t;
+
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
 using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
 
 } // namespace net
 
-namespace benchmark {
+namespace detail {
 
-class tcp_stream_client;
+struct error;
 
-struct result;
-
-using result_ptr = std::shared_ptr<result>;
-using tcp_stream_client_ptr = std::shared_ptr<tcp_stream_client>;
-
-} // namespace benchmark
+} // namespace detail
