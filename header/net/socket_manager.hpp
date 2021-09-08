@@ -22,6 +22,16 @@ public:
 
   virtual ~socket_manager();
 
+  socket_manager(socket_manager&& mgr);
+
+  socket_manager(const socket_manager&) = delete;
+
+  // -- Assignment operators ---------------------------------------------------
+
+  socket_manager& operator=(socket_manager&& other);
+
+  socket_manager& operator=(const socket_manager&) = delete;
+
   // -- properties -------------------------------------------------------------
 
   /// Returns a ptr to the multiplexer
