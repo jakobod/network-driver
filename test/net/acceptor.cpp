@@ -68,8 +68,6 @@ struct dummy_socket_manager : public net::socket_manager {
 
 struct dummy_factory : net::socket_manager_factory {
   net::socket_manager_ptr make(net::socket hdl, net::multiplexer* mpx) {
-    std::cerr << "Creating new dummy_socket_manager with id = " << hdl.id
-              << std::endl;
     return std::make_shared<dummy_socket_manager>(hdl, mpx);
   };
 };

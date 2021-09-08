@@ -7,6 +7,8 @@
 
 #include "net/socket_manager.hpp"
 
+#include <utility>
+
 #include "fwd.hpp"
 #include "net/stream_socket.hpp"
 
@@ -16,9 +18,17 @@ namespace net {
 template <class Application>
 class stream_manager : public socket_manager {
 public:
-  stream_manager(stream_socket handle, multiplexer* mpx)
-    : socket_manager(handle, mpx) {
+  template <class... Ts>
+  stream_manager(stream_socket handle, multiplexer* mpx, Ts&&... xs)
+    : socket_manager(handle, mpx), application_(std::forward<Ts>(xs)...) {
     // nop
+  }
+
+  detail::error init() {
+    if (!net::nonblocking(handle(), true))
+      return detail::error(detail::error_code::socket_operation_failed,
+                           "Could not set nonblocking");
+    return application_.init(*this);
   }
 
   // -- socket_manager API -----------------------------------------------------
@@ -81,6 +91,11 @@ public:
     received_ = 0;
     if (recv_buffer_.size() != size)
       recv_buffer_.resize(size);
+  }
+
+  /// Returns a reference to the send_buffer
+  detail::byte_buffer& send_buffer() {
+    return send_buffer_;
   }
 
 private:

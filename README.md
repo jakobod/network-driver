@@ -7,6 +7,7 @@
 # TODO
 - [ ] set nonblocking on all sockets in the multiplexer
 - [ ] io_uring implementation
+- [ ] EBPF?! - https://www.nginx.com/blog/our-roadmap-quic-http-3-support-nginx/
 
 - [ ] Think about how to benchmark
 - [ ] Measure all things individually
@@ -24,11 +25,11 @@
     - fluctuating load
 
 - Tests
-  [x] acceptor
+  - [x] acceptor
   - epoll_multiplexer
   - pipe_socket
   - pollset_updater
   - raw_socket
-  - stream_socket
-  [x] tcp_accept_socket
-  [x] tcp_stream_socket
+  - [x] stream_socket
+  - [x] tcp_accept_socket
+  - [x] tcp_stream_socket

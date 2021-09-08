@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstring>
 #include <numeric>
 
 #include "detail/error.hpp"
@@ -50,25 +51,38 @@ struct dummy_multiplexer : public net::multiplexer {
 };
 
 struct dummy_application {
-  dummy_application(detail::const_byte_span data) : data_(data) {
+  dummy_application(detail::const_byte_span data, size_t& received)
+    : received_(received), data_(data) {
     // nop
+  }
+
+  template <class Parent>
+  detail::error init(Parent& parent) {
+    parent.configure_next_read(data_.size());
+    return detail::none;
   }
 
   template <class Parent>
   bool produce(Parent& parent) {
     if (!written_) {
-          auto& buf = parent.send_buffer();
-    buf.insert(buf.end(), data.begin(), data.end());
-    return true;
+      auto& buf = parent.send_buffer();
+      buf.insert(buf.end(), data_.begin(), data_.end());
+      written_ = true;
+      return true;
     }
     return false;
   }
 
   template <class Parent>
-  bool consume(Parent&, detail::const_byte_span) {
+  bool consume(Parent&, detail::const_byte_span data) {
+    received_ += data.size();
+    EXPECT_EQ(memcmp(data.data(), data_.data(), data.size()), 0);
     return true;
   }
 
+private:
+  size_t& received_;
+  bool written_ = false;
   detail::const_byte_span data_;
 };
 
@@ -81,18 +95,26 @@ struct stream_manager_test : public testing::Test {
     auto socket_res = net::make_stream_socket_pair();
     EXPECT_EQ(std::get_if<detail::error>(&socket_res), nullptr);
     sockets = std::get<net::stream_socket_pair>(socket_res);
+    uint8_t b = 0;
+    for (auto& val :
+         std::span{reinterpret_cast<uint8_t*>(data.data()), data.size()})
+      val = b++;
   }
 
   net::stream_socket_pair sockets;
   dummy_multiplexer mpx;
-  detail::byte_array<1024> data;
+  detail::byte_array<32768> data;
 };
 
 } // namespace
 
 TEST_F(stream_manager_test, handle_read_event) {
-  manager_type mgr(sockets.first, &mpx);
+  size_t received = 0;
+  manager_type mgr(sockets.first, &mpx, std::span{data}, received);
+  ASSERT_EQ(mgr.init(), detail::none);
   ASSERT_EQ(write(sockets.second, data), data.size());
+  mgr.handle_read_event();
+  EXPECT_EQ(received, data.size());
 }
 
 TEST_F(stream_manager_test, handle_write_event) {
