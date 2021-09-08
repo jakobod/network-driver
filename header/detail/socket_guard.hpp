@@ -20,7 +20,7 @@ public:
   static_assert(std::is_base_of_v<net::socket, Socket>,
                 "Template argument is NOT a socket!");
 
-  socket_guard(Socket sock) : sock_(sock) {
+  explicit socket_guard(Socket sock) : sock_(sock) {
     // nop
   }
 
@@ -29,8 +29,9 @@ public:
   }
 
   ~socket_guard() {
-    if (sock_ != net::invalid_socket)
+    if (sock_ != net::invalid_socket) {
       net::close(sock_);
+    }
   }
 
   Socket release() {
@@ -58,7 +59,7 @@ private:
 
 template <class Socket>
 socket_guard<Socket> make_socket_guard(Socket sock) {
-  return {sock};
+  return socket_guard<Socket>{sock};
 }
 
 } // namespace detail
