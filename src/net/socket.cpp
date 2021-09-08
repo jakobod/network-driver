@@ -16,16 +16,14 @@
 
 namespace net {
 
-void close(socket sock) {
-  if (sock != invalid_socket)
-    ::close(sock.id);
-  else
-    std::cerr << "tried to close an invalid socket" << std::endl;
+void close(socket hdl) {
+  if (hdl != invalid_socket)
+    ::close(hdl.id);
 }
 
-void shutdown(socket sock, int how) {
-  if (sock != invalid_socket)
-    ::shutdown(sock.id, how);
+void shutdown(socket hdl, int how) {
+  if (hdl != invalid_socket)
+    ::shutdown(hdl.id, how);
 }
 
 int last_socket_error() {
@@ -45,29 +43,29 @@ std::string last_socket_error_as_string() {
   return strerror(errno);
 }
 
-bool nonblocking(socket x, bool new_value) {
+bool nonblocking(socket hdl, bool new_value) {
   // read flags for x
-  auto flags = fcntl(x.id, F_GETFL, 0);
+  auto flags = fcntl(hdl.id, F_GETFL, 0);
   if (flags == -1)
     return false;
   flags = new_value ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
-  return (fcntl(x.id, F_SETFL, flags) == 0);
+  return (fcntl(hdl.id, F_SETFL, flags) == 0);
 }
 
 /// Returns the mac address of the specified interface.
-ifreq get_if_mac(socket socket, const std::string& if_name) {
+ifreq get_if_mac(socket hdl, const std::string& if_name) {
   ifreq if_mac = {};
   strncpy(if_mac.ifr_name, if_name.c_str(), IFNAMSIZ - 1);
-  if (ioctl(socket.id, SIOCGIFHWADDR, &if_mac) < 0)
+  if (ioctl(hdl.id, SIOCGIFHWADDR, &if_mac) < 0)
     perror("SIOCGIFHWADDR");
   return if_mac;
 }
 
 /// Returns the index of the specified interface.
-ifreq get_if_index(socket socket, const std::string& if_name) {
+ifreq get_if_index(socket hdl, const std::string& if_name) {
   ifreq if_index = {};
   strncpy(if_index.ifr_name, if_name.c_str(), IFNAMSIZ - 1);
-  if (ioctl(socket.id, SIOCGIFINDEX, &if_index) < 0)
+  if (ioctl(hdl.id, SIOCGIFINDEX, &if_index) < 0)
     perror("SIOCGIFINDEX");
   return if_index;
 }

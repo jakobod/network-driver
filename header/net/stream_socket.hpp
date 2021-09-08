@@ -12,6 +12,8 @@
 #include <cstddef>
 
 #include "detail/byte_container.hpp"
+#include "detail/error.hpp"
+#include "fwd.hpp"
 #include "net/socket.hpp"
 
 namespace net {
@@ -23,6 +25,9 @@ struct stream_socket : socket {
 
   using super::super;
 };
+
+/// Creates a connected stream_socket_pair
+detail::error_or<stream_socket_pair> make_stream_socket_pair();
 
 /// Enables or disables keepalive on `x`.
 bool keepalive(stream_socket x, bool new_value);

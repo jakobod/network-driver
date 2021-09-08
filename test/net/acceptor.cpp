@@ -35,8 +35,8 @@ struct dummy_multiplexer : public net::multiplexer {
     last_error = std::move(err);
   }
 
-  void add(net::socket_manager_ptr, net::operation) override {
-    mgr = std::move(mgr);
+  void add(net::socket_manager_ptr new_mgr, net::operation) override {
+    mgr = std::move(new_mgr);
   }
 
   void enable(net::socket_manager&, net::operation) override {
@@ -80,8 +80,8 @@ struct acceptor_test : public testing::Test {
     auto err = std::get_if<detail::error>(&res);
     EXPECT_EQ(err, nullptr);
     auto sock_pair = std::get<net::acceptor_pair>(res);
-    acc = net::acceptor(sock_pair.first, &mpx,
-                        std::make_shared<dummy_factory>());
+    acc = std::move(
+      net::acceptor(sock_pair.first, &mpx, std::make_shared<dummy_factory>()));
     port = sock_pair.second;
   }
 
@@ -93,11 +93,8 @@ struct acceptor_test : public testing::Test {
 } // namespace
 
 TEST_F(acceptor_test, handle_read_event) {
-  std::cerr << "connecting to localhost:" << port << std::endl;
   auto sock = net::make_connected_tcp_stream_socket("127.0.0.1", port);
-  std::cerr << "handling_read_event" << std::endl;
   EXPECT_TRUE(acc.handle_read_event());
-  std::cerr << "check errors" << std::endl;
   EXPECT_EQ(mpx.last_error, detail::none);
   EXPECT_NE(mpx.mgr, nullptr);
 }

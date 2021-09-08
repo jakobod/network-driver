@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 31.03.2021
  *
  *  This file is based on `stream_socket.cpp` from the C++ Actor Framework.
  *  https://github.com/actor-framework/incubator
@@ -15,6 +14,14 @@
 namespace net {
 
 constexpr int no_sigpipe_io_flag = MSG_NOSIGNAL;
+
+detail::error_or<stream_socket_pair> make_stream_socket_pair() {
+  socket_id sockets[2];
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0)
+    return detail::error(detail::error_code::socket_operation_failed,
+                         net::last_socket_error_as_string());
+  return std::make_pair(stream_socket{sockets[0]}, stream_socket{sockets[1]});
+}
 
 bool keepalive(stream_socket x, bool new_value) {
   int value = new_value ? 1 : 0;

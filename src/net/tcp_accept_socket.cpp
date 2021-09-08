@@ -38,8 +38,7 @@ detail::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port) {
   auto res = net::port_of(*guard);
   if (auto err = std::get_if<detail::error>(&res))
     return *err;
-  auto bound_port = std::get<uint16_t>(res);
-  return std::make_pair(guard.release(), bound_port);
+  return std::make_pair(guard.release(), std::get<uint16_t>(res));
 }
 
 detail::error_or<uint16_t> port_of(tcp_accept_socket x) {

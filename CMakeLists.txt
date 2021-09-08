@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(lib_net CXX)
 
 include(FetchContent)
+include(GoogleTest)
 
 # -- set useful CMake options --------------------------------------------------
 
@@ -75,8 +76,9 @@ enable_testing()
 
 add_executable(
   lib_net_test
-  test/acceptor.cpp
-  test/tcp_stream_socket.cpp
+  test/detail/socket_guard.cpp
+  test/net/acceptor.cpp
+  test/net/tcp_socket.cpp
 )
 
 target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
@@ -87,5 +89,4 @@ target_link_libraries(
   gtest_main
 )
 
-include(GoogleTest)
 gtest_discover_tests(lib_net_test)
