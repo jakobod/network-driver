@@ -50,10 +50,26 @@ struct dummy_multiplexer : public net::multiplexer {
 };
 
 struct dummy_application {
+  dummy_application(detail::const_byte_span data) : data_(data) {
+    // nop
+  }
+
+  template <class Parent>
+  bool produce(Parent& parent) {
+    if (!written_) {
+          auto& buf = parent.send_buffer();
+    buf.insert(buf.end(), data.begin(), data.end());
+    return true;
+    }
+    return false;
+  }
+
   template <class Parent>
   bool consume(Parent&, detail::const_byte_span) {
     return true;
   }
+
+  detail::const_byte_span data_;
 };
 
 using manager_type = net::stream_manager<dummy_application>;
