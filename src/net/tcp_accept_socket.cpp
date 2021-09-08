@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 31.03.2021
  */
 
 #include "net/tcp_accept_socket.hpp"
@@ -11,7 +10,7 @@
 #include <variant>
 
 #include "detail/error.hpp"
-#include "detail/socket_guard.hpp"
+#include "net/socket_guard.hpp"
 #include "net/socket_sys_includes.hpp"
 #include "net/tcp_stream_socket.hpp"
 
@@ -20,7 +19,7 @@ namespace net {
 detail::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port) {
   sockaddr_in servaddr = {};
   tcp_accept_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
-  auto guard = detail::make_socket_guard(sock);
+  auto guard = net::make_socket_guard(sock);
   if (sock == invalid_socket)
     return detail::error(detail::socket_operation_failed,
                          "Failed to create socket");

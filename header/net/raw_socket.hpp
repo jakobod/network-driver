@@ -8,8 +8,8 @@
 
 #include <linux/if_packet.h>
 
-#include "detail/byte_container.hpp"
 #include "detail/error.hpp"
+#include "fwd.hpp"
 #include "net/socket.hpp"
 
 namespace net {

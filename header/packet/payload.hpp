@@ -9,7 +9,7 @@
 #include <cstring>
 #include <iostream>
 
-#include "detail/byte_container.hpp"
+#include "fwd.hpp"
 
 namespace packet {
 

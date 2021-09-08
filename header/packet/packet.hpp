@@ -12,7 +12,7 @@
 #include <net/ethernet.h>
 #include <span>
 
-#include "detail/byte_container.hpp"
+#include "fwd.hpp"
 #include "net/mac_address.hpp"
 #include "net/socket_sys_includes.hpp"
 

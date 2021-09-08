@@ -11,7 +11,6 @@
 
 #include <cstddef>
 
-#include "detail/byte_container.hpp"
 #include "detail/error.hpp"
 #include "fwd.hpp"
 #include "net/socket.hpp"

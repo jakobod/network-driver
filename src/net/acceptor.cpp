@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 30.03.2021
  */
 
 #include "net/acceptor.hpp"

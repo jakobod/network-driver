@@ -11,7 +11,7 @@
 
 #include <iostream>
 
-#include "detail/socket_guard.hpp"
+#include "net/socket_guard.hpp"
 #include "net/socket_sys_includes.hpp"
 
 namespace net {
@@ -21,7 +21,7 @@ make_connected_tcp_stream_socket(const std::string ip, uint16_t port) {
   if (port == 0)
     return detail::error(detail::invalid_argument, "port should not be zero");
   tcp_stream_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
-  auto guard = detail::make_socket_guard(sock);
+  auto guard = net::make_socket_guard(sock);
   if (sock == invalid_socket)
     return detail::error(detail::socket_operation_failed,
                          last_socket_error_as_string());

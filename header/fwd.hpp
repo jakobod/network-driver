@@ -1,12 +1,14 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 29.03.2021
  */
 
 #pragma once
 
+#include <cstddef>
 #include <memory>
+#include <span>
+#include <vector>
 
 namespace net {
 
@@ -31,5 +33,12 @@ using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
 namespace detail {
 
 struct error;
+
+using byte_buffer = std::vector<std::byte>;
+using byte_span = std::span<std::byte>;
+using const_byte_span = std::span<const std::byte>;
+
+template <size_t Size>
+using byte_array = std::array<std::byte, Size>;
 
 } // namespace detail

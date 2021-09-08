@@ -24,11 +24,11 @@
     - fluctuating load
 
 - Tests
-  - acceptor
+  [x] acceptor
   - epoll_multiplexer
   - pipe_socket
   - pollset_updater
   - raw_socket
   - stream_socket
-  - tcp_accept_socket
-  - tcp_stream_socket
+  [x] tcp_accept_socket
+  [x] tcp_stream_socket

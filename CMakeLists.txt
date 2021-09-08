@@ -78,10 +78,12 @@ add_executable(
   lib_net_test
   test/detail/socket_guard.cpp
   test/net/acceptor.cpp
+  test/net/stream_manager.cpp
   test/net/tcp_socket.cpp
 )
 
 target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
+target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/test")
 
 target_link_libraries(
   lib_net_test

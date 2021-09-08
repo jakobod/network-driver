@@ -6,8 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "detail/error.hpp"
-#include "detail/socket_guard.hpp"
 #include "fwd.hpp"
+#include "net/socket_guard.hpp"
 #include "net/stream_socket.hpp"
 
 namespace {
@@ -29,7 +29,7 @@ struct socket_guard_test : public testing::Test {
 TEST_F(socket_guard_test, close) {
   {
     // Should close the socket after leaving the scope
-    auto guard = detail::make_socket_guard(sockets.first);
+    auto guard = net::make_socket_guard(sockets.first);
   }
   detail::byte_array<1> data;
   EXPECT_LT(write(sockets.first, data), 0);
@@ -39,7 +39,7 @@ TEST_F(socket_guard_test, close) {
 TEST_F(socket_guard_test, release) {
   {
     // Should close the socket after leaving the scope
-    auto guard = detail::make_socket_guard(sockets.first);
+    auto guard = net::make_socket_guard(sockets.first);
     auto sock = guard.release();
     EXPECT_EQ(sock, sockets.first);
   }

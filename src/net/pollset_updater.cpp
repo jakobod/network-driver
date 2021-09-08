@@ -8,7 +8,6 @@
 
 #include <iostream>
 
-#include "detail/byte_container.hpp"
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"
 
