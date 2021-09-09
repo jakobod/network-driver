@@ -67,7 +67,7 @@ public:
         send_buffer_.erase(send_buffer_.begin(),
                            send_buffer_.begin() + write_res);
 
-        return send_buffer_.empty();
+        return !send_buffer_.empty();
       } else if (write_res <= 0) {
         if (last_socket_error_is_temporary())
           return true;

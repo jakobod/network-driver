@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstring>
 #include <numeric>
 
@@ -64,13 +65,15 @@ struct dummy_application {
 
   template <class Parent>
   bool produce(Parent& parent) {
-    if (!written_) {
+    if (!data_.empty()) {
+      return false;
+    } else {
       auto& buf = parent.send_buffer();
-      buf.insert(buf.end(), data_.begin(), data_.end());
-      written_ = true;
+      auto size = std::min(size_t{1024}, data_.size());
+      buf.insert(buf.end(), data_.begin(), data_.begin() + size);
+      data_ = data_.subspan(size);
       return true;
     }
-    return false;
   }
 
   template <class Parent>
@@ -99,6 +102,7 @@ struct stream_manager_test : public testing::Test {
     for (auto& val :
          std::span{reinterpret_cast<uint8_t*>(data.data()), data.size()})
       val = b++;
+    EXPECT_TRUE(net::nonblocking(sockets.second, true));
   }
 
   net::stream_socket_pair sockets;
@@ -112,11 +116,34 @@ TEST_F(stream_manager_test, handle_read_event) {
   size_t received = 0;
   manager_type mgr(sockets.first, &mpx, std::span{data}, received);
   ASSERT_EQ(mgr.init(), detail::none);
-  ASSERT_EQ(write(sockets.second, data), data.size());
-  mgr.handle_read_event();
+  ASSERT_EQ(net::write(sockets.second, data), data.size());
+  EXPECT_TRUE(mgr.handle_read_event());
   EXPECT_EQ(received, data.size());
 }
 
+TEST_F(stream_manager_test, disconnect) {
+  size_t received = 0;
+  manager_type mgr(sockets.first, &mpx, std::span{data}, received);
+  ASSERT_EQ(mgr.init(), detail::none);
+  close(sockets.second);
+  EXPECT_FALSE(mgr.handle_read_event());
+}
+
 TEST_F(stream_manager_test, handle_write_event) {
-  // nop
+  size_t received = 0;
+  manager_type mgr(sockets.first, &mpx, std::span{data}, received);
+  ASSERT_EQ(mgr.init(), detail::none);
+  detail::byte_array<32768> received_data;
+  auto read_some = [&]() -> ptrdiff_t {
+    auto buf = received_data.data() + received;
+    auto remaining = received_data.size() - received;
+    return net::read(sockets.second, std::span{buf, remaining});
+  };
+  while (mgr.handle_write_event()) {
+    std::cerr << "ROUND" << std::endl;
+    EXPECT_GT(read_some(), 0);
+  }
+  EXPECT_GE(read_some(), 0);
+  EXPECT_EQ(received, data.size());
+  EXPECT_EQ(memcmp(data.data(), received_data.data(), received_data.size()), 0);
 }
