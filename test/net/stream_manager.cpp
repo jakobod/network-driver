@@ -52,40 +52,38 @@ struct dummy_multiplexer : public net::multiplexer {
 };
 
 struct dummy_application {
-  dummy_application(detail::const_byte_span data, size_t& received)
+  dummy_application(detail::const_byte_span data, detail::byte_buffer& received)
     : received_(received), data_(data) {
     // nop
   }
 
   template <class Parent>
   detail::error init(Parent& parent) {
-    parent.configure_next_read(data_.size());
+    parent.configure_next_read(1024);
     return detail::none;
   }
 
   template <class Parent>
-  bool produce(Parent& parent) {
-    if (!data_.empty()) {
-      return false;
-    } else {
-      auto& buf = parent.send_buffer();
-      auto size = std::min(size_t{1024}, data_.size());
-      buf.insert(buf.end(), data_.begin(), data_.begin() + size);
-      data_ = data_.subspan(size);
-      return true;
-    }
+  void produce(Parent& parent) {
+    auto& buf = parent.send_buffer();
+    auto size = std::min(size_t{1024}, data_.size());
+    buf.insert(buf.end(), data_.begin(), data_.begin() + size);
+    data_ = data_.subspan(size);
+  }
+
+  bool has_more_data() {
+    return !data_.empty();
   }
 
   template <class Parent>
-  bool consume(Parent&, detail::const_byte_span data) {
-    received_ += data.size();
-    EXPECT_EQ(memcmp(data.data(), data_.data(), data.size()), 0);
+  bool consume(Parent& parent, detail::const_byte_span data) {
+    received_.insert(received_.end(), data.begin(), data.end());
+    parent.configure_next_read(1024);
     return true;
   }
 
 private:
-  size_t& received_;
-  bool written_ = false;
+  detail::byte_buffer& received_;
   detail::const_byte_span data_;
 };
 
@@ -108,22 +106,24 @@ struct stream_manager_test : public testing::Test {
   net::stream_socket_pair sockets;
   dummy_multiplexer mpx;
   detail::byte_array<32768> data;
+
+  detail::byte_buffer received_data;
 };
 
 } // namespace
 
 TEST_F(stream_manager_test, handle_read_event) {
-  size_t received = 0;
-  manager_type mgr(sockets.first, &mpx, std::span{data}, received);
+  manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
   ASSERT_EQ(mgr.init(), detail::none);
   ASSERT_EQ(net::write(sockets.second, data), data.size());
-  EXPECT_TRUE(mgr.handle_read_event());
-  EXPECT_EQ(received, data.size());
+  while (received_data.size() < data.size())
+    ASSERT_TRUE(mgr.handle_read_event());
+  EXPECT_TRUE(
+    std::equal(received_data.begin(), received_data.end(), data.begin()));
 }
 
 TEST_F(stream_manager_test, disconnect) {
-  size_t received = 0;
-  manager_type mgr(sockets.first, &mpx, std::span{data}, received);
+  manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
   ASSERT_EQ(mgr.init(), detail::none);
   close(sockets.second);
   EXPECT_FALSE(mgr.handle_read_event());
@@ -131,19 +131,22 @@ TEST_F(stream_manager_test, disconnect) {
 
 TEST_F(stream_manager_test, handle_write_event) {
   size_t received = 0;
-  manager_type mgr(sockets.first, &mpx, std::span{data}, received);
+  detail::byte_array<32768> buf;
+  manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
   ASSERT_EQ(mgr.init(), detail::none);
-  detail::byte_array<32768> received_data;
-  auto read_some = [&]() -> ptrdiff_t {
-    auto buf = received_data.data() + received;
-    auto remaining = received_data.size() - received;
-    return net::read(sockets.second, std::span{buf, remaining});
+  auto read_some = [&]() {
+    auto data = buf.data() + received;
+    auto remaining = buf.size() - received;
+    auto res = net::read(sockets.second, std::span{data, remaining});
+    if (res < 0)
+      ASSERT_TRUE(net::last_socket_error_is_temporary());
+    else if (res == 0)
+      FAIL() << "socket diconnected prematurely!" << std::endl;
+    received += res;
   };
-  while (mgr.handle_write_event()) {
-    std::cerr << "ROUND" << std::endl;
-    EXPECT_GT(read_some(), 0);
-  }
-  EXPECT_GE(read_some(), 0);
-  EXPECT_EQ(received, data.size());
+  while (mgr.handle_write_event())
+    read_some();
+  read_some();
+  ASSERT_EQ(received, data.size());
   EXPECT_EQ(memcmp(data.data(), received_data.data(), received_data.size()), 0);
 }

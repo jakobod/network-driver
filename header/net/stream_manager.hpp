@@ -14,6 +14,9 @@
 
 namespace net {
 
+static constexpr size_t max_consecutive_reads = 20;
+static constexpr size_t max_consecutive_writes = 20;
+
 /// Manages the lifetime of a socket.
 template <class Application>
 class stream_manager : public socket_manager {
@@ -34,50 +37,63 @@ public:
   // -- socket_manager API -----------------------------------------------------
 
   bool handle_read_event() override {
-    for (int i = 0; i < 20; ++i) {
-      auto ptr = recv_buffer_.data() + received_;
+    for (size_t i = 0; i < max_consecutive_reads; ++i) {
+      auto data = recv_buffer_.data() + received_;
       auto size = recv_buffer_.size() - received_;
-      auto read_res = read(handle<stream_socket>(), std::span(ptr, size));
-      if (read_res == 0)
-        return false; // Disconnect
-      if (read_res < 0) {
-        if (last_socket_error_is_temporary()) {
-          return true;
-        } else {
+      auto read_res = read(handle<stream_socket>(), std::span(data, size));
+      if (read_res > 0) {
+        received_ += read_res;
+        if (received_ == recv_buffer_.size()) {
+          if (!application_.consume(*this, recv_buffer_)) {
+            return false;
+          }
+        }
+      } else if (read_res == 0) {
+        return false;
+      } else if (read_res < 0) {
+        if (!last_socket_error_is_temporary()) {
           mpx()->handle_error(detail::error(detail::socket_operation_failed,
                                             "[socket_manager.read()] "
                                               + last_socket_error_as_string()));
           return false;
         }
+        return true;
       }
-      received_ += read_res;
-      if (recv_buffer_.size() == received_)
-        if (!application_.consume(*this, recv_buffer_))
-          return false;
     }
     return true;
   }
 
   bool handle_write_event() override {
-    for (int i = 0; i < 20; ++i) {
-      auto num_bytes = send_buffer_.size() - written_;
-      auto write_res = write(handle<stream_socket>(),
-                             std::span(send_buffer_.data(), num_bytes));
-      if (write_res > 0) {
-        send_buffer_.erase(send_buffer_.begin(),
-                           send_buffer_.begin() + write_res);
-
-        return !send_buffer_.empty();
-      } else if (write_res <= 0) {
-        if (last_socket_error_is_temporary())
-          return true;
-        else
-          mpx()->handle_error(detail::error(detail::socket_operation_failed,
-                                            "[socket_manager.write()] "
-                                              + last_socket_error_as_string()));
+    // Handles writing data to the socket.
+    // Returns `true` if everything has been written and `false` in case of an
+    // error.
+    auto write_some = [&]() {
+      for (size_t i = 0; i < max_consecutive_writes; ++i) {
+        auto num_bytes = send_buffer_.size() - written_;
+        auto write_res = write(handle<stream_socket>(),
+                               std::span(send_buffer_.data(), num_bytes));
+        if (write_res > 0) {
+          send_buffer_.erase(send_buffer_.begin(),
+                             send_buffer_.begin() + write_res);
+          if (send_buffer_.empty())
+            break;
+        } else {
+          if (!last_socket_error_is_temporary())
+            mpx()->handle_error(detail::error(
+              detail::socket_operation_failed,
+              "[socket_manager.write()] " + last_socket_error_as_string()));
+          return false;
+        }
       }
-    }
-    return false;
+      return !send_buffer_.empty();
+    };
+    auto fetch_data = [&]() {
+      for (size_t i = 0; i < 10 && application_.has_more_data(); ++i) {
+        application_.produce(*this);
+      }
+    };
+    fetch_data();
+    return write_some() || application_.has_more_data();
   }
 
   std::string me() const override {
