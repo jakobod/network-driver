@@ -20,12 +20,14 @@ add_compile_options(-Wall -Wextra -pedantic)
 # Threads
 find_package(Threads)
 
-# Googletest
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-)
-FetchContent_MakeAvailable(googletest)
+if (LIB_NET_ENABLE_TESTS)
+  # Googletest
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+  )
+  FetchContent_MakeAvailable(googletest)
+endif()
 
 # -- project files -------------------------------------------------------------
 
@@ -52,11 +54,10 @@ set(LIB_NET_SOURCES
 
 # -- Object for different targets ----------------------------------------------
 
-add_library(lib_net_obj OBJECT
-            ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
-set_property(TARGET lib_net_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_include_directories(lib_net_obj PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
-target_link_libraries(lib_net_obj Threads::Threads)
+add_library(net SHARED ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
+set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
+target_link_libraries(net Threads::Threads)
 
 # -- add executables -----------------------------------------------------------
 
@@ -65,30 +66,33 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 macro(add_target name)
   add_executable(${name} "src/${name}.cpp")
   target_include_directories(${name} PRIVATE "header")
-  target_link_libraries(${name} PRIVATE lib_net_obj)
+  target_link_libraries(${name} PRIVATE net)
 endmacro()
 
 # add_target(main) # This is the main project file
 
 # -- test setup ----------------------------------------------------------------
 
-enable_testing()
+if (LIB_NET_ENABLE_TESTS)
+  enable_testing()
 
-add_executable(
-  lib_net_test
-  test/detail/socket_guard.cpp
-  test/net/acceptor.cpp
-  test/net/stream_manager.cpp
-  test/net/tcp_socket.cpp
-)
+  add_executable(
+    lib_net_test
+    test/detail/socket_guard.cpp
+    test/net/acceptor.cpp
+    test/net/epoll_multiplexer.cpp
+    test/net/stream_manager.cpp
+    test/net/tcp_socket.cpp
+  )
 
-target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
-target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/test")
+  target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
+  target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/test")
 
-target_link_libraries(
-  lib_net_test
-  lib_net_obj
-  gtest_main
-)
+  target_link_libraries(
+    lib_net_test
+    net
+    gtest_main
+  )
 
-gtest_discover_tests(lib_net_test)
+  gtest_discover_tests(lib_net_test)
+endif()

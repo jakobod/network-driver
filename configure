@@ -68,10 +68,8 @@ append_cache_entry() {
 set_build_flag() {
   FlagName=''
   case "$1" in
-    shared-libs)             FlagName='BUILD_SHARED_LIBS' ;;
-    export-compile-commands) FlagName='CMAKE_EXPORT_COMPILE_COMMANDS' ;;
+    testing)                 FlagName='LIB_NET_ENABLE_TESTS' ;;
     prefer-pthread-flag)     FlagName='THREADS_PREFER_PTHREAD_FLAG' ;;
-    exceptions)              FlagName='CAF_ENABLE_EXCEPTIONS' ;;
     *)
       echo "Invalid flag '$1'.  Try $0 --help to see available options."
       exit 1
@@ -108,28 +106,11 @@ while [ $# -ne 0 ]; do
     --generator=*)
       CMakeGenerator="$optarg"
       ;;
-    --tag=*)
-      tag="$optarg"
-      append_cache_entry CAF_TAG STRING "$tag"
-      ;;
-    --with-caf=*)
-      tag="local"
-      append_cache_entry CAF_ROOT PATH "$optarg"
-      ;;
     --build-type=*)
       append_cache_entry CMAKE_BUILD_TYPE STRING "$optarg"
       ;;
     --cxx-flags=*)
       append_cache_entry CMAKE_CXX_FLAGS STRING "$optarg"
-      ;;
-    --prefix=*)
-      append_cache_entry CMAKE_INSTALL_PREFIX PATH "$optarg"
-      ;;
-    --log-level=*)
-      append_cache_entry CAF_LOG_LEVEL STRING "$optarg"
-      ;;
-    --sanitizers=*)
-      append_cache_entry SANITIZERS STRING "$optarg"
       ;;
     --enable-*)
       set_build_flag $optarg ON

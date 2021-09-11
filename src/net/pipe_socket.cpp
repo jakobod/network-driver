@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 04.03.2021
  *
  *  This file is based on `pipe_socket.cpp` from the C++ Actor Framework.
  *  https://github.com/actor-framework/incubator
@@ -18,13 +17,9 @@ namespace net {
 
 detail::error_or<pipe_socket_pair> make_pipe() {
   socket_id pipefds[2];
-  if (pipe(pipefds) != 0) {
-    std::cout << "make_pipe: " + last_socket_error_as_string() << std::endl;
+  if (pipe(pipefds) != 0)
     return detail::error(detail::socket_operation_failed,
                          "make_pipe: " + last_socket_error_as_string());
-  }
-  std::cout << "pipefd0 = " << pipefds[0] << " pipefd1 = " << pipefds[1]
-            << std::endl;
   return std::make_pair(pipe_socket{pipefds[0]}, pipe_socket{pipefds[1]});
 }
 

@@ -29,6 +29,9 @@ public:
 
   // -- Interface functions ----------------------------------------------------
 
+  /// The main multiplexing loop.
+  virtual void poll_once(bool blocking) = 0;
+
   /// Adds a new fd to the multiplexer for operation `initial`.
   virtual void add(socket_manager_ptr mgr, operation initial) = 0;
 
@@ -38,8 +41,7 @@ public:
   /// Disables an operation `op` for socket manager `mgr`.
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
-  virtual void disable(socket_manager& mgr, operation op, bool remove = true)
-    = 0;
+  virtual void disable(socket_manager& mgr, operation op, bool remove) = 0;
 };
 
 } // namespace net

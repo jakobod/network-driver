@@ -35,6 +35,10 @@ struct dummy_multiplexer : public net::multiplexer {
     last_error = std::move(err);
   }
 
+  void poll_once(bool) override {
+    // nop
+  }
+
   void add(net::socket_manager_ptr new_mgr, net::operation) override {
     mgr = std::move(new_mgr);
   }

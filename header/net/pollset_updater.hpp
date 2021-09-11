@@ -20,11 +20,15 @@ public:
 
   using opcode = uint8_t;
 
-  using msg_buf = std::array<std::byte, 1>;
-
   // -- constants --------------------------------------------------------------
 
-  static constexpr opcode shutdown_code = 0x01;
+  static constexpr opcode add_code = 0x00;
+
+  static constexpr opcode enable_code = 0x01;
+
+  static constexpr opcode disable_code = 0x02;
+
+  static constexpr opcode shutdown_code = 0x03;
 
   // -- constructors, destructors, and assignment operators --------------------
 

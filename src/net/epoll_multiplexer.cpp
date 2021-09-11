@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 30.03.2021
  */
 
 #include "net/epoll_multiplexer.hpp"
@@ -23,7 +22,6 @@ epoll_multiplexer::epoll_multiplexer()
 }
 
 epoll_multiplexer::~epoll_multiplexer() {
-  close(pipe_writer_);
   ::close(epoll_fd_);
 }
 
@@ -46,8 +44,7 @@ detail::error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
   auto accept_socket_pair
     = std::get<std::pair<net::tcp_accept_socket, uint16_t>>(res);
   auto accept_socket = accept_socket_pair.first;
-  std::cerr << "acceptor is listening on port: " << accept_socket_pair.second
-            << " socket_id = " << accept_socket.id << std::endl;
+  listening_port_ = accept_socket_pair.second;
   add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
   return detail::none;
@@ -63,20 +60,23 @@ void epoll_multiplexer::start() {
 
 void epoll_multiplexer::shutdown() {
   if (std::this_thread::get_id() == mpx_thread_id_) {
-    std::cerr << "shutdown() called by epoll_multiplexer" << std::endl;
-    // disable all managers for reading!
-    for (auto it = managers_.begin(); it != managers_.end(); ++it) {
+    auto it = managers_.begin();
+    while (it != managers_.end()) {
       auto& mgr = it->second;
       if (mgr->handle() != pipe_reader_) {
         disable(*mgr, operation::read, false);
         if (mgr->mask() == operation::none)
           it = del(it);
+        else
+          ++it;
+      } else {
+        ++it;
       }
     }
     shutting_down_ = true;
-    running_ = false;
+    close(pipe_writer_);
+    pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {
-    std::cerr << "shutdown() called by outstanding" << std::endl;
     std::byte code{pollset_updater::shutdown_code};
     auto res = write(pipe_writer_, detail::byte_span(&code, 1));
     if (res != 1) {
@@ -100,6 +100,54 @@ void epoll_multiplexer::handle_error(detail::error err) {
 }
 
 // -- Interface functions ------------------------------------------------------
+
+void epoll_multiplexer::poll_once(bool blocking) {
+  // using namespace std::chrono;
+  // auto block_until = steady_clock::now() + 1000ms;
+  // auto next_wakeup
+  //   = duration_cast<milliseconds>(block_until - steady_clock::now());
+  auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
+                               static_cast<int>(pollset_.size()),
+                               blocking ? -1 : 0);
+  //  next_wakeup.count());
+  if (num_events < 0) {
+    switch (errno) {
+      case EINTR:
+        return;
+      default:
+        std::cerr << "epoll_wait failed: " << strerror(errno) << std::endl;
+        running_ = false;
+        break;
+    }
+  } else {
+    for (int i = 0; i < num_events; ++i) {
+      if (pollset_[i].events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
+        std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
+                  << std::endl;
+        del(socket{pollset_[i].data.fd});
+        continue;
+      } else {
+        if ((pollset_[i].events & operation::read) == operation::read) {
+          auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
+          if (!mgr->handle_read_event())
+            disable(*mgr, operation::read);
+        }
+        if ((pollset_[i].events & operation::write) == operation::write) {
+          auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
+          if (!mgr->handle_write_event())
+            disable(*mgr, operation::write);
+        }
+      }
+    }
+    // if (block_until <= steady_clock::now()) {
+    //   block_until += 1000ms;
+    //   std::cerr << *results_ << std::endl;
+    //   // for (const auto& p : managers_)
+    //   //   std::cerr << *p.second << std::endl;
+    //   // std::cerr << std::endl;
+    // }
+  }
+}
 
 void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
   if (!mgr->mask_add(initial))
@@ -150,53 +198,8 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
 }
 
 void epoll_multiplexer::run() {
-  // using namespace std::chrono;
-  // auto block_until = steady_clock::now() + 1000ms;
-  while (running_) {
-    // auto next_wakeup
-    //   = duration_cast<milliseconds>(block_until - steady_clock::now());
-    auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                                 static_cast<int>(pollset_.size()), -1);
-    //  next_wakeup.count());
-    if (num_events < 0) {
-      switch (errno) {
-        case EINTR:
-          continue;
-        default:
-          std::cerr << "epoll_wait failed: " << strerror(errno) << std::endl;
-          running_ = false;
-          break;
-      }
-    } else {
-      for (int i = 0; i < num_events; ++i) {
-        if (pollset_[i].events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
-          std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
-                    << std::endl;
-          del(socket{pollset_[i].data.fd});
-          continue;
-        } else {
-          if ((pollset_[i].events & operation::read) == operation::read) {
-            auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-            if (!mgr->handle_read_event())
-              disable(*mgr, operation::read);
-          }
-          if ((pollset_[i].events & operation::write) == operation::write) {
-            auto mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-            if (!mgr->handle_write_event())
-              disable(*mgr, operation::write);
-          }
-        }
-      }
-      // if (block_until <= steady_clock::now()) {
-      //   block_until += 1000ms;
-      //   std::cerr << *results_ << std::endl;
-      //   // for (const auto& p : managers_)
-      //   //   std::cerr << *p.second << std::endl;
-      //   // std::cerr << std::endl;
-      // }
-    }
-  }
-  std::cerr << "epoll_multiplexer done" << std::endl;
+  while (running_)
+    poll_once(true);
 }
 
 } // namespace net

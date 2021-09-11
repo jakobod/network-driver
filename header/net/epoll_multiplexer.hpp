@@ -34,34 +34,56 @@ public:
   ~epoll_multiplexer();
 
   /// Initializes the multiplexer.
-  detail::error init(socket_manager_factory_ptr factory);
+  detail::error init(socket_manager_factory_ptr factory) override;
+
+  // -- Thread functions -------------------------------------------------------
 
   /// Creates a thread that runs this multiplexer indefinately.
-  void start();
+  void start() override;
 
   /// Shuts the multiplexer down!
-  void shutdown();
+  void shutdown() override;
 
   /// Joins with the multiplexer.
-  void join();
+  void join() override;
 
   // -- Error Handling ---------------------------------------------------------
 
-  void handle_error(detail::error err);
+  void handle_error(detail::error err) override;
 
   // -- Interface functions ----------------------------------------------------
 
-  /// Adds a new fd to the multiplexer for operation `initial`.
-  void add(socket_manager_ptr mgr, operation initial);
+  /// Main multiplexing loop.
+  void poll_once(bool blocking) override;
 
-  void enable(socket_manager&, operation op);
+  /// Adds a new fd to the multiplexer for operation `initial`.
+  void add(socket_manager_ptr mgr, operation initial) override;
+
+  void enable(socket_manager&, operation op) override;
 
   /// Disables an operation `op` for socket manager `mgr`.
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
-  void disable(socket_manager& mgr, operation op, bool remove = true);
+  void disable(socket_manager& mgr, operation op, bool remove = true) override;
+
+  // -- members ----------------------------------------------------------------
+
+  uint16_t port() const noexcept {
+    return listening_port_;
+  }
+
+  uint16_t num_socket_managers() const {
+    return managers_.size();
+  }
+
+  bool running() const noexcept {
+    return mpx_thread_.joinable();
+  }
 
 private:
+  /// The main multiplexer loop.
+  void run();
+
   /// Deletes an existing socket_manager using its key `handle`.
   void del(socket handle);
 
@@ -72,8 +94,8 @@ private:
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
 
-  /// Main multiplexing loop.
-  void run();
+  // Network members
+  uint16_t listening_port_;
 
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_;

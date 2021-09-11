@@ -38,6 +38,10 @@ struct dummy_multiplexer : public net::multiplexer {
     FAIL() << "There should be no errors! " << err << std::endl;
   }
 
+  void poll_once(bool) override {
+    // nop
+  }
+
   void add(net::socket_manager_ptr, net::operation) override {
     // nop
   }

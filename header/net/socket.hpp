@@ -17,7 +17,7 @@
 namespace net {
 
 struct socket {
-  socket_id id;
+  socket_id id = invalid_socket_id;
 
   constexpr socket() noexcept : id(invalid_socket_id) {
     // nop
