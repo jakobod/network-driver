@@ -9,6 +9,7 @@
 #include "net/epoll_multiplexer.hpp"
 #include "net/error.hpp"
 #include "net/socket_manager_factory.hpp"
+#include "net/stream_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
 using namespace net;
@@ -22,7 +23,8 @@ struct dummy_socket_manager : public socket_manager {
   }
 
   bool handle_read_event() override {
-    return false;
+    detail::byte_array<1024> buf;
+    return read(handle<stream_socket>(), buf) > 0;
   }
 
   bool handle_write_event() override {
@@ -56,23 +58,20 @@ struct epoll_multiplexer_test : public testing::Test {
 
 TEST_F(epoll_multiplexer_test, mpx_accepts_connections) {
   std::array<tcp_stream_socket, 10> sockets;
-  for (auto& sock : sockets) {
-    sock = connect_to_mpx();
-    mpx.poll_once(false);
-    std::cerr << "sock = " << sock.id << std::endl;
+  for (size_t i = 0; i < 10; ++i) {
+    connect_to_mpx();
+    EXPECT_EQ(mpx.poll_once(false), none);
   }
-  // EXPECT_EQ(mpx.num_socket_managers(), 12);
-  // mpx.shutdown();
-  // mpx.poll_once(false);
-  // EXPECT_EQ(mpx.num_socket_managers(), 1);
-  // EXPECT_FALSE(mpx.running());
+  EXPECT_EQ(mpx.num_socket_managers(), 12);
+  mpx.shutdown();
+  EXPECT_EQ(mpx.num_socket_managers(), 1);
 }
 
-TEST_F(epoll_multiplexer_test, shutdown) {
-  // add_managers(10);
+// TEST_F(epoll_multiplexer_test, shutdown) {
+//   add_managers(10);
 
-  // EXPECT_EQ(mpx.num_socket_managers(), 12);
-  // mpx.shutdown();
-  // mpx.join();
-  // EXPECT_FALSE(mpx.running());
-}
+//   EXPECT_EQ(mpx.num_socket_managers(), 12);
+//   mpx.shutdown();
+//   mpx.join();
+//   EXPECT_FALSE(mpx.running());
+// }
