@@ -79,7 +79,7 @@ struct dummy_factory : net::socket_manager_factory {
 struct acceptor_test : public testing::Test {
   acceptor_test() : acc{net::tcp_accept_socket{0}, nullptr, nullptr} {
     auto res = net::make_tcp_accept_socket(0);
-    auto err = std::get_if<detail::error>(&res);
+    auto err = detail::get_error(res);
     EXPECT_EQ(err, nullptr);
     auto sock_pair = std::get<net::acceptor_pair>(res);
     acc = std::move(

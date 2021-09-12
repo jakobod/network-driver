@@ -57,4 +57,9 @@ const error none{};
 template <class T>
 using error_or = std::variant<T, error>;
 
+template <class T>
+error* get_error(error_or<T>& maybe_error) {
+  return std::get_if<error>(&maybe_error);
+}
+
 } // namespace detail

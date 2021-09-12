@@ -35,7 +35,7 @@ detail::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port) {
   if ((listen(sock.id, max_conn_backlog)) != 0)
     return detail::error(detail::socket_operation_failed, "Failed to listen");
   auto res = net::port_of(*guard);
-  if (auto err = std::get_if<detail::error>(&res))
+  if (auto err = detail::get_error(res))
     return *err;
   return std::make_pair(guard.release(), std::get<uint16_t>(res));
 }

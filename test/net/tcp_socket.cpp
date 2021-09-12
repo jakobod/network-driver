@@ -10,12 +10,12 @@
 
 TEST(tcp_socket_test, accept) {
   auto acc_res = net::make_tcp_accept_socket(0);
-  ASSERT_EQ(std::get_if<detail::error>(&acc_res), nullptr);
+  ASSERT_EQ(detail::get_error(acc_res), nullptr);
   auto acc_pair = std::get<net::acceptor_pair>(acc_res);
   // Connect to the accept socket
   auto conn_res = net::make_connected_tcp_stream_socket("127.0.0.1",
                                                         acc_pair.second);
-  ASSERT_EQ(std::get_if<detail::error>(&conn_res), nullptr);
+  ASSERT_EQ(detail::get_error(conn_res), nullptr);
   auto sock = std::get<net::tcp_stream_socket>(conn_res);
   ASSERT_NE(sock, net::invalid_socket);
   // Accept the connection

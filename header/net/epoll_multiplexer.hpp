@@ -10,7 +10,6 @@
 #include <thread>
 #include <unordered_map>
 
-#include "detail/error.hpp"
 #include "fwd.hpp"
 #include "net/multiplexer.hpp"
 #include "net/operation.hpp"

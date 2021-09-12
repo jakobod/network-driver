@@ -33,6 +33,7 @@ public:
   virtual void poll_once(bool blocking) = 0;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
+  /// @warning This function is *NOT* thread-safe.
   virtual void add(socket_manager_ptr mgr, operation initial) = 0;
 
   /// Enables an operation `op` for socket manager `mgr`.

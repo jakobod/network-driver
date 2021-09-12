@@ -41,15 +41,28 @@ struct epoll_multiplexer_test : public testing::Test {
     EXPECT_EQ(mpx.init(factory), detail::none);
   }
 
+  /// THIS IS NOT THREAD SAFE!
   void add_managers(size_t num) {
-    std::vector<stream_socket> sockets;
     for (size_t i = 0; i < num; ++i) {
       auto sock_pair_res = make_stream_socket_pair();
-      ASSERT_EQ(std::get_if<detail::error>(&sock_pair_res), nullptr);
+      ASSERT_EQ(detail::get_error(sock_pair_res), nullptr);
       auto sp = std::get<stream_socket_pair>(sock_pair_res);
       mpx.add(std::make_shared<dummy_socket_manager>(sp.first, &mpx),
               operation::read);
     }
+  }
+
+  std::vector<tcp_stream_socket> connect_to_mpx(size_t num) {
+    std::vector<tcp_stream_socket> sockets;
+    for (size_t i = 0; i < num; ++i) {
+      auto sock_res = net::make_connected_tcp_stream_socket("127.0.0.1",
+                                                            mpx.port());
+      EXPECT_EQ(detail::get_error(sock_res), nullptr);
+      auto sock = std::get<tcp_stream_socket>(sock_res);
+      sockets.emplace_back(sock);
+      mpx.poll_once(false);
+    }
+    return sockets;
   }
 
   socket_manager_factory_ptr factory;
@@ -58,12 +71,14 @@ struct epoll_multiplexer_test : public testing::Test {
 
 } // namespace
 
-// TEST_F(epoll_multiplexer_test, connect) {
-//   auto socket_res = make_connected_tcp_stream_socket("127.0.0.1",
-//                                                           mpx.port());
-//   ASSERT_EQ(std::get_if<tcp_stream_socket>(&socket_res), nullptr);
-//   mpx.poll_once(false);
-// }
+TEST_F(epoll_multiplexer_test, mpx_accepts_connections) {
+  connect_to_mpx(10);
+  EXPECT_EQ(mpx.num_socket_managers(), 12);
+  mpx.shutdown();
+  mpx.poll_once(false);
+  EXPECT_EQ(mpx.num_socket_managers(), 1);
+  EXPECT_FALSE(mpx.running());
+}
 
 TEST_F(epoll_multiplexer_test, shutdown) {
   mpx.start();

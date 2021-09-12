@@ -10,6 +10,7 @@
 #include <iostream>
 #include <utility>
 
+#include "detail/error.hpp"
 #include "net/acceptor.hpp"
 #include "net/socket_manager.hpp"
 #include "net/socket_sys_includes.hpp"
@@ -31,7 +32,7 @@ detail::error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
     return detail::error(detail::runtime_error, "creating epoll fd failed");
   // Create pollset updater
   auto pipe_res = make_pipe();
-  if (auto err = std::get_if<detail::error>(&pipe_res))
+  if (auto err = detail::get_error(pipe_res))
     return *err;
   auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
   pipe_reader_ = pipe_fds.first;
@@ -39,7 +40,7 @@ detail::error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
   add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
   // Create Acceptor
   auto res = net::make_tcp_accept_socket(0);
-  if (auto err = std::get_if<detail::error>(&res))
+  if (auto err = detail::get_error(res))
     return *err;
   auto accept_socket_pair
     = std::get<std::pair<net::tcp_accept_socket, uint16_t>>(res);

@@ -17,7 +17,7 @@ struct socket_guard_test : public testing::Test {
     : sockets{net::stream_socket{net::invalid_socket_id},
               net::stream_socket{net::invalid_socket_id}} {
     auto socket_res = net::make_stream_socket_pair();
-    EXPECT_EQ(std::get_if<detail::error>(&socket_res), nullptr);
+    EXPECT_EQ(detail::get_error(socket_res), nullptr);
     sockets = std::get<net::stream_socket_pair>(socket_res);
   }
 
