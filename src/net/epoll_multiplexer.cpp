@@ -10,8 +10,8 @@
 #include <iostream>
 #include <utility>
 
-#include "detail/error.hpp"
 #include "net/acceptor.hpp"
+#include "net/error.hpp"
 #include "net/socket_manager.hpp"
 #include "net/socket_sys_includes.hpp"
 
@@ -26,13 +26,13 @@ epoll_multiplexer::~epoll_multiplexer() {
   ::close(epoll_fd_);
 }
 
-detail::error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
+error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
-    return detail::error(detail::runtime_error, "creating epoll fd failed");
+    return error(runtime_error, "creating epoll fd failed");
   // Create pollset updater
   auto pipe_res = make_pipe();
-  if (auto err = detail::get_error(pipe_res))
+  if (auto err = get_error(pipe_res))
     return *err;
   auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
   pipe_reader_ = pipe_fds.first;
@@ -40,7 +40,7 @@ detail::error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
   add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
   // Create Acceptor
   auto res = net::make_tcp_accept_socket(0);
-  if (auto err = detail::get_error(res))
+  if (auto err = get_error(res))
     return *err;
   auto accept_socket_pair
     = std::get<std::pair<net::tcp_accept_socket, uint16_t>>(res);
@@ -48,7 +48,7 @@ detail::error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
   listening_port_ = accept_socket_pair.second;
   add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
-  return detail::none;
+  return none;
 }
 
 void epoll_multiplexer::start() {
@@ -99,14 +99,14 @@ void epoll_multiplexer::set_thread_id() {
 
 // -- Error handling -----------------------------------------------------------
 
-void epoll_multiplexer::handle_error(detail::error err) {
+void epoll_multiplexer::handle_error(error err) {
   std::cerr << "ERROR: " << err << std::endl;
   shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
 
-detail::error epoll_multiplexer::poll_once(bool blocking) {
+error epoll_multiplexer::poll_once(bool blocking) {
   // using namespace std::chrono;
   // auto block_until = steady_clock::now() + 1000ms;
   // auto next_wakeup
@@ -118,10 +118,9 @@ detail::error epoll_multiplexer::poll_once(bool blocking) {
   if (num_events < 0) {
     switch (errno) {
       case EINTR:
-        return detail::none;
+        return none;
       default:
-        return detail::error{detail::error_code::runtime_error,
-                             strerror(errno)};
+        return error{runtime_error, strerror(errno)};
     }
   } else {
     for (int i = 0; i < num_events; ++i) {
@@ -151,7 +150,7 @@ detail::error epoll_multiplexer::poll_once(bool blocking) {
     //   // std::cerr << std::endl;
     // }
   }
-  return detail::none;
+  return none;
 }
 
 void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
@@ -198,8 +197,8 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
   event.events = static_cast<uint32_t>(events);
   event.data.fd = fd;
   if (epoll_ctl(epoll_fd_, op, fd, &event) < 0)
-    handle_error(detail::error(detail::runtime_error,
-                               "epoll_ctl: " + std::string(strerror(errno))));
+    handle_error(
+      error(runtime_error, "epoll_ctl: " + std::string(strerror(errno))));
 }
 
 void epoll_multiplexer::run() {

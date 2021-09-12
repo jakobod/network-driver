@@ -9,43 +9,40 @@
 #include <utility>
 #include <variant>
 
-#include "detail/error.hpp"
+#include "net/error.hpp"
 #include "net/socket_guard.hpp"
 #include "net/socket_sys_includes.hpp"
 #include "net/tcp_stream_socket.hpp"
 
 namespace net {
 
-detail::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port) {
+error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port) {
   sockaddr_in servaddr = {};
   tcp_accept_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
-  auto guard = net::make_socket_guard(sock);
+  auto guard = make_socket_guard(sock);
   if (sock == invalid_socket)
-    return detail::error(detail::socket_operation_failed,
-                         "Failed to create socket");
+    return error(socket_operation_failed, "Failed to create socket");
   servaddr.sin_family = AF_INET;
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr.sin_port = htons(port);
   if ((::bind(sock.id, reinterpret_cast<sockaddr*>(&servaddr),
               sizeof(sockaddr)))
       != 0)
-    return detail::error(detail::socket_operation_failed,
-                         "Failed to bind socket: "
-                           + net::last_socket_error_as_string());
+    return error(socket_operation_failed,
+                 "Failed to bind socket: " + last_socket_error_as_string());
   if ((listen(sock.id, max_conn_backlog)) != 0)
-    return detail::error(detail::socket_operation_failed, "Failed to listen");
+    return error(socket_operation_failed, "Failed to listen");
   auto res = net::port_of(*guard);
-  if (auto err = detail::get_error(res))
+  if (auto err = get_error(res))
     return *err;
   return std::make_pair(guard.release(), std::get<uint16_t>(res));
 }
 
-detail::error_or<uint16_t> port_of(tcp_accept_socket x) {
+error_or<uint16_t> port_of(tcp_accept_socket x) {
   struct sockaddr_in sin;
   socklen_t len = sizeof(sin);
   if (getsockname(x.id, (struct sockaddr*) &sin, &len) == -1)
-    return detail::error(detail::socket_operation_failed,
-                         net::last_socket_error_as_string());
+    return error(socket_operation_failed, last_socket_error_as_string());
   return ntohs(sin.sin_port);
 }
 

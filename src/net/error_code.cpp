@@ -1,12 +1,11 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 05.04.2021
  */
 
-#include "detail/error_code.hpp"
+#include "net/error_code.hpp"
 
-namespace detail {
+namespace net {
 
 std::string to_string(error_code err) {
   switch (err) {
@@ -23,4 +22,4 @@ std::string to_string(error_code err) {
   }
 }
 
-} // namespace detail
+} // namespace net

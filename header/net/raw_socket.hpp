@@ -1,14 +1,13 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 18.02.2021
  */
 
 #pragma once
 
 #include <linux/if_packet.h>
 
-#include "detail/error.hpp"
+#include "error.hpp"
 #include "fwd.hpp"
 #include "net/socket.hpp"
 
@@ -20,7 +19,7 @@ struct raw_socket : socket {
   using super::super;
 };
 
-detail::error_or<raw_socket> make_raw_socket();
+error_or<raw_socket> make_raw_socket();
 
 ssize_t sendto(raw_socket sock, sockaddr_ll socket_address,
                detail::byte_span data);

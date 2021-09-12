@@ -1,17 +1,16 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 18.02.2021
  */
 
 #pragma once
 
-#include "detail/error_code.hpp"
-
 #include <string>
 #include <variant>
 
-namespace detail {
+#include "net/error_code.hpp"
+
+namespace net {
 
 struct error {
   error(error_code err, std::string err_msg)
@@ -62,4 +61,4 @@ error* get_error(error_or<T>& maybe_error) {
   return std::get_if<error>(&maybe_error);
 }
 
-} // namespace detail
+} // namespace net

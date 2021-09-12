@@ -12,7 +12,7 @@ namespace net {
 class multiplexer {
 public:
   /// Initializes the multiplexer.
-  virtual detail::error init(socket_manager_factory_ptr factory) = 0;
+  virtual error init(socket_manager_factory_ptr factory) = 0;
 
   /// Creates a thread that runs this multiplexer indefinately.
   virtual void start() = 0;
@@ -25,12 +25,12 @@ public:
 
   // -- Error Handling ---------------------------------------------------------
 
-  virtual void handle_error(detail::error err) = 0;
+  virtual void handle_error(error err) = 0;
 
   // -- Interface functions ----------------------------------------------------
 
   /// The main multiplexing loop.
-  virtual detail::error poll_once(bool blocking) = 0;
+  virtual error poll_once(bool blocking) = 0;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
   /// @warning This function is *NOT* thread-safe.

@@ -5,18 +5,20 @@
 
 #include <gtest/gtest.h>
 
-#include "detail/error.hpp"
 #include "net/acceptor.hpp"
+#include "net/error.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
+using namespace net;
+
 namespace {
 
-struct dummy_multiplexer : public net::multiplexer {
-  detail::error init(net::socket_manager_factory_ptr) override {
-    return detail::none;
+struct dummy_multiplexer : public multiplexer {
+  error init(socket_manager_factory_ptr) override {
+    return none;
   }
 
   void start() override {
@@ -31,33 +33,33 @@ struct dummy_multiplexer : public net::multiplexer {
     // nop
   }
 
-  void handle_error(detail::error err) override {
+  void handle_error(error err) override {
     last_error = std::move(err);
   }
 
-  void poll_once(bool) override {
-    // nop
+  error poll_once(bool) override {
+    return none;
   }
 
-  void add(net::socket_manager_ptr new_mgr, net::operation) override {
+  void add(socket_manager_ptr new_mgr, operation) override {
     mgr = std::move(new_mgr);
   }
 
-  void enable(net::socket_manager&, net::operation) override {
+  void enable(socket_manager&, operation) override {
     // nop
   }
 
-  void disable(net::socket_manager&, net::operation, bool) override {
+  void disable(socket_manager&, operation, bool) override {
     // nop
   }
 
-  detail::error last_error = detail::none;
-  net::socket_manager_ptr mgr = nullptr;
+  error last_error;
+  socket_manager_ptr mgr = nullptr;
 };
 
-struct dummy_socket_manager : public net::socket_manager {
-  dummy_socket_manager(net::socket handle, net::multiplexer* parent)
-    : net::socket_manager(handle, parent) {
+struct dummy_socket_manager : public socket_manager {
+  dummy_socket_manager(net::socket handle, multiplexer* parent)
+    : socket_manager(handle, parent) {
     // nop
   }
 
@@ -70,38 +72,37 @@ struct dummy_socket_manager : public net::socket_manager {
   }
 };
 
-struct dummy_factory : net::socket_manager_factory {
-  net::socket_manager_ptr make(net::socket hdl, net::multiplexer* mpx) {
+struct dummy_factory : socket_manager_factory {
+  socket_manager_ptr make(net::socket hdl, multiplexer* mpx) {
     return std::make_shared<dummy_socket_manager>(hdl, mpx);
   };
 };
 
 struct acceptor_test : public testing::Test {
-  acceptor_test() : acc{net::tcp_accept_socket{0}, nullptr, nullptr} {
-    auto res = net::make_tcp_accept_socket(0);
-    auto err = detail::get_error(res);
-    EXPECT_EQ(err, nullptr);
-    auto sock_pair = std::get<net::acceptor_pair>(res);
+  acceptor_test() : acc{tcp_accept_socket{0}, nullptr, nullptr} {
+    auto res = make_tcp_accept_socket(0);
+    EXPECT_EQ(get_error(res), nullptr);
+    auto sock_pair = std::get<acceptor_pair>(res);
     acc = std::move(
-      net::acceptor(sock_pair.first, &mpx, std::make_shared<dummy_factory>()));
+      acceptor(sock_pair.first, &mpx, std::make_shared<dummy_factory>()));
     port = sock_pair.second;
   }
 
   dummy_multiplexer mpx;
-  net::acceptor acc;
+  acceptor acc;
   uint16_t port;
 };
 
 } // namespace
 
 TEST_F(acceptor_test, handle_read_event) {
-  auto sock = net::make_connected_tcp_stream_socket("127.0.0.1", port);
+  auto sock = make_connected_tcp_stream_socket("127.0.0.1", port);
   EXPECT_TRUE(acc.handle_read_event());
-  EXPECT_EQ(mpx.last_error, detail::none);
+  EXPECT_EQ(mpx.last_error, none);
   EXPECT_NE(mpx.mgr, nullptr);
 }
 
 TEST_F(acceptor_test, handle_write_event) {
   EXPECT_FALSE(acc.handle_write_event());
-  EXPECT_EQ(mpx.last_error, detail::error(detail::runtime_error));
+  EXPECT_EQ(mpx.last_error, error(runtime_error));
 }

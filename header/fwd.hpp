@@ -19,6 +19,7 @@ class socket_manager_factory;
 struct socket;
 struct stream_socket;
 struct pipe_socket;
+struct error;
 struct tcp_stream_socket;
 struct tcp_accept_socket;
 
@@ -32,8 +33,6 @@ using multiplexer_ptr = std::shared_ptr<multiplexer>;
 } // namespace net
 
 namespace detail {
-
-struct error;
 
 using byte_buffer = std::vector<std::byte>;
 using byte_span = std::span<std::byte>;

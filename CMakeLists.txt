@@ -36,10 +36,10 @@ file(GLOB_RECURSE LIB_NET_HEADERS "header/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
-  src/detail/error_code.cpp
   src/net/acceptor.cpp
   src/net/operation.cpp
   src/net/epoll_multiplexer.cpp
+  src/net/error_code.cpp
   src/net/pipe_socket.cpp
   src/net/pollset_updater.cpp
   src/net/raw_socket.cpp
@@ -48,8 +48,6 @@ set(LIB_NET_SOURCES
   src/net/stream_socket.cpp
   src/net/tcp_accept_socket.cpp
   src/net/tcp_stream_socket.cpp
-  src/packet/packet.cpp
-  src/packet/payload.cpp
 )
 
 # -- Object for different targets ----------------------------------------------
@@ -78,7 +76,7 @@ if (LIB_NET_ENABLE_TESTS)
 
   add_executable(
     lib_net_test
-    test/detail/socket_guard.cpp
+    test/net/socket_guard.cpp
     test/net/acceptor.cpp
     test/net/epoll_multiplexer.cpp
     test/net/stream_manager.cpp

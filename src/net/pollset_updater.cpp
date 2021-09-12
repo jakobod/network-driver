@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 07.04.2021
  */
 
 #include "net/pollset_updater.hpp"
@@ -10,6 +9,7 @@
 #include <iostream>
 #include <span>
 
+#include "net/error.hpp"
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"
 
@@ -45,9 +45,8 @@ bool pollset_updater::handle_read_event() {
 }
 
 bool pollset_updater::handle_write_event() {
-  mpx()->handle_error(
-    detail::error(detail::runtime_error,
-                  "[pollset_updater] should not be registered for reading!"));
+  mpx()->handle_error(error(
+    runtime_error, "[pollset_updater] should not be registered for reading!"));
   return false;
 }
 

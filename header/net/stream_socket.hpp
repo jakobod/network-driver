@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 31.03.2021
  *
  *  This file is based on `stream_socket.hpp` from the C++ Actor Framework.
  *  https://github.com/actor-framework/incubator
@@ -11,8 +10,8 @@
 
 #include <cstddef>
 
-#include "detail/error.hpp"
 #include "fwd.hpp"
+#include "net/error.hpp"
 #include "net/socket.hpp"
 
 namespace net {
@@ -26,7 +25,7 @@ struct stream_socket : socket {
 };
 
 /// Creates a connected stream_socket_pair
-detail::error_or<stream_socket_pair> make_stream_socket_pair();
+error_or<stream_socket_pair> make_stream_socket_pair();
 
 /// Enables or disables keepalive on `x`.
 bool keepalive(stream_socket x, bool new_value);

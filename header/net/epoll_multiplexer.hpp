@@ -32,7 +32,7 @@ public:
   ~epoll_multiplexer();
 
   /// Initializes the multiplexer.
-  detail::error init(socket_manager_factory_ptr factory) override;
+  error init(socket_manager_factory_ptr factory) override;
 
   // -- Thread functions -------------------------------------------------------
 
@@ -49,12 +49,12 @@ public:
 
   // -- Error Handling ---------------------------------------------------------
 
-  void handle_error(detail::error err) override;
+  void handle_error(error err) override;
 
   // -- Interface functions ----------------------------------------------------
 
   /// Main multiplexing loop.
-  detail::error poll_once(bool blocking) override;
+  error poll_once(bool blocking) override;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
   void add(socket_manager_ptr mgr, operation initial) override;

@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace detail {
+namespace net {
 
 enum error_code {
   no_error = 0,
@@ -20,4 +20,4 @@ enum error_code {
 
 std::string to_string(error_code err);
 
-} // namespace detail
+} // namespace net

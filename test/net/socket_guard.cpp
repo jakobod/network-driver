@@ -5,23 +5,25 @@
 
 #include <gtest/gtest.h>
 
-#include "detail/error.hpp"
 #include "fwd.hpp"
+#include "net/error.hpp"
 #include "net/socket_guard.hpp"
 #include "net/stream_socket.hpp"
+
+using namespace net;
 
 namespace {
 
 struct socket_guard_test : public testing::Test {
   socket_guard_test()
-    : sockets{net::stream_socket{net::invalid_socket_id},
-              net::stream_socket{net::invalid_socket_id}} {
-    auto socket_res = net::make_stream_socket_pair();
-    EXPECT_EQ(detail::get_error(socket_res), nullptr);
-    sockets = std::get<net::stream_socket_pair>(socket_res);
+    : sockets{stream_socket{invalid_socket_id},
+              stream_socket{invalid_socket_id}} {
+    auto socket_res = make_stream_socket_pair();
+    EXPECT_EQ(get_error(socket_res), nullptr);
+    sockets = std::get<stream_socket_pair>(socket_res);
   }
 
-  net::stream_socket_pair sockets;
+  stream_socket_pair sockets;
 };
 
 } // namespace
@@ -29,7 +31,7 @@ struct socket_guard_test : public testing::Test {
 TEST_F(socket_guard_test, close) {
   {
     // Should close the socket after leaving the scope
-    auto guard = net::make_socket_guard(sockets.first);
+    auto guard = make_socket_guard(sockets.first);
   }
   detail::byte_array<1> data;
   EXPECT_LT(write(sockets.first, data), 0);
@@ -39,7 +41,7 @@ TEST_F(socket_guard_test, close) {
 TEST_F(socket_guard_test, release) {
   {
     // Should close the socket after leaving the scope
-    auto guard = net::make_socket_guard(sockets.first);
+    auto guard = make_socket_guard(sockets.first);
     auto sock = guard.release();
     EXPECT_EQ(sock, sockets.first);
   }

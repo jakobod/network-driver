@@ -1,25 +1,23 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 02.03.2021
  */
 
 #include "net/raw_socket.hpp"
 
 #include <sys/socket.h>
 
-#include "detail/error.hpp"
+#include "net/error.hpp"
 #include "net/socket_guard.hpp"
 #include "net/socket_sys_includes.hpp"
 
 namespace net {
 
-detail::error_or<raw_socket> make_raw_socket() {
+error_or<raw_socket> make_raw_socket() {
   auto raw_sock = raw_socket{::socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)};
   auto guard = net::make_socket_guard(raw_sock);
   if (guard == invalid_socket)
-    return detail::error(detail::socket_operation_failed,
-                         last_socket_error_as_string());
+    return error(socket_operation_failed, last_socket_error_as_string());
   return guard.release();
 }
 

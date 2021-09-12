@@ -28,14 +28,14 @@ bool acceptor::handle_read_event() {
   auto accepted = accept(hdl);
   if (accepted == invalid_socket) {
     mpx()->handle_error(
-      detail::error(detail::socket_operation_failed,
-                    "accepting failed: " + last_socket_error_as_string()));
+      error(socket_operation_failed,
+            "accepting failed: " + last_socket_error_as_string()));
     return true;
   }
   if (!nonblocking(accepted, true)) {
     mpx()->handle_error(
-      detail::error(detail::socket_operation_failed,
-                    "nonblocking failed " + last_socket_error_as_string()));
+      error(socket_operation_failed,
+            "nonblocking failed " + last_socket_error_as_string()));
     return true;
   }
   auto mgr = factory_->make(accepted, mpx());
@@ -44,8 +44,8 @@ bool acceptor::handle_read_event() {
 }
 
 bool acceptor::handle_write_event() {
-  mpx()->handle_error(detail::error(
-    detail::runtime_error, "acceptor should NOT receive write events!"));
+  mpx()->handle_error(
+    error(runtime_error, "acceptor should NOT receive write events!"));
   return false;
 }
 

@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "fwd.hpp"
+#include "net/error.hpp"
 #include "net/stream_socket.hpp"
 
 namespace net {
@@ -27,10 +28,9 @@ public:
     // nop
   }
 
-  detail::error init() {
-    if (!net::nonblocking(handle(), true))
-      return detail::error(detail::error_code::socket_operation_failed,
-                           "Could not set nonblocking");
+  error init() {
+    if (!nonblocking(handle(), true))
+      return error(socket_operation_failed, "Could not set nonblocking");
     return application_.init(*this);
   }
 
@@ -52,9 +52,9 @@ public:
         return false;
       } else if (read_res < 0) {
         if (!last_socket_error_is_temporary()) {
-          mpx()->handle_error(detail::error(detail::socket_operation_failed,
-                                            "[socket_manager.read()] "
-                                              + last_socket_error_as_string()));
+          mpx()->handle_error(
+            error(socket_operation_failed,
+                  "[socket_manager.read()] " + last_socket_error_as_string()));
           return false;
         }
         return true;
@@ -79,9 +79,9 @@ public:
             break;
         } else {
           if (!last_socket_error_is_temporary())
-            mpx()->handle_error(detail::error(
-              detail::socket_operation_failed,
-              "[socket_manager.write()] " + last_socket_error_as_string()));
+            mpx()->handle_error(error(socket_operation_failed,
+                                      "[socket_manager.write()] "
+                                        + last_socket_error_as_string()));
           return false;
         }
       }
