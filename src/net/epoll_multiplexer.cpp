@@ -93,6 +93,10 @@ void epoll_multiplexer::join() {
     mpx_thread_.join();
 }
 
+void epoll_multiplexer::set_thread_id() {
+  mpx_thread_id_ = std::this_thread::get_id();
+}
+
 // -- Error handling -----------------------------------------------------------
 
 void epoll_multiplexer::handle_error(detail::error err) {
@@ -102,7 +106,7 @@ void epoll_multiplexer::handle_error(detail::error err) {
 
 // -- Interface functions ------------------------------------------------------
 
-void epoll_multiplexer::poll_once(bool blocking) {
+detail::error epoll_multiplexer::poll_once(bool blocking) {
   // using namespace std::chrono;
   // auto block_until = steady_clock::now() + 1000ms;
   // auto next_wakeup
@@ -114,11 +118,10 @@ void epoll_multiplexer::poll_once(bool blocking) {
   if (num_events < 0) {
     switch (errno) {
       case EINTR:
-        return;
+        return detail::none;
       default:
-        std::cerr << "epoll_wait failed: " << strerror(errno) << std::endl;
-        running_ = false;
-        break;
+        return detail::error{detail::error_code::runtime_error,
+                             strerror(errno)};
     }
   } else {
     for (int i = 0; i < num_events; ++i) {
@@ -148,6 +151,7 @@ void epoll_multiplexer::poll_once(bool blocking) {
     //   // std::cerr << std::endl;
     // }
   }
+  return detail::none;
 }
 
 void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
@@ -199,8 +203,10 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
 }
 
 void epoll_multiplexer::run() {
-  while (running_)
-    poll_once(true);
+  while (running_) {
+    if (poll_once(true))
+      running_ = false;
+  }
 }
 
 } // namespace net

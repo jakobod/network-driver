@@ -30,7 +30,7 @@ public:
   // -- Interface functions ----------------------------------------------------
 
   /// The main multiplexing loop.
-  virtual void poll_once(bool blocking) = 0;
+  virtual detail::error poll_once(bool blocking) = 0;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
   /// @warning This function is *NOT* thread-safe.

@@ -12,7 +12,6 @@
 
 #include "fwd.hpp"
 #include "net/multiplexer.hpp"
-#include "net/operation.hpp"
 #include "net/pipe_socket.hpp"
 #include "net/pollset_updater.hpp"
 
@@ -46,6 +45,8 @@ public:
   /// Joins with the multiplexer.
   void join() override;
 
+  void set_thread_id();
+
   // -- Error Handling ---------------------------------------------------------
 
   void handle_error(detail::error err) override;
@@ -53,7 +54,7 @@ public:
   // -- Interface functions ----------------------------------------------------
 
   /// Main multiplexing loop.
-  void poll_once(bool blocking) override;
+  detail::error poll_once(bool blocking) override;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
   void add(socket_manager_ptr mgr, operation initial) override;
