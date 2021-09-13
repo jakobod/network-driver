@@ -26,7 +26,8 @@ epoll_multiplexer::~epoll_multiplexer() {
   ::close(epoll_fd_);
 }
 
-error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
+error epoll_multiplexer::init(socket_manager_factory_ptr factory,
+                              uint16_t port) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
     return error(runtime_error, "creating epoll fd failed");
@@ -39,7 +40,7 @@ error epoll_multiplexer::init(socket_manager_factory_ptr factory) {
   pipe_writer_ = pipe_fds.second;
   add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
   // Create Acceptor
-  auto res = net::make_tcp_accept_socket(0);
+  auto res = net::make_tcp_accept_socket(port);
   if (auto err = get_error(res))
     return *err;
   auto accept_socket_pair
@@ -209,9 +210,9 @@ void epoll_multiplexer::run() {
 }
 
 error_or<multiplexer_ptr>
-make_epoll_multiplexer(socket_manager_factory_ptr factory) {
+make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
   auto mpx = std::make_shared<epoll_multiplexer>();
-  if (auto err = mpx->init(std::move(factory)))
+  if (auto err = mpx->init(std::move(factory), port))
     return err;
   return mpx;
 }

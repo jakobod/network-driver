@@ -12,7 +12,7 @@ namespace net {
 class multiplexer {
 public:
   /// Initializes the multiplexer.
-  virtual error init(socket_manager_factory_ptr factory) = 0;
+  virtual error init(socket_manager_factory_ptr factory, uint16_t port) = 0;
 
   /// Creates a thread that runs this multiplexer indefinately.
   virtual void start() = 0;

@@ -32,7 +32,7 @@ public:
   ~epoll_multiplexer();
 
   /// Initializes the multiplexer.
-  error init(socket_manager_factory_ptr factory) override;
+  error init(socket_manager_factory_ptr factory, uint16_t port) override;
 
   // -- Thread functions -------------------------------------------------------
 
@@ -114,6 +114,6 @@ private:
 };
 
 error_or<multiplexer_ptr>
-make_epoll_multiplexer(socket_manager_factory_ptr factory);
+make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port = 0);
 
 } // namespace net

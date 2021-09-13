@@ -76,7 +76,7 @@ struct epoll_multiplexer_test : public testing::Test {
     : factory(std::make_shared<dummy_factory>(handled_read_event,
                                               handled_write_event)) {
     mpx.set_thread_id();
-    EXPECT_EQ(mpx.init(factory), none);
+    EXPECT_EQ(mpx.init(factory, 0), none);
     default_num_socket_managers = mpx.num_socket_managers();
   }
 

@@ -17,7 +17,7 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  error init(socket_manager_factory_ptr) override {
+  error init(socket_manager_factory_ptr, uint16_t) override {
     return none;
   }
 
