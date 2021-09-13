@@ -8,6 +8,7 @@
 #include <string>
 #include <variant>
 
+#include "fwd.hpp"
 #include "net/error_code.hpp"
 
 namespace net {
@@ -52,9 +53,6 @@ private:
 };
 
 const error none{};
-
-template <class T>
-using error_or = std::variant<T, error>;
 
 template <class T>
 error* get_error(error_or<T>& maybe_error) {

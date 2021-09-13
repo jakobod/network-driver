@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <memory>
 #include <span>
+#include <variant>
 #include <vector>
 
 namespace net {
@@ -29,6 +30,9 @@ using stream_socket_pair = std::pair<stream_socket, stream_socket>;
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
 using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
 using multiplexer_ptr = std::shared_ptr<multiplexer>;
+
+template <class T>
+using error_or = std::variant<T, error>;
 
 } // namespace net
 
