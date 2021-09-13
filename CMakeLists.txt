@@ -8,6 +8,7 @@ include(GoogleTest)
 
 # -- set useful CMake options --------------------------------------------------
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -18,7 +19,7 @@ add_compile_options(-Wall -Wextra -pedantic)
 # -- find or fetch dependencies ------------------------------------------------
 
 # Threads
-find_package(Threads)
+find_package(Threads REQUIRED)
 
 if (LIB_NET_ENABLE_TESTS)
   # Googletest
@@ -32,7 +33,7 @@ endif()
 # -- project files -------------------------------------------------------------
 
 # Find the packet-routing headers
-file(GLOB_RECURSE LIB_NET_HEADERS "header/*.hpp")
+file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/header/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
@@ -52,22 +53,10 @@ set(LIB_NET_SOURCES
 
 # -- Object for different targets ----------------------------------------------
 
-add_library(net SHARED ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
+add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
 target_link_libraries(net Threads::Threads)
-
-# -- add executables -----------------------------------------------------------
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-macro(add_target name)
-  add_executable(${name} "src/${name}.cpp")
-  target_include_directories(${name} PRIVATE "header")
-  target_link_libraries(${name} PRIVATE net)
-endmacro()
-
-# add_target(main) # This is the main project file
 
 # -- test setup ----------------------------------------------------------------
 
