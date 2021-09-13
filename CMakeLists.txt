@@ -39,6 +39,7 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/header/*.hpp")
 set(LIB_NET_SOURCES
   src/net/acceptor.cpp
   src/net/operation.cpp
+  src/net/error.cpp
   src/net/epoll_multiplexer.cpp
   src/net/error_code.cpp
   src/net/pipe_socket.cpp

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <sstream>
 #include <string>
 #include <variant>
 
@@ -14,34 +15,21 @@
 namespace net {
 
 struct error {
-  error(error_code err, std::string err_msg)
-    : err_(err), err_msg_(std::move(err_msg)) {
-    // nop
-  }
+  error(error_code err, std::string err_msg);
 
-  error(error_code err) : err_(err), err_msg_("") {
-    // nop
-  }
+  error(error_code err);
 
-  error() : err_(no_error), err_msg_("") {
-    // nop
-  }
+  error();
 
   ~error() = default;
 
   // -- boolean operators ------------------------------------------------------
 
-  operator bool() const {
-    return err_ != no_error;
-  }
+  operator bool() const;
 
-  bool operator==(const error& other) {
-    return err_ == other.err_;
-  }
+  bool operator==(const error& other);
 
-  bool operator!=(const error& other) {
-    return err_ != other.err_;
-  }
+  bool operator!=(const error& other);
 
   friend std::ostream& operator<<(std::ostream& os, const error& err) {
     return os << to_string(err.err_) << std::string(": ") << err.err_msg_;
@@ -58,5 +46,7 @@ template <class T>
 error* get_error(error_or<T>& maybe_error) {
   return std::get_if<error>(&maybe_error);
 }
+
+std::string to_string(const error& err);
 
 } // namespace net

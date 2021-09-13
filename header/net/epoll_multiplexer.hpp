@@ -114,11 +114,6 @@ private:
 };
 
 error_or<multiplexer_ptr>
-make_epoll_multiplexer(socket_manager_factory_ptr factory) {
-  auto mpx = std::make_shared<epoll_multiplexer>();
-  if (auto err = mpx->init(std::move(factory)))
-    return err;
-  return mpx;
-}
+make_epoll_multiplexer(socket_manager_factory_ptr factory);
 
 } // namespace net
