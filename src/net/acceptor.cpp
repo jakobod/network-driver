@@ -45,7 +45,14 @@ bool acceptor::handle_read_event() {
 
 bool acceptor::handle_write_event() {
   mpx()->handle_error(
-    error(runtime_error, "acceptor should NOT receive write events!"));
+    error(runtime_error, "[acceptor::handle_write_event()] acceptor should not "
+                         "be registered for writing"));
+  return false;
+}
+
+bool acceptor::handle_timeout(uint64_t) {
+  mpx()->handle_error(
+    error(runtime_error, "[acceptor::handle_timeout()] not implemented!"));
   return false;
 }
 

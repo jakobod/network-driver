@@ -7,6 +7,8 @@
 
 #include "fwd.hpp"
 
+#include <chrono>
+
 namespace net {
 
 class multiplexer {
@@ -43,6 +45,19 @@ public:
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
   virtual void disable(socket_manager& mgr, operation op, bool remove) = 0;
+
+  virtual void set_timeout(socket_manager& mgr, uint64_t timeout_id,
+                           std::chrono::system_clock::time_point)
+    = 0;
+
+  // -- members ----------------------------------------------------------------
+
+  uint16_t port() const noexcept {
+    return port_;
+  }
+
+protected:
+  uint16_t port_ = 0;
 };
 
 } // namespace net

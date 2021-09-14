@@ -43,10 +43,9 @@ error epoll_multiplexer::init(socket_manager_factory_ptr factory,
   auto res = net::make_tcp_accept_socket(port);
   if (auto err = get_error(res))
     return *err;
-  auto accept_socket_pair
-    = std::get<std::pair<net::tcp_accept_socket, uint16_t>>(res);
+  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
   auto accept_socket = accept_socket_pair.first;
-  listening_port_ = accept_socket_pair.second;
+  port_ = accept_socket_pair.second;
   add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
   return none;
@@ -108,13 +107,17 @@ void epoll_multiplexer::handle_error(error err) {
 // -- Interface functions ------------------------------------------------------
 
 error epoll_multiplexer::poll_once(bool blocking) {
-  // using namespace std::chrono;
-  // auto block_until = steady_clock::now() + 1000ms;
-  // auto next_wakeup
-  //   = duration_cast<milliseconds>(block_until - steady_clock::now());
+  using namespace std::chrono;
+  auto timeout = [&]() -> int {
+    if (!blocking)
+      return 0; // nonblocking
+    if (current_timeout_ == std::nullopt)
+      return -1;
+    return duration_cast<milliseconds>(*current_timeout_ - system_clock::now())
+      .count();
+  };
   auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                               static_cast<int>(pollset_.size()),
-                               blocking ? -1 : 0);
+                               static_cast<int>(pollset_.size()), timeout());
   //  next_wakeup.count());
   if (num_events < 0) {
     switch (errno) {
@@ -124,6 +127,7 @@ error epoll_multiplexer::poll_once(bool blocking) {
         return error{runtime_error, strerror(errno)};
     }
   } else {
+    handle_timeouts();
     for (int i = 0; i < num_events; ++i) {
       if (pollset_[i].events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
         std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
@@ -143,13 +147,6 @@ error epoll_multiplexer::poll_once(bool blocking) {
         }
       }
     }
-    // if (block_until <= steady_clock::now()) {
-    //   block_until += 1000ms;
-    //   std::cerr << *results_ << std::endl;
-    //   // for (const auto& p : managers_)
-    //   //   std::cerr << *p.second << std::endl;
-    //   // std::cerr << std::endl;
-    // }
   }
   return none;
 }
@@ -176,6 +173,14 @@ void epoll_multiplexer::disable(socket_manager& mgr, operation op,
     del(mgr.handle());
 }
 
+void epoll_multiplexer::set_timeout(
+  socket_manager& mgr, uint64_t timeout_id,
+  std::chrono::system_clock::time_point when) {
+  timeouts_.emplace(&mgr, when, timeout_id);
+  if (current_timeout_ == std::nullopt || when < *current_timeout_)
+    current_timeout_ = when;
+}
+
 void epoll_multiplexer::del(socket handle) {
   mod(handle.id, EPOLL_CTL_DEL, operation::none);
   managers_.erase(handle.id);
@@ -200,6 +205,21 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
   if (epoll_ctl(epoll_fd_, op, fd, &event) < 0)
     handle_error(
       error(runtime_error, "epoll_ctl: " + std::string(strerror(errno))));
+}
+
+void epoll_multiplexer::handle_timeouts() {
+  auto now = std::chrono::system_clock::now();
+  while (!timeouts_.empty()) {
+    if (timeouts_.top().when <= now) {
+      timeouts_.top().mgr->handle_timeout(timeouts_.top().id);
+      timeouts_.pop();
+    } else {
+      current_timeout_ = timeouts_.top().when;
+      return;
+    }
+  }
+  if (timeouts_.empty())
+    current_timeout_ = std::nullopt;
 }
 
 void epoll_multiplexer::run() {

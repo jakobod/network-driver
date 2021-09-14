@@ -53,6 +53,11 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
+  void set_timeout(socket_manager&, uint64_t,
+                   std::chrono::system_clock::time_point) override {
+    // nop
+  }
+
   error last_error;
   socket_manager_ptr mgr = nullptr;
 };
@@ -68,6 +73,10 @@ struct dummy_socket_manager : public socket_manager {
   }
 
   bool handle_write_event() override {
+    return false;
+  }
+
+  bool handle_timeout(uint64_t) override {
     return false;
   }
 };

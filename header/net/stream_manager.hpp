@@ -96,6 +96,12 @@ public:
     return write_some() || application_.has_more_data();
   }
 
+  bool handle_timeout(uint64_t) {
+    mpx()->handle_error(error(
+      runtime_error, "[stream_manager::handle_timeout()] not implemented!"));
+    return false;
+  }
+
   std::string me() const override {
     return "stream_manager";
   }

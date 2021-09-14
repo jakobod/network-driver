@@ -6,6 +6,8 @@
 #pragma once
 
 #include <array>
+#include <optional>
+#include <queue>
 #include <sys/epoll.h>
 #include <thread>
 #include <unordered_map>
@@ -14,12 +16,29 @@
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"
 #include "net/pollset_updater.hpp"
+#include "net/socket_manager.hpp"
 
 namespace net {
 
 static const size_t max_epoll_events = 32;
 
+struct timeout_entry {
+  net::socket_manager* mgr;
+  std::chrono::system_clock::time_point when;
+  uint64_t id;
+
+  bool operator<(const timeout_entry& foo) const {
+    return when < foo.when;
+  }
+
+  bool operator==(const timeout_entry& foo) const {
+    return (mgr == foo.mgr) && (when == foo.when) && (id == foo.id);
+  }
+};
+
 class epoll_multiplexer : public multiplexer {
+  using optional_timepoint
+    = std::optional<std::chrono::system_clock::time_point>;
   using pollset = std::array<epoll_event, max_epoll_events>;
   using epoll_fd = int;
   using manager_map = std::unordered_map<int, socket_manager_ptr>;
@@ -59,6 +78,7 @@ public:
   /// Adds a new fd to the multiplexer for operation `initial`.
   void add(socket_manager_ptr mgr, operation initial) override;
 
+  /// Enables an operation `op` for socket manager `mgr`.
   void enable(socket_manager&, operation op) override;
 
   /// Disables an operation `op` for socket manager `mgr`.
@@ -66,11 +86,10 @@ public:
   /// removed if `remove` is set.
   void disable(socket_manager& mgr, operation op, bool remove = true) override;
 
-  // -- members ----------------------------------------------------------------
+  void set_timeout(socket_manager& mgr, uint64_t timeout_id,
+                   std::chrono::system_clock::time_point when) override;
 
-  uint16_t port() const noexcept {
-    return listening_port_;
-  }
+  // -- members ----------------------------------------------------------------
 
   uint16_t num_socket_managers() const {
     return managers_.size();
@@ -94,21 +113,24 @@ private:
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
 
-  // Network members
-  uint16_t listening_port_;
+  void handle_timeouts();
 
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_;
   pipe_socket pipe_reader_;
 
   // epoll variables
-  epoll_fd epoll_fd_;
+  epoll_fd epoll_fd_ = invalid_socket_id;
   pollset pollset_;
   manager_map managers_;
 
+  // timeout handling
+  std::priority_queue<timeout_entry> timeouts_;
+  optional_timepoint current_timeout_ = std::nullopt;
+
   // thread variables
-  bool shutting_down_;
-  bool running_;
+  bool shutting_down_ = false;
+  bool running_ = false;
   std::thread mpx_thread_;
   std::thread::id mpx_thread_id_;
 };

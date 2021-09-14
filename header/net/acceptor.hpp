@@ -24,6 +24,8 @@ public:
 
   bool handle_write_event() override;
 
+  bool handle_timeout(uint64_t timeout_id) override;
+
   virtual std::string me() const {
     return "acceptor";
   }

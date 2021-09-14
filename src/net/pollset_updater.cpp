@@ -45,8 +45,16 @@ bool pollset_updater::handle_read_event() {
 }
 
 bool pollset_updater::handle_write_event() {
+  mpx()->handle_error(
+    error(runtime_error,
+          "[pollset_updater::handle_write_event()] pollset_updater should not "
+          "be registered for writing"));
+  return false;
+}
+
+bool pollset_updater::handle_timeout(uint64_t) {
   mpx()->handle_error(error(
-    runtime_error, "[pollset_updater] should not be registered for reading!"));
+    runtime_error, "[pollset_updater::handle_timeout()] not implemented!"));
   return false;
 }
 

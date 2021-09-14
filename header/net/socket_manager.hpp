@@ -69,6 +69,8 @@ public:
 
   virtual bool handle_write_event() = 0;
 
+  virtual bool handle_timeout(uint64_t timeout_id) = 0;
+
   // -- stringification --------------------------------------------------------
 
   virtual std::string me() const {

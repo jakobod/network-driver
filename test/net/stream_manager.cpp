@@ -55,6 +55,11 @@ struct dummy_multiplexer : public multiplexer {
   void disable(socket_manager&, operation, bool) override {
     // nop
   }
+
+  void set_timeout(socket_manager&, uint64_t,
+                   std::chrono::system_clock::time_point) override {
+    // nop
+  }
 };
 
 struct dummy_application {

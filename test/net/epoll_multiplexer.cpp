@@ -19,10 +19,11 @@ namespace {
 struct dummy_socket_manager : public socket_manager {
   dummy_socket_manager(net::socket handle, multiplexer* parent,
                        bool& handled_read_event, bool& handled_write_event,
-                       bool register_writing)
+                       bool& handled_timeout, bool register_writing)
     : socket_manager(handle, parent),
       handled_read_event_(handled_read_event),
       handled_write_event_(handled_write_event),
+      handled_timeout_(handled_timeout),
       register_writing_(register_writing) {
     // nop
   }
@@ -42,9 +43,15 @@ struct dummy_socket_manager : public socket_manager {
     return false;
   }
 
+  bool handle_timeout(uint64_t) override {
+    handled_timeout_ = true;
+    return false;
+  }
+
 private:
   bool& handled_read_event_;
   bool& handled_write_event_;
+  bool& handled_timeout_;
   bool register_writing_ = false;
 };
 
@@ -130,3 +137,9 @@ TEST_F(epoll_multiplexer_test, event_handling) {
   EXPECT_TRUE(handled_write_event);
   EXPECT_EQ(read(sock, buf), buf.size());
 }
+
+// TEST_F(epoll_multiplexer_test, timeout) {
+//   auto mgr = std::make_shared<dummy_socket_manager>(handled_read_event,
+//                                                     handled_write_event,
+//                                                     handled_timeout, false);
+// }
