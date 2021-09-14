@@ -5,6 +5,7 @@
 
 #include "net/epoll_multiplexer.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <iostream>
@@ -113,11 +114,15 @@ error epoll_multiplexer::poll_once(bool blocking) {
       return 0; // nonblocking
     if (current_timeout_ == std::nullopt)
       return -1;
-    return duration_cast<milliseconds>(*current_timeout_ - system_clock::now())
-      .count();
+    auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
+    auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
+    return (timeout_tp - now).count();
   };
+
+  auto to = timeout();
+  std::cerr << "[epoll_multiplexer.poll_once()] timeout = " << to << std::endl;
   auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                               static_cast<int>(pollset_.size()), timeout());
+                               static_cast<int>(pollset_.size()), to);
   //  next_wakeup.count());
   if (num_events < 0) {
     switch (errno) {
@@ -176,9 +181,18 @@ void epoll_multiplexer::disable(socket_manager& mgr, operation op,
 void epoll_multiplexer::set_timeout(
   socket_manager& mgr, uint64_t timeout_id,
   std::chrono::system_clock::time_point when) {
+  using namespace std::chrono;
+  auto now = std::chrono::system_clock::now();
+  std::cerr << "[epoll_multiplexer.set_timeout()] id = " << timeout_id
+            << ", at = " << duration_cast<milliseconds>(when - now).count()
+            << std::endl;
   timeouts_.emplace(&mgr, when, timeout_id);
-  if (current_timeout_ == std::nullopt || when < *current_timeout_)
+  if (current_timeout_ != std::nullopt)
+    current_timeout_ = std::min(when, *current_timeout_);
+  else
     current_timeout_ = when;
+  //  || when < *current_timeout_)
+  //   current_timeout_ = when;
 }
 
 void epoll_multiplexer::del(socket handle) {
@@ -208,12 +222,27 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
 }
 
 void epoll_multiplexer::handle_timeouts() {
-  auto now = std::chrono::system_clock::now();
+  using namespace std::chrono;
+  auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
   while (!timeouts_.empty()) {
-    if (timeouts_.top().when <= now) {
+    auto when = time_point_cast<milliseconds>(timeouts_.top().when);
+    std::cerr << "[epoll_multiplexer::handle_timeouts()] now = "
+              << now.time_since_epoch().count()
+              << ", timeout = " << when.time_since_epoch().count()
+              << ", diff = " << std::abs((when - now).count()) << std::endl;
+    if (when <= now) {
+      std::cerr << "[epoll_multiplexer::handle_timeouts()] handling timeout "
+                << timeouts_.top().id << std::endl;
       timeouts_.top().mgr->handle_timeout(timeouts_.top().id);
+      std::cerr
+        << "[epoll_multiplexer::handle_timeouts()] top after handling timeout "
+        << timeouts_.top().id << std::endl;
+
       timeouts_.pop();
     } else {
+      std::cerr << "[epoll_multiplexer::handle_timeouts()] current_timeout not "
+                   "reached."
+                << std::endl;
       current_timeout_ = timeouts_.top().when;
       return;
     }

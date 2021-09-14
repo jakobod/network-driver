@@ -27,8 +27,12 @@ struct timeout_entry {
   std::chrono::system_clock::time_point when;
   uint64_t id;
 
-  bool operator<(const timeout_entry& foo) const {
-    return when < foo.when;
+  bool operator<(const timeout_entry& other) const {
+    return when < other.when;
+  }
+
+  bool operator>(const timeout_entry& other) const {
+    return when > other.when;
   }
 
   bool operator==(const timeout_entry& foo) const {
@@ -125,7 +129,9 @@ private:
   manager_map managers_;
 
   // timeout handling
-  std::priority_queue<timeout_entry> timeouts_;
+  std::priority_queue<timeout_entry, std::vector<timeout_entry>,
+                      std::greater<timeout_entry>>
+    timeouts_;
   optional_timepoint current_timeout_ = std::nullopt;
 
   // thread variables

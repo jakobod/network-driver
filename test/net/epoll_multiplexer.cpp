@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
+
 #include "fwd.hpp"
 #include "net/epoll_multiplexer.hpp"
 #include "net/error.hpp"
@@ -13,17 +15,19 @@
 #include "net/tcp_stream_socket.hpp"
 
 using namespace net;
+using namespace std::chrono_literals;
 
 namespace {
 
 struct dummy_socket_manager : public socket_manager {
   dummy_socket_manager(net::socket handle, multiplexer* parent,
                        bool& handled_read_event, bool& handled_write_event,
-                       bool& handled_timeout, bool register_writing)
+                       std::vector<uint64_t>& handled_timeouts,
+                       bool register_writing)
     : socket_manager(handle, parent),
       handled_read_event_(handled_read_event),
       handled_write_event_(handled_write_event),
-      handled_timeout_(handled_timeout),
+      handled_timeouts_(handled_timeouts),
       register_writing_(register_writing) {
     // nop
   }
@@ -43,15 +47,21 @@ struct dummy_socket_manager : public socket_manager {
     return false;
   }
 
-  bool handle_timeout(uint64_t) override {
-    handled_timeout_ = true;
+  bool handle_timeout(uint64_t timeout_id) override {
+    std::cerr << "[dummy_socket_manager::handle_timeout()] handling "
+              << timeout_id << std::endl;
+    handled_timeouts_.push_back(timeout_id);
+    if (timeout_id < 10) {
+      auto now = std::chrono::system_clock::now();
+      mpx()->set_timeout(*this, timeout_id + 1, now + 10ms);
+    }
     return false;
   }
 
 private:
   bool& handled_read_event_;
   bool& handled_write_event_;
-  bool& handled_timeout_;
+  std::vector<uint64_t>& handled_timeouts_;
   bool register_writing_ = false;
 };
 
@@ -62,10 +72,9 @@ struct dummy_factory : public socket_manager_factory {
   }
 
   socket_manager_ptr make(net::socket handle, multiplexer* mpx) override {
-    return std::make_shared<dummy_socket_manager>(handle, mpx,
-                                                  handled_read_event_,
-                                                  handled_write_event_,
-                                                  register_writing_);
+    return std::make_shared<dummy_socket_manager>(
+      handle, mpx, handled_read_event_, handled_write_event_, handled_timeouts_,
+      register_writing_);
   }
 
   void register_writing() {
@@ -75,6 +84,7 @@ struct dummy_factory : public socket_manager_factory {
 private:
   bool& handled_read_event_;
   bool& handled_write_event_;
+  std::vector<uint64_t> handled_timeouts_;
   bool register_writing_ = false;
 };
 
@@ -138,8 +148,18 @@ TEST_F(epoll_multiplexer_test, event_handling) {
   EXPECT_EQ(read(sock, buf), buf.size());
 }
 
-// TEST_F(epoll_multiplexer_test, timeout) {
-//   auto mgr = std::make_shared<dummy_socket_manager>(handled_read_event,
-//                                                     handled_write_event,
-//                                                     handled_timeout, false);
-// }
+TEST_F(epoll_multiplexer_test, timeout) {
+  std::vector<uint64_t> handled_timeouts;
+  std::array<uint64_t, 11> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  auto mgr = std::make_shared<dummy_socket_manager>(
+    net::socket{invalid_socket_id}, &mpx, handled_read_event,
+    handled_write_event, handled_timeouts, false);
+  auto now = std::chrono::system_clock::now();
+  mpx.set_timeout(*mgr, 0, now + 10ms);
+  for (int i = 0; i < 11; ++i)
+    EXPECT_EQ(mpx.poll_once(true), none);
+  EXPECT_EQ(handled_timeouts.size(), expected_result.size());
+  EXPECT_EQ(memcmp(handled_timeouts.data(), expected_result.data(),
+                   handled_timeouts.size()),
+            0);
+}
