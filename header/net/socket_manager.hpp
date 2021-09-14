@@ -63,6 +63,11 @@ public:
 
   void register_writing();
 
+  void set_timeout_in(std::chrono::milliseconds duration, uint64_t timeout_id);
+
+  void set_timeout_at(std::chrono::system_clock::time_point point,
+                      uint64_t timeout_id);
+
   // -- event handling ---------------------------------------------------------
 
   virtual bool handle_read_event() = 0;

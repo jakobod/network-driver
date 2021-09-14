@@ -61,4 +61,15 @@ void socket_manager::register_writing() {
   mpx_->enable(*this, operation::write);
 }
 
+void socket_manager::set_timeout_in(std::chrono::milliseconds duration,
+                                    uint64_t timeout_id) {
+  auto tp = std::chrono::system_clock::now() + duration;
+  mpx()->set_timeout(*this, timeout_id, tp);
+}
+
+void socket_manager::set_timeout_at(std::chrono::system_clock::time_point point,
+                                    uint64_t timeout_id) {
+  mpx()->set_timeout(*this, timeout_id, point);
+}
+
 } // namespace net

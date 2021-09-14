@@ -48,13 +48,9 @@ struct dummy_socket_manager : public socket_manager {
   }
 
   bool handle_timeout(uint64_t timeout_id) override {
-    std::cerr << "[dummy_socket_manager::handle_timeout()] handling "
-              << timeout_id << std::endl;
     handled_timeouts_.push_back(timeout_id);
-    if (timeout_id < 10) {
-      auto now = std::chrono::system_clock::now();
-      mpx()->set_timeout(*this, timeout_id + 1, now + 10ms);
-    }
+    if (timeout_id < 10)
+      set_timeout_in(1ms, timeout_id + 1);
     return false;
   }
 
