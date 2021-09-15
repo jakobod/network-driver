@@ -23,11 +23,11 @@ error_or<pipe_socket_pair> make_pipe() {
   return std::make_pair(pipe_socket{pipefds[0]}, pipe_socket{pipefds[1]});
 }
 
-ptrdiff_t write(pipe_socket x, detail::byte_span buf) {
+ptrdiff_t write(pipe_socket x, util::byte_span buf) {
   return ::write(x.id, reinterpret_cast<const char*>(buf.data()), buf.size());
 }
 
-ptrdiff_t read(pipe_socket x, detail::byte_span buf) {
+ptrdiff_t read(pipe_socket x, util::byte_span buf) {
   return ::read(x.id, reinterpret_cast<char*>(buf.data()), buf.size());
 }
 

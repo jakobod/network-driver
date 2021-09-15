@@ -116,7 +116,7 @@ public:
   }
 
   /// Returns a reference to the send_buffer
-  detail::byte_buffer& send_buffer() {
+  util::byte_buffer& send_buffer() {
     return send_buffer_;
   }
 
@@ -126,8 +126,8 @@ private:
   size_t received_ = 0;
   size_t written_ = 0;
 
-  detail::byte_buffer recv_buffer_;
-  detail::byte_buffer send_buffer_;
+  util::byte_buffer recv_buffer_;
+  util::byte_buffer send_buffer_;
 };
 
 } // namespace net

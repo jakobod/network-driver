@@ -39,12 +39,12 @@ bool nodelay(stream_socket x, bool new_value) {
   return res == 0;
 }
 
-ptrdiff_t read(stream_socket x, detail::byte_span buf) {
+ptrdiff_t read(stream_socket x, util::byte_span buf) {
   return ::recv(x.id, reinterpret_cast<char*>(buf.data()), buf.size(),
                 no_sigpipe_io_flag);
 }
 
-ptrdiff_t write(stream_socket x, detail::byte_span buf) {
+ptrdiff_t write(stream_socket x, util::byte_span buf) {
   return ::send(x.id, reinterpret_cast<const char*>(buf.data()), buf.size(),
                 no_sigpipe_io_flag);
 }

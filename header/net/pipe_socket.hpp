@@ -32,9 +32,9 @@ using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
 error_or<pipe_socket_pair> make_pipe();
 
 /// Transmits data from `x` to its peer.
-ptrdiff_t write(pipe_socket x, detail::byte_span buf);
+ptrdiff_t write(pipe_socket x, util::byte_span buf);
 
 /// Receives data from `x`.
-ptrdiff_t read(pipe_socket x, detail::byte_span buf);
+ptrdiff_t read(pipe_socket x, util::byte_span buf);
 
 } // namespace net

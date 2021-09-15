@@ -37,9 +37,9 @@ bool nodelay(stream_socket x, bool new_value);
 bool reuseaddr(socket x, bool new_value);
 
 /// Receives data from `x`.
-ptrdiff_t read(stream_socket x, detail::byte_span buf);
+ptrdiff_t read(stream_socket x, util::byte_span buf);
 
 /// Sends data to `x`.
-ptrdiff_t write(stream_socket x, detail::byte_span buf);
+ptrdiff_t write(stream_socket x, util::byte_span buf);
 
 } // namespace net

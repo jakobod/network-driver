@@ -33,7 +33,7 @@ struct dummy_socket_manager : public socket_manager {
   }
 
   bool handle_read_event() override {
-    detail::byte_array<1024> buf;
+    util::byte_array<1024> buf;
     handled_read_event_ = true;
     if (register_writing_)
       this->register_writing();
@@ -41,7 +41,7 @@ struct dummy_socket_manager : public socket_manager {
   }
 
   bool handle_write_event() override {
-    detail::byte_array<1024> buf;
+    util::byte_array<1024> buf;
     handled_write_event_ = true;
     write(handle<stream_socket>(), buf);
     return false;
@@ -134,7 +134,7 @@ TEST_F(epoll_multiplexer_test, event_handling) {
   EXPECT_TRUE(nonblocking(sock, true));
   EXPECT_EQ(mpx.poll_once(false), none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);
-  detail::byte_array<1024> buf;
+  util::byte_array<1024> buf;
   write(sock, buf);
   EXPECT_EQ(mpx.poll_once(false), none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);

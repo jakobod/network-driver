@@ -37,7 +37,7 @@ using error_or = std::variant<T, error>;
 
 } // namespace net
 
-namespace detail {
+namespace util {
 
 using byte_buffer = std::vector<std::byte>;
 using byte_span = std::span<std::byte>;
@@ -46,4 +46,4 @@ using const_byte_span = std::span<const std::byte>;
 template <size_t Size>
 using byte_array = std::array<std::byte, Size>;
 
-} // namespace detail
+} // namespace util

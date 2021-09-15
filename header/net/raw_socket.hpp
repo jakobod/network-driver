@@ -22,7 +22,7 @@ struct raw_socket : socket {
 error_or<raw_socket> make_raw_socket();
 
 ssize_t sendto(raw_socket sock, sockaddr_ll socket_address,
-               detail::byte_span data);
+               util::byte_span data);
 
 template <class Packet>
 ssize_t sendto(raw_socket sock, sockaddr_ll socket_address, Packet& p) {

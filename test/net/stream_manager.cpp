@@ -63,7 +63,7 @@ struct dummy_multiplexer : public multiplexer {
 };
 
 struct dummy_application {
-  dummy_application(detail::const_byte_span data, detail::byte_buffer& received)
+  dummy_application(util::const_byte_span data, util::byte_buffer& received)
     : received_(received), data_(data) {
     // nop
   }
@@ -87,15 +87,15 @@ struct dummy_application {
   }
 
   template <class Parent>
-  bool consume(Parent& parent, detail::const_byte_span data) {
+  bool consume(Parent& parent, util::const_byte_span data) {
     received_.insert(received_.end(), data.begin(), data.end());
     parent.configure_next_read(1024);
     return true;
   }
 
 private:
-  detail::byte_buffer& received_;
-  detail::const_byte_span data_;
+  util::byte_buffer& received_;
+  util::const_byte_span data_;
 };
 
 using manager_type = stream_manager<dummy_application>;
@@ -116,9 +116,9 @@ struct stream_manager_test : public testing::Test {
 
   stream_socket_pair sockets;
   dummy_multiplexer mpx;
-  detail::byte_array<32768> data;
+  util::byte_array<32768> data;
 
-  detail::byte_buffer received_data;
+  util::byte_buffer received_data;
 };
 
 } // namespace
@@ -142,7 +142,7 @@ TEST_F(stream_manager_test, disconnect) {
 
 TEST_F(stream_manager_test, handle_write_event) {
   size_t received = 0;
-  detail::byte_array<32768> buf;
+  util::byte_array<32768> buf;
   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
   ASSERT_EQ(mgr.init(), none);
   auto read_some = [&]() {

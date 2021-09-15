@@ -33,7 +33,7 @@ TEST_F(socket_guard_test, close) {
     // Should close the socket after leaving the scope
     auto guard = make_socket_guard(sockets.first);
   }
-  detail::byte_array<1> data;
+  util::byte_array<1> data;
   EXPECT_LT(write(sockets.first, data), 0);
   EXPECT_EQ(read(sockets.second, data), 0);
 }
@@ -45,7 +45,7 @@ TEST_F(socket_guard_test, release) {
     auto sock = guard.release();
     EXPECT_EQ(sock, sockets.first);
   }
-  detail::byte_array<1> data;
+  util::byte_array<1> data;
   EXPECT_EQ(write(sockets.first, data), 1);
   EXPECT_EQ(read(sockets.second, data), 1);
   close(sockets.first);

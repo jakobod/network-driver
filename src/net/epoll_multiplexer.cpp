@@ -80,7 +80,7 @@ void epoll_multiplexer::shutdown() {
     pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {
     std::byte code{pollset_updater::shutdown_code};
-    auto res = write(pipe_writer_, detail::byte_span(&code, 1));
+    auto res = write(pipe_writer_, util::byte_span(&code, 1));
     if (res != 1) {
       std::cerr << "ERROR could not write to pipe: "
                 << last_socket_error_as_string() << std::endl;

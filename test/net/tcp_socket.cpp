@@ -25,7 +25,7 @@ TEST(tcp_socket_test, accept) {
   auto accepted = accept(acc_pair.first);
   EXPECT_NE(accepted, invalid_socket);
   // Check functionality
-  detail::byte_array<10> data;
+  util::byte_array<10> data;
   EXPECT_EQ(write(sock, data), data.size());
   EXPECT_EQ(read(accepted, data), data.size());
 }
