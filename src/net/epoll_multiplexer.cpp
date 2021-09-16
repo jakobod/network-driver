@@ -94,6 +94,10 @@ void epoll_multiplexer::join() {
     mpx_thread_.join();
 }
 
+bool epoll_multiplexer::running() {
+  return mpx_thread_.joinable();
+}
+
 void epoll_multiplexer::set_thread_id() {
   mpx_thread_id_ = std::this_thread::get_id();
 }

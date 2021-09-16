@@ -33,6 +33,10 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
+  bool running() override {
+    return false;
+  }
+
   void handle_error(error err) override {
     last_error = std::move(err);
   }

@@ -25,6 +25,8 @@ public:
   /// Joins with the multiplexer.
   virtual void join() = 0;
 
+  virtual bool running() = 0;
+
   // -- Error Handling ---------------------------------------------------------
 
   virtual void handle_error(error err) = 0;

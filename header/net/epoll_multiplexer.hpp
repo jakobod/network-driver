@@ -68,6 +68,8 @@ public:
   /// Joins with the multiplexer.
   void join() override;
 
+  bool running() override;
+
   void set_thread_id();
 
   // -- Error Handling ---------------------------------------------------------
@@ -97,10 +99,6 @@ public:
 
   uint16_t num_socket_managers() const {
     return managers_.size();
-  }
-
-  bool running() const noexcept {
-    return mpx_thread_.joinable();
   }
 
 private:
