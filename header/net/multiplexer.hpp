@@ -48,7 +48,7 @@ public:
   /// removed if `remove` is set.
   virtual void disable(socket_manager& mgr, operation op, bool remove) = 0;
 
-  virtual void set_timeout(socket_manager& mgr, uint64_t timeout_id,
+  virtual void set_timeout(socket_manager* mgr, uint64_t timeout_id,
                            std::chrono::system_clock::time_point)
     = 0;
 

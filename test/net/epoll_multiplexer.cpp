@@ -150,8 +150,7 @@ TEST_F(epoll_multiplexer_test, timeout) {
   auto mgr = std::make_shared<dummy_socket_manager>(
     net::socket{invalid_socket_id}, &mpx, handled_read_event,
     handled_write_event, handled_timeouts, false);
-  auto now = std::chrono::system_clock::now();
-  mpx.set_timeout(*mgr, 0, now + 10ms);
+  mgr->set_timeout_in(10ms, 0);
   for (int i = 0; i < 11; ++i)
     EXPECT_EQ(mpx.poll_once(true), none);
   EXPECT_EQ(handled_timeouts.size(), expected_result.size());

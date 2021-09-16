@@ -92,7 +92,7 @@ public:
   /// removed if `remove` is set.
   void disable(socket_manager& mgr, operation op, bool remove = true) override;
 
-  void set_timeout(socket_manager& mgr, uint64_t timeout_id,
+  void set_timeout(socket_manager* mgr, uint64_t timeout_id,
                    std::chrono::system_clock::time_point when) override;
 
   // -- members ----------------------------------------------------------------
