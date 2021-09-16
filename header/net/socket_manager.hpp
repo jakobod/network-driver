@@ -26,6 +26,8 @@ public:
 
   socket_manager(const socket_manager&) = delete;
 
+  virtual error init() = 0;
+
   // -- Assignment operators ---------------------------------------------------
 
   socket_manager& operator=(socket_manager&& other);

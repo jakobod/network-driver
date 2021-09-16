@@ -28,7 +28,7 @@ public:
     // nop
   }
 
-  error init() {
+  error init() override {
     if (!nonblocking(handle(), true))
       return error(socket_operation_failed, "Could not set nonblocking");
     return application_.init(*this);

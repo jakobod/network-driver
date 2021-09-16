@@ -18,6 +18,8 @@ public:
   acceptor(tcp_accept_socket handle, multiplexer* mpx,
            socket_manager_factory_ptr factory);
 
+  error init() override;
+
   // -- properties -------------------------------------------------------------
 
   bool handle_read_event() override;

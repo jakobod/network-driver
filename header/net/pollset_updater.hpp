@@ -34,6 +34,8 @@ public:
 
   pollset_updater(pipe_socket read_handle, multiplexer* parent);
 
+  error init() override;
+
   // -- interface functions ----------------------------------------------------
 
   bool handle_read_event() override;

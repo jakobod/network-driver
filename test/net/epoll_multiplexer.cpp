@@ -32,6 +32,10 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
+  error init() override {
+    return none;
+  }
+
   bool handle_read_event() override {
     util::byte_array<1024> buf;
     handled_read_event_ = true;

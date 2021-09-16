@@ -21,6 +21,10 @@ acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx,
   // nop
 }
 
+error acceptor::init() {
+  return none;
+}
+
 // -- properties -------------------------------------------------------------
 
 bool acceptor::handle_read_event() {

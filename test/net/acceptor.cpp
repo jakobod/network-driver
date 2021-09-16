@@ -72,6 +72,10 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
+  error init() override {
+    return none;
+  }
+
   bool handle_read_event() override {
     return false;
   }

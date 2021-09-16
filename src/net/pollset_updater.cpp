@@ -20,6 +20,10 @@ pollset_updater::pollset_updater(pipe_socket handle, multiplexer* mpx)
   // nop
 }
 
+error pollset_updater::init() {
+  return none;
+}
+
 // -- interface functions ----------------------------------------------------
 
 bool pollset_updater::handle_read_event() {
