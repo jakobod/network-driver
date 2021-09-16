@@ -7,7 +7,7 @@
 
 #include <array>
 #include <optional>
-#include <queue>
+#include <set>
 #include <sys/epoll.h>
 #include <thread>
 #include <unordered_map>
@@ -23,7 +23,7 @@ namespace net {
 static const size_t max_epoll_events = 32;
 
 struct timeout_entry {
-  net::socket_manager* mgr;
+  socket_id hdl;
   std::chrono::system_clock::time_point when;
   uint64_t id;
 
@@ -35,8 +35,8 @@ struct timeout_entry {
     return when > other.when;
   }
 
-  bool operator==(const timeout_entry& foo) const {
-    return (mgr == foo.mgr) && (when == foo.when) && (id == foo.id);
+  bool operator==(const timeout_entry& other) const {
+    return (hdl == other.hdl) && (when == other.when) && (id == other.id);
   }
 };
 
@@ -46,6 +46,7 @@ class epoll_multiplexer : public multiplexer {
   using pollset = std::array<epoll_event, max_epoll_events>;
   using epoll_fd = int;
   using manager_map = std::unordered_map<int, socket_manager_ptr>;
+  using timeout_entry_set = std::set<timeout_entry>;
 
 public:
   // -- constructors, destructors ----------------------------------------------
@@ -92,12 +93,12 @@ public:
   /// removed if `remove` is set.
   void disable(socket_manager& mgr, operation op, bool remove = true) override;
 
-  void set_timeout(socket_manager* mgr, uint64_t timeout_id,
+  void set_timeout(socket_manager& mgr, uint64_t timeout_id,
                    std::chrono::system_clock::time_point when) override;
 
   // -- members ----------------------------------------------------------------
 
-  uint16_t num_socket_managers() const {
+  [[nodiscard]] uint16_t num_socket_managers() const {
     return managers_.size();
   }
 
@@ -127,9 +128,7 @@ private:
   manager_map managers_;
 
   // timeout handling
-  std::priority_queue<timeout_entry, std::vector<timeout_entry>,
-                      std::greater<timeout_entry>>
-    timeouts_;
+  timeout_entry_set timeouts_;
   optional_timepoint current_timeout_ = std::nullopt;
 
   // thread variables

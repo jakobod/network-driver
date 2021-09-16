@@ -53,7 +53,7 @@ struct dummy_socket_manager : public socket_manager {
 
   bool handle_timeout(uint64_t timeout_id) override {
     handled_timeouts_.push_back(timeout_id);
-    if (timeout_id < 10)
+    if (timeout_id < 9)
       set_timeout_in(1ms, timeout_id + 1);
     return false;
   }
@@ -148,14 +148,44 @@ TEST_F(epoll_multiplexer_test, event_handling) {
   EXPECT_EQ(read(sock, buf), buf.size());
 }
 
-TEST_F(epoll_multiplexer_test, timeout) {
+TEST_F(epoll_multiplexer_test, resetting_timeout) {
   std::vector<uint64_t> handled_timeouts;
-  std::array<uint64_t, 11> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  auto mgr = std::make_shared<dummy_socket_manager>(
-    net::socket{invalid_socket_id}, &mpx, handled_read_event,
-    handled_write_event, handled_timeouts, false);
+  std::array<uint64_t, 10> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  auto res = make_stream_socket_pair();
+  ASSERT_EQ(get_error(res), nullptr);
+  auto sockets = std::get<stream_socket_pair>(res);
+  auto mgr = std::make_shared<dummy_socket_manager>(sockets.first, &mpx,
+                                                    handled_read_event,
+                                                    handled_write_event,
+                                                    handled_timeouts, false);
+  mpx.add(mgr, operation::read);
   mgr->set_timeout_in(10ms, 0);
-  for (int i = 0; i < 11; ++i)
+  while (handled_timeouts.size() < expected_result.size())
+    EXPECT_EQ(mpx.poll_once(true), none);
+  EXPECT_EQ(handled_timeouts.size(), expected_result.size());
+  EXPECT_EQ(memcmp(handled_timeouts.data(), expected_result.data(),
+                   handled_timeouts.size()),
+            0);
+}
+
+TEST_F(epoll_multiplexer_test, multiple_timeouts) {
+  std::vector<uint64_t> handled_timeouts;
+  std::array<uint64_t, 10> expected_result{20, 21, 22, 23, 24,
+                                           25, 26, 27, 28, 29};
+  auto res = make_stream_socket_pair();
+  ASSERT_EQ(get_error(res), nullptr);
+  auto sockets = std::get<stream_socket_pair>(res);
+  auto mgr = std::make_shared<dummy_socket_manager>(sockets.first, &mpx,
+                                                    handled_read_event,
+                                                    handled_write_event,
+                                                    handled_timeouts, false);
+  mpx.add(mgr, operation::read);
+  auto duration = 10ms;
+  for (auto id : expected_result) {
+    mgr->set_timeout_in(duration, id);
+    duration += 10ms;
+  }
+  while (handled_timeouts.size() < expected_result.size())
     EXPECT_EQ(mpx.poll_once(true), none);
   EXPECT_EQ(handled_timeouts.size(), expected_result.size());
   EXPECT_EQ(memcmp(handled_timeouts.data(), expected_result.data(),

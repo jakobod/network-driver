@@ -60,7 +60,7 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  void set_timeout(socket_manager*, uint64_t,
+  void set_timeout(socket_manager&, uint64_t,
                    std::chrono::system_clock::time_point) override {
     // nop
   }

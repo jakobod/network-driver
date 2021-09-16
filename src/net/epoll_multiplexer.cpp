@@ -182,9 +182,9 @@ void epoll_multiplexer::disable(socket_manager& mgr, operation op,
 }
 
 void epoll_multiplexer::set_timeout(
-  socket_manager* mgr, uint64_t timeout_id,
+  socket_manager& mgr, uint64_t timeout_id,
   std::chrono::system_clock::time_point when) {
-  timeouts_.emplace(mgr, when, timeout_id);
+  timeouts_.emplace(mgr.handle().id, when, timeout_id);
   current_timeout_ = (current_timeout_ != std::nullopt)
                        ? std::min(when, *current_timeout_)
                        : when;
@@ -219,18 +219,20 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
 void epoll_multiplexer::handle_timeouts() {
   using namespace std::chrono;
   auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
-  while (!timeouts_.empty()) {
-    auto when = time_point_cast<milliseconds>(timeouts_.top().when);
+  for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
+    auto& entry = *it;
+    auto when = time_point_cast<milliseconds>(entry.when);
     if (when <= now) {
-      timeouts_.top().mgr->handle_timeout(timeouts_.top().id);
-      timeouts_.pop();
+      managers_.at(entry.hdl)->handle_timeout(entry.id);
     } else {
-      current_timeout_ = timeouts_.top().when;
-      return;
+      timeouts_.erase(timeouts_.begin(), it);
+      if (timeouts_.empty())
+        current_timeout_ = std::nullopt;
+      else
+        current_timeout_ = entry.when;
+      break;
     }
   }
-  if (timeouts_.empty())
-    current_timeout_ = std::nullopt;
 }
 
 void epoll_multiplexer::run() {
