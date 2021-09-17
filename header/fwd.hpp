@@ -15,17 +15,24 @@
 namespace net {
 
 class socket_manager;
-class multiplexer;
 class socket_manager_factory;
+class acceptor;
+class pollset_updater;
+class multiplexer;
+class epoll_multiplexer;
+class multithreaded_epoll_multiplexer;
 
 struct socket;
+struct raw_socket;
 struct stream_socket;
 struct pipe_socket;
-struct error;
 struct tcp_stream_socket;
 struct tcp_accept_socket;
+struct timeout_entry;
+struct error;
 
 enum class operation : uint32_t;
+enum class event_result : uint8_t;
 
 using stream_socket_pair = std::pair<stream_socket, stream_socket>;
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
@@ -34,6 +41,8 @@ using multiplexer_ptr = std::shared_ptr<multiplexer>;
 
 template <class T>
 using error_or = std::variant<T, error>;
+template <class Socket>
+class socket_guard;
 
 } // namespace net
 

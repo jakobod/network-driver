@@ -13,7 +13,6 @@ namespace net {
 enum error_code {
   no_error = 0,
   runtime_error,
-  // socket errors
   socket_operation_failed,
   invalid_argument,
 };

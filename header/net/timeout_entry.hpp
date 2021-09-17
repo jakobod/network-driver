@@ -1,3 +1,4 @@
+
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
@@ -6,13 +7,11 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
 
-#include "fwd.hpp"
 #include "net/socket_id.hpp"
 
 namespace net {
-
-static const size_t max_epoll_events = 32;
 
 struct timeout_entry {
   socket_id hdl;
