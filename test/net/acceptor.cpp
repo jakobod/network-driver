@@ -7,6 +7,7 @@
 
 #include "net/acceptor.hpp"
 #include "net/error.hpp"
+#include "net/event_result.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/tcp_accept_socket.hpp"
@@ -76,16 +77,16 @@ struct dummy_socket_manager : public socket_manager {
     return none;
   }
 
-  bool handle_read_event() override {
-    return false;
+  event_result handle_read_event() override {
+    return event_result::done;
   }
 
-  bool handle_write_event() override {
-    return false;
+  event_result handle_write_event() override {
+    return event_result::done;
   }
 
-  bool handle_timeout(uint64_t) override {
-    return false;
+  event_result handle_timeout(uint64_t) override {
+    return event_result::done;
   }
 };
 
@@ -114,12 +115,12 @@ struct acceptor_test : public testing::Test {
 
 TEST_F(acceptor_test, handle_read_event) {
   auto sock = make_connected_tcp_stream_socket("127.0.0.1", port);
-  EXPECT_TRUE(acc.handle_read_event());
+  EXPECT_EQ(acc.handle_read_event(), event_result::ok);
   EXPECT_EQ(mpx.last_error, none);
   EXPECT_NE(mpx.mgr, nullptr);
 }
 
 TEST_F(acceptor_test, handle_write_event) {
-  EXPECT_FALSE(acc.handle_write_event());
+  EXPECT_EQ(acc.handle_write_event(), event_result::error);
   EXPECT_EQ(mpx.last_error, error(runtime_error));
 }

@@ -1,12 +1,12 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 03.03.2021
  */
 
 #pragma once
 
 #include <string>
+#include <sys/epoll.h>
 
 namespace net {
 
@@ -16,6 +16,10 @@ enum class operation : uint32_t {
   read = 0x001,
   write = 0x004,
   read_write = 0x001 | 0x004,
+  one_shot = EPOLLONESHOT,
+  one_shot_read = read | one_shot,
+  one_shot_write = write | one_shot,
+  one_shot_read_write = read_write | one_shot,
 };
 
 /// @relates operation

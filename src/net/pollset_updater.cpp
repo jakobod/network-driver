@@ -26,7 +26,7 @@ error pollset_updater::init() {
 
 // -- interface functions ----------------------------------------------------
 
-bool pollset_updater::handle_read_event() {
+event_result pollset_updater::handle_read_event() {
   opcode code;
   auto res = read(handle<pipe_socket>(),
                   std::span{reinterpret_cast<std::byte*>(&code), 1});
@@ -40,26 +40,26 @@ bool pollset_updater::handle_read_event() {
         break;
       case shutdown_code:
         mpx()->shutdown();
-        return false;
+        return event_result::done;
       default:
         break;
     }
   }
-  return true;
+  return event_result::ok;
 }
 
-bool pollset_updater::handle_write_event() {
+event_result pollset_updater::handle_write_event() {
   mpx()->handle_error(
     error(runtime_error,
           "[pollset_updater::handle_write_event()] pollset_updater should not "
           "be registered for writing"));
-  return false;
+  return event_result::error;
 }
 
-bool pollset_updater::handle_timeout(uint64_t) {
+event_result pollset_updater::handle_timeout(uint64_t) {
   mpx()->handle_error(error(
     runtime_error, "[pollset_updater::handle_timeout()] not implemented!"));
-  return false;
+  return event_result::error;
 }
 
 } // namespace net

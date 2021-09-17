@@ -8,8 +8,8 @@
 #include <chrono>
 
 #include "fwd.hpp"
-#include "net/epoll_multiplexer.hpp"
 #include "net/error.hpp"
+#include "net/multithreaded_epoll_multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/stream_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
@@ -56,7 +56,7 @@ struct dummy_socket_manager : public socket_manager {
     handled_timeouts_.push_back(timeout_id);
     if (timeout_id < 9)
       set_timeout_in(1ms, timeout_id + 1);
-    return event_result::ok;
+    return event_result::done;
   }
 
 private:
@@ -89,10 +89,11 @@ private:
   bool register_writing_ = false;
 };
 
-struct epoll_multiplexer_test : public testing::Test {
-  epoll_multiplexer_test()
-    : factory(std::make_shared<dummy_factory>(handled_read_event,
-                                              handled_write_event)) {
+struct multithreaded_epoll_multiplexer_test : public testing::Test {
+  multithreaded_epoll_multiplexer_test()
+    : factory(
+      std::make_shared<dummy_factory>(handled_read_event, handled_write_event)),
+      mpx(2) {
     mpx.set_thread_id();
     EXPECT_EQ(mpx.init(factory, 0), none);
     default_num_socket_managers = mpx.num_socket_managers();
@@ -107,13 +108,13 @@ struct epoll_multiplexer_test : public testing::Test {
   bool handled_read_event = false;
   bool handled_write_event = false;
   socket_manager_factory_ptr factory;
-  epoll_multiplexer mpx;
+  multithreaded_epoll_multiplexer mpx;
   size_t default_num_socket_managers;
 };
 
 } // namespace
 
-TEST_F(epoll_multiplexer_test, mpx_accepts_connections) {
+TEST_F(multithreaded_epoll_multiplexer_test, mpx_accepts_connections) {
   std::array<tcp_stream_socket, 10> sockets;
   for (size_t i = 0; i < 10; ++i) {
     connect_to_mpx();
@@ -124,7 +125,7 @@ TEST_F(epoll_multiplexer_test, mpx_accepts_connections) {
   EXPECT_EQ(mpx.num_socket_managers(), 1);
 }
 
-TEST_F(epoll_multiplexer_test, manager_removed_after_disconnect) {
+TEST_F(multithreaded_epoll_multiplexer_test, manager_removed_after_disconnect) {
   auto sock = connect_to_mpx();
   EXPECT_EQ(mpx.poll_once(false), none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);
@@ -133,7 +134,7 @@ TEST_F(epoll_multiplexer_test, manager_removed_after_disconnect) {
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers);
 }
 
-TEST_F(epoll_multiplexer_test, event_handling) {
+TEST_F(multithreaded_epoll_multiplexer_test, event_handling) {
   auto sock = connect_to_mpx();
   std::static_pointer_cast<dummy_factory>(factory)->register_writing();
   EXPECT_TRUE(nonblocking(sock, true));
@@ -149,7 +150,7 @@ TEST_F(epoll_multiplexer_test, event_handling) {
   EXPECT_EQ(read(sock, buf), buf.size());
 }
 
-TEST_F(epoll_multiplexer_test, resetting_timeout) {
+TEST_F(multithreaded_epoll_multiplexer_test, resetting_timeout) {
   std::vector<uint64_t> handled_timeouts;
   std::array<uint64_t, 10> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto res = make_stream_socket_pair();
@@ -169,7 +170,7 @@ TEST_F(epoll_multiplexer_test, resetting_timeout) {
             0);
 }
 
-TEST_F(epoll_multiplexer_test, multiple_timeouts) {
+TEST_F(multithreaded_epoll_multiplexer_test, multiple_timeouts) {
   std::vector<uint64_t> handled_timeouts;
   std::array<uint64_t, 10> expected_result{20, 21, 22, 23, 24,
                                            25, 26, 27, 28, 29};
@@ -192,4 +193,21 @@ TEST_F(epoll_multiplexer_test, multiple_timeouts) {
   EXPECT_EQ(memcmp(handled_timeouts.data(), expected_result.data(),
                    handled_timeouts.size()),
             0);
+}
+
+TEST_F(multithreaded_epoll_multiplexer_test, multiple_threads_polling) {
+  auto f = [&]() { EXPECT_EQ(mpx.poll_once(true), none); };
+  std::array<std::thread, 10> threads;
+  for (auto& t : threads)
+    t = std::thread{f};
+  std::this_thread::sleep_for(10ms);
+  for (size_t i = 0; i < threads.size(); ++i) {
+    connect_to_mpx();
+    std::this_thread::sleep_for(10ms);
+  }
+  EXPECT_EQ(mpx.num_socket_managers(),
+            default_num_socket_managers + threads.size());
+  for (auto& t : threads)
+    if (t.joinable())
+      t.join();
 }

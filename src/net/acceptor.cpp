@@ -27,37 +27,37 @@ error acceptor::init() {
 
 // -- properties -------------------------------------------------------------
 
-bool acceptor::handle_read_event() {
+event_result acceptor::handle_read_event() {
   auto hdl = handle<tcp_accept_socket>();
   auto accepted = accept(hdl);
   if (accepted == invalid_socket) {
     mpx()->handle_error(
       error(socket_operation_failed,
             "accepting failed: " + last_socket_error_as_string()));
-    return true;
+    return event_result::ok;
   }
   if (!nonblocking(accepted, true)) {
     mpx()->handle_error(
       error(socket_operation_failed,
             "nonblocking failed " + last_socket_error_as_string()));
-    return true;
+    return event_result::ok;
   }
   auto mgr = factory_->make(accepted, mpx());
   mpx()->add(std::move(mgr), operation::read);
-  return true;
+  return event_result::ok;
 }
 
-bool acceptor::handle_write_event() {
+event_result acceptor::handle_write_event() {
   mpx()->handle_error(
     error(runtime_error, "[acceptor::handle_write_event()] acceptor should not "
                          "be registered for writing"));
-  return false;
+  return event_result::error;
 }
 
-bool acceptor::handle_timeout(uint64_t) {
+event_result acceptor::handle_timeout(uint64_t) {
   mpx()->handle_error(
     error(runtime_error, "[acceptor::handle_timeout()] not implemented!"));
-  return false;
+  return event_result::error;
 }
 
 } // namespace net

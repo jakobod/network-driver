@@ -3,7 +3,7 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "net/epoll_multiplexer.hpp"
+#include "net/multithreaded_epoll_multiplexer.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -13,22 +13,23 @@
 
 #include "net/acceptor.hpp"
 #include "net/error.hpp"
+#include "net/event_result.hpp"
 #include "net/socket_manager.hpp"
 #include "net/socket_sys_includes.hpp"
 
 namespace net {
 
-epoll_multiplexer::epoll_multiplexer()
-  : epoll_fd_(invalid_socket_id), shutting_down_(false), running_(false) {
-  // nop
+multithreaded_epoll_multiplexer::multithreaded_epoll_multiplexer(
+  size_t num_threads) {
+  mpx_threads_.resize(num_threads);
 }
 
-epoll_multiplexer::~epoll_multiplexer() {
+multithreaded_epoll_multiplexer::~multithreaded_epoll_multiplexer() {
   ::close(epoll_fd_);
 }
 
-error epoll_multiplexer::init(socket_manager_factory_ptr factory,
-                              uint16_t port) {
+error multithreaded_epoll_multiplexer::init(socket_manager_factory_ptr factory,
+                                            uint16_t port) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
     return error(runtime_error, "creating epoll fd failed");
@@ -52,22 +53,28 @@ error epoll_multiplexer::init(socket_manager_factory_ptr factory,
   return none;
 }
 
-void epoll_multiplexer::start() {
+void multithreaded_epoll_multiplexer::start() {
   if (!running_) {
+    for (auto& thread : mpx_threads_) {
+      thread = std::thread(&multithreaded_epoll_multiplexer::run, this);
+      mpx_thread_ids_.emplace(thread.get_id());
+    }
+    std::cerr << "[mmpx] ";
+    for (auto id : mpx_thread_ids_)
+      std::cerr << id << ", ";
+    std::cerr << std::endl;
     running_ = true;
-    mpx_thread_ = std::thread(&epoll_multiplexer::run, this);
-    mpx_thread_id_ = mpx_thread_.get_id();
   }
 }
 
-void epoll_multiplexer::shutdown() {
-  if (std::this_thread::get_id() == mpx_thread_id_) {
+void multithreaded_epoll_multiplexer::shutdown() {
+  if (mpx_thread_ids_.contains(std::this_thread::get_id())) {
     auto it = managers_.begin();
     while (it != managers_.end()) {
       auto& mgr = it->second;
       if (mgr->handle() != pipe_reader_) {
         disable(*mgr, operation::read, false);
-        if (mgr->mask() == operation::none)
+        if ((mgr->mask() & operation::read_write) == operation::none)
           it = del(it);
         else
           ++it;
@@ -89,29 +96,31 @@ void epoll_multiplexer::shutdown() {
   }
 }
 
-void epoll_multiplexer::join() {
-  if (mpx_thread_.joinable())
-    mpx_thread_.join();
+void multithreaded_epoll_multiplexer::join() {
+  for (auto& thread : mpx_threads_) {
+    if (thread.joinable())
+      thread.join();
+  }
 }
 
-bool epoll_multiplexer::running() {
-  return mpx_thread_.joinable();
+bool multithreaded_epoll_multiplexer::running() {
+  return running_;
 }
 
-void epoll_multiplexer::set_thread_id() {
-  mpx_thread_id_ = std::this_thread::get_id();
+void multithreaded_epoll_multiplexer::set_thread_id() {
+  mpx_thread_ids_.emplace(std::this_thread::get_id());
 }
 
 // -- Error handling -----------------------------------------------------------
 
-void epoll_multiplexer::handle_error(error err) {
+void multithreaded_epoll_multiplexer::handle_error(error err) {
   std::cerr << "ERROR: " << err << std::endl;
   shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
 
-error epoll_multiplexer::poll_once(bool blocking) {
+error multithreaded_epoll_multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   auto timeout = [&]() -> int {
     if (!blocking)
@@ -122,11 +131,10 @@ error epoll_multiplexer::poll_once(bool blocking) {
     auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
     return (timeout_tp - now).count();
   };
-
   auto to = timeout();
-  auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                               static_cast<int>(pollset_.size()), to);
-  //  next_wakeup.count());
+  pollset events;
+  auto num_events = epoll_wait(epoll_fd_, events.data(),
+                               static_cast<int>(events.size()), to);
   if (num_events < 0) {
     switch (errno) {
       case EINTR:
@@ -137,14 +145,15 @@ error epoll_multiplexer::poll_once(bool blocking) {
   } else {
     handle_timeouts();
     for (int i = 0; i < num_events; ++i) {
-      if (pollset_[i].events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
+      auto& event = events[i];
+      if (event.events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
         std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
                   << std::endl;
-        del(socket{pollset_[i].data.fd});
+        del(socket{event.data.fd});
         continue;
       } else {
-        auto handle_result = [&](event_result res,
-                                 socket_manager_ptr& mgr) -> bool {
+        auto& mgr = managers_[static_cast<int>(event.data.fd)];
+        auto handle_result = [&](event_result res) -> bool {
           if (res == event_result::done) {
             disable(*mgr, operation::read);
           } else if (res == event_result::error) {
@@ -153,45 +162,46 @@ error epoll_multiplexer::poll_once(bool blocking) {
           }
           return true;
         };
-        if ((pollset_[i].events & operation::read) == operation::read) {
-          auto& mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-          if (!handle_result(mgr->handle_read_event(), mgr))
+        if ((event.events & operation::read) == operation::read) {
+          if (!handle_result(mgr->handle_read_event()))
             continue;
         }
-        if ((pollset_[i].events & operation::write) == operation::write) {
-          auto& mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-          if (!handle_result(mgr->handle_write_event(), mgr))
+        if ((event.events & operation::write) == operation::write) {
+          if (!handle_result(mgr->handle_write_event()))
             continue;
         }
+        rearm(mgr);
       }
     }
   }
   return none;
 }
 
-void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
-  if (!mgr->mask_add(initial))
+void multithreaded_epoll_multiplexer::add(socket_manager_ptr mgr,
+                                          operation initial) {
+  if (!mgr->mask_add(initial | operation::one_shot))
     return;
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
   managers_.emplace(mgr->handle().id, std::move(mgr));
 }
 
-void epoll_multiplexer::enable(socket_manager& mgr, operation op) {
+void multithreaded_epoll_multiplexer::enable(socket_manager& mgr,
+                                             operation op) {
   if (!mgr.mask_add(op))
     return;
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
 }
 
-void epoll_multiplexer::disable(socket_manager& mgr, operation op,
-                                bool remove) {
+void multithreaded_epoll_multiplexer::disable(socket_manager& mgr, operation op,
+                                              bool remove) {
   if (!mgr.mask_del(op))
     return;
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
-  if (remove && mgr.mask() == operation::none)
+  if (remove && (mgr.mask() & operation::read_write) == operation::none)
     del(mgr.handle());
 }
 
-void epoll_multiplexer::set_timeout(
+void multithreaded_epoll_multiplexer::set_timeout(
   socket_manager& mgr, uint64_t timeout_id,
   std::chrono::system_clock::time_point when) {
   timeouts_.emplace(mgr.handle().id, when, timeout_id);
@@ -200,15 +210,15 @@ void epoll_multiplexer::set_timeout(
                        : when;
 }
 
-void epoll_multiplexer::del(socket handle) {
+void multithreaded_epoll_multiplexer::del(socket handle) {
   mod(handle.id, EPOLL_CTL_DEL, operation::none);
   managers_.erase(handle.id);
   if (shutting_down_ && managers_.empty())
     running_ = false;
 }
 
-epoll_multiplexer::manager_map::iterator
-epoll_multiplexer::del(manager_map::iterator it) {
+multithreaded_epoll_multiplexer::manager_map::iterator
+multithreaded_epoll_multiplexer::del(manager_map::iterator it) {
   auto fd = it->second->handle().id;
   mod(fd, EPOLL_CTL_DEL, operation::none);
   auto new_it = managers_.erase(it);
@@ -217,7 +227,11 @@ epoll_multiplexer::del(manager_map::iterator it) {
   return new_it;
 }
 
-void epoll_multiplexer::mod(int fd, int op, operation events) {
+void multithreaded_epoll_multiplexer::rearm(socket_manager_ptr& mgr) {
+  mod(mgr->handle().id, EPOLL_CTL_MOD, mgr->mask());
+}
+
+void multithreaded_epoll_multiplexer::mod(int fd, int op, operation events) {
   epoll_event event = {};
   event.events = static_cast<uint32_t>(events);
   event.data.fd = fd;
@@ -226,7 +240,7 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
       error(runtime_error, "epoll_ctl: " + std::string(strerror(errno))));
 }
 
-void epoll_multiplexer::handle_timeouts() {
+void multithreaded_epoll_multiplexer::handle_timeouts() {
   using namespace std::chrono;
   auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
   for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
@@ -245,7 +259,7 @@ void epoll_multiplexer::handle_timeouts() {
   }
 }
 
-void epoll_multiplexer::run() {
+void multithreaded_epoll_multiplexer::run() {
   while (running_) {
     if (poll_once(true))
       running_ = false;
@@ -253,8 +267,9 @@ void epoll_multiplexer::run() {
 }
 
 error_or<multiplexer_ptr>
-make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
-  auto mpx = std::make_shared<epoll_multiplexer>();
+make_multithreaded_epoll_multiplexer(socket_manager_factory_ptr factory,
+                                     uint16_t port, size_t num_threads) {
+  auto mpx = std::make_shared<multithreaded_epoll_multiplexer>(num_threads);
   if (auto err = mpx->init(std::move(factory), port))
     return err;
   return mpx;

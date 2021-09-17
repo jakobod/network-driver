@@ -20,6 +20,14 @@ std::string to_string(operation op) {
       return "write";
     case operation::read_write:
       return "read_write";
+    case operation::one_shot:
+      return "one_shot";
+    case operation::one_shot_read:
+      return "one_shot_read";
+    case operation::one_shot_write:
+      return "one_shot_write";
+    case operation::one_shot_read_write:
+      return "one_shot_read_write";
     default: {
       std::bitset<32> x(static_cast<uint32_t>(op));
       return "unknown operation: " + x.to_string();

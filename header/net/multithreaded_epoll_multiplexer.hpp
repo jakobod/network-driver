@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <optional>
 #include <set>
 #include <sys/epoll.h>
@@ -21,7 +22,7 @@
 
 namespace net {
 
-class epoll_multiplexer : public multiplexer {
+class multithreaded_epoll_multiplexer : public multiplexer {
   static constexpr size_t max_epoll_events = 32;
 
   using optional_timepoint
@@ -34,9 +35,9 @@ class epoll_multiplexer : public multiplexer {
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  epoll_multiplexer();
+  multithreaded_epoll_multiplexer(size_t num_threads);
 
-  ~epoll_multiplexer();
+  ~multithreaded_epoll_multiplexer();
 
   /// Initializes the multiplexer.
   error init(socket_manager_factory_ptr factory, uint16_t port) override;
@@ -81,7 +82,7 @@ public:
 
   // -- members ----------------------------------------------------------------
 
-  [[nodiscard]] uint16_t num_socket_managers() const {
+  [[nodiscard]] size_t num_socket_managers() const {
     return managers_.size();
   }
 
@@ -92,6 +93,9 @@ private:
   /// Deletes an existing socket_manager using its key `handle`.
   void del(socket handle);
 
+  /// Rearms an existing socket_manager for its events.
+  void rearm(socket_manager_ptr& mgr);
+
   /// Deletes an existing socket_manager using an iterator `it` to the
   /// manager_map.
   manager_map::iterator del(manager_map::iterator it);
@@ -99,6 +103,7 @@ private:
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
 
+  /// Searches for timeout events and handles them.
   void handle_timeouts();
 
   // pipe for synchronous access to mpx
@@ -107,7 +112,6 @@ private:
 
   // epoll variables
   epoll_fd epoll_fd_ = invalid_socket_id;
-  pollset pollset_;
   manager_map managers_;
 
   // timeout handling
@@ -115,10 +119,10 @@ private:
   optional_timepoint current_timeout_ = std::nullopt;
 
   // thread variables
-  bool shutting_down_ = false;
-  bool running_ = false;
-  std::thread mpx_thread_;
-  std::thread::id mpx_thread_id_;
+  std::atomic_bool shutting_down_ = false;
+  std::atomic_bool running_ = false;
+  std::vector<std::thread> mpx_threads_;
+  std::set<std::thread::id> mpx_thread_ids_;
 };
 
 error_or<multiplexer_ptr>

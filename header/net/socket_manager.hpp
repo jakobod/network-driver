@@ -10,6 +10,7 @@
 #pragma once
 
 #include "fwd.hpp"
+#include "net/event_result.hpp"
 #include "net/operation.hpp"
 #include "net/socket.hpp"
 
@@ -72,11 +73,11 @@ public:
 
   // -- event handling ---------------------------------------------------------
 
-  virtual bool handle_read_event() = 0;
+  virtual event_result handle_read_event() = 0;
 
-  virtual bool handle_write_event() = 0;
+  virtual event_result handle_write_event() = 0;
 
-  virtual bool handle_timeout(uint64_t timeout_id) = 0;
+  virtual event_result handle_timeout(uint64_t timeout_id) = 0;
 
   // -- stringification --------------------------------------------------------
 

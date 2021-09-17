@@ -38,11 +38,11 @@ public:
 
   // -- interface functions ----------------------------------------------------
 
-  bool handle_read_event() override;
+  event_result handle_read_event() override;
 
-  bool handle_write_event() override;
+  event_result handle_write_event() override;
 
-  bool handle_timeout(uint64_t timeout_id) override;
+  event_result handle_timeout(uint64_t timeout_id) override;
 
   virtual std::string me() const {
     return "pollset_updater";
