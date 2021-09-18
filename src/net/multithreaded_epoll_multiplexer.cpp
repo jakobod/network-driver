@@ -143,10 +143,10 @@ error multithreaded_epoll_multiplexer::poll_once(bool blocking) {
         del(socket{event.data.fd});
         continue;
       } else {
-        auto& mgr = managers_[static_cast<int>(event.data.fd)];
-        auto handle_result = [&](event_result res) -> bool {
+        auto& mgr = managers_[event.data.fd];
+        auto handle_result = [&](event_result res, operation op) -> bool {
           if (res == event_result::done) {
-            disable(*mgr, operation::read);
+            disable(*mgr, op);
           } else if (res == event_result::error) {
             del(mgr->handle());
             return false;
@@ -154,11 +154,11 @@ error multithreaded_epoll_multiplexer::poll_once(bool blocking) {
           return true;
         };
         if ((event.events & operation::read) == operation::read) {
-          if (!handle_result(mgr->handle_read_event()))
+          if (!handle_result(mgr->handle_read_event(), operation::read))
             continue;
         }
         if ((event.events & operation::write) == operation::write) {
-          if (!handle_result(mgr->handle_write_event()))
+          if (!handle_result(mgr->handle_write_event(), operation::write))
             continue;
         }
         rearm(mgr);

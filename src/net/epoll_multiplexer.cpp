@@ -122,11 +122,9 @@ error epoll_multiplexer::poll_once(bool blocking) {
     auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
     return (timeout_tp - now).count();
   };
-
   auto to = timeout();
   auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
                                static_cast<int>(pollset_.size()), to);
-  //  next_wakeup.count());
   if (num_events < 0) {
     return (errno == EINTR) ? none : error{runtime_error, strerror(errno)};
   } else {
@@ -139,10 +137,10 @@ error epoll_multiplexer::poll_once(bool blocking) {
         del(socket{event.data.fd});
         continue;
       } else {
-        auto& mgr = managers_[static_cast<int>(event.data.fd)];
-        auto handle_result = [&](event_result res) -> bool {
+        auto& mgr = managers_[event.data.fd];
+        auto handle_result = [&](event_result res, operation op) -> bool {
           if (res == event_result::done) {
-            disable(*mgr, operation::read);
+            disable(*mgr, op);
           } else if (res == event_result::error) {
             del(mgr->handle());
             return false;
@@ -150,11 +148,11 @@ error epoll_multiplexer::poll_once(bool blocking) {
           return true;
         };
         if ((event.events & operation::read) == operation::read) {
-          if (!handle_result(mgr->handle_read_event()))
+          if (!handle_result(mgr->handle_read_event(), operation::read))
             continue;
         }
         if ((event.events & operation::write) == operation::write) {
-          if (!handle_result(mgr->handle_write_event()))
+          if (!handle_result(mgr->handle_write_event(), operation::write))
             continue;
         }
       }
