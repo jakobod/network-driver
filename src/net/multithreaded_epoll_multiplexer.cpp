@@ -59,10 +59,6 @@ void multithreaded_epoll_multiplexer::start() {
       thread = std::thread(&multithreaded_epoll_multiplexer::run, this);
       mpx_thread_ids_.emplace(thread.get_id());
     }
-    std::cerr << "[mmpx] ";
-    for (auto id : mpx_thread_ids_)
-      std::cerr << id << ", ";
-    std::cerr << std::endl;
     running_ = true;
   }
 }
@@ -136,12 +132,7 @@ error multithreaded_epoll_multiplexer::poll_once(bool blocking) {
   auto num_events = epoll_wait(epoll_fd_, events.data(),
                                static_cast<int>(events.size()), to);
   if (num_events < 0) {
-    switch (errno) {
-      case EINTR:
-        return none;
-      default:
-        return error{runtime_error, strerror(errno)};
-    }
+    return (errno == EINTR) ? none : error{runtime_error, strerror(errno)};
   } else {
     handle_timeouts();
     for (int i = 0; i < num_events; ++i) {
@@ -205,9 +196,10 @@ void multithreaded_epoll_multiplexer::set_timeout(
   socket_manager& mgr, uint64_t timeout_id,
   std::chrono::system_clock::time_point when) {
   timeouts_.emplace(mgr.handle().id, when, timeout_id);
-  current_timeout_ = (current_timeout_ != std::nullopt)
-                       ? std::min(when, *current_timeout_)
-                       : when;
+  auto next_timeout = (current_timeout_ != std::nullopt)
+                        ? std::min(when, *current_timeout_)
+                        : when;
+  set_current_timeout(next_timeout);
 }
 
 void multithreaded_epoll_multiplexer::del(socket handle) {
@@ -242,21 +234,30 @@ void multithreaded_epoll_multiplexer::mod(int fd, int op, operation events) {
 
 void multithreaded_epoll_multiplexer::handle_timeouts() {
   using namespace std::chrono;
+  if (timeouts_.empty() || !handle_timeouts_lock_.try_lock())
+    return;
   auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
-  for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
-    auto& entry = *it;
-    auto when = time_point_cast<milliseconds>(entry.when);
+  auto it = timeouts_.begin();
+  for (; it != timeouts_.end(); ++it) {
+    auto when = time_point_cast<milliseconds>(it->when);
     if (when <= now) {
-      managers_.at(entry.hdl)->handle_timeout(entry.id);
+      managers_.at(it->hdl)->handle_timeout(it->id);
     } else {
-      timeouts_.erase(timeouts_.begin(), it);
       if (timeouts_.empty())
-        current_timeout_ = std::nullopt;
+        set_current_timeout(std::nullopt);
       else
-        current_timeout_ = entry.when;
+        set_current_timeout(it->when);
       break;
     }
   }
+  timeouts_.erase(timeouts_.begin(), it);
+  handle_timeouts_lock_.unlock();
+}
+
+void multithreaded_epoll_multiplexer::set_current_timeout(
+  optional_timepoint when) {
+  std::lock_guard<std::mutex> guard(current_timeout_lock_);
+  current_timeout_ = when;
 }
 
 void multithreaded_epoll_multiplexer::run() {

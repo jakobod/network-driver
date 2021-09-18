@@ -128,23 +128,19 @@ error epoll_multiplexer::poll_once(bool blocking) {
                                static_cast<int>(pollset_.size()), to);
   //  next_wakeup.count());
   if (num_events < 0) {
-    switch (errno) {
-      case EINTR:
-        return none;
-      default:
-        return error{runtime_error, strerror(errno)};
-    }
+    return (errno == EINTR) ? none : error{runtime_error, strerror(errno)};
   } else {
     handle_timeouts();
     for (int i = 0; i < num_events; ++i) {
-      if (pollset_[i].events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
+      auto& event = pollset_[i];
+      if (event.events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
         std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
                   << std::endl;
-        del(socket{pollset_[i].data.fd});
+        del(socket{event.data.fd});
         continue;
       } else {
-        auto handle_result = [&](event_result res,
-                                 socket_manager_ptr& mgr) -> bool {
+        auto& mgr = managers_[static_cast<int>(event.data.fd)];
+        auto handle_result = [&](event_result res) -> bool {
           if (res == event_result::done) {
             disable(*mgr, operation::read);
           } else if (res == event_result::error) {
@@ -153,14 +149,12 @@ error epoll_multiplexer::poll_once(bool blocking) {
           }
           return true;
         };
-        if ((pollset_[i].events & operation::read) == operation::read) {
-          auto& mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-          if (!handle_result(mgr->handle_read_event(), mgr))
+        if ((event.events & operation::read) == operation::read) {
+          if (!handle_result(mgr->handle_read_event()))
             continue;
         }
-        if ((pollset_[i].events & operation::write) == operation::write) {
-          auto& mgr = managers_[static_cast<int>(pollset_[i].data.fd)];
-          if (!handle_result(mgr->handle_write_event(), mgr))
+        if ((event.events & operation::write) == operation::write) {
+          if (!handle_result(mgr->handle_write_event()))
             continue;
         }
       }

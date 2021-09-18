@@ -35,7 +35,7 @@ class multithreaded_epoll_multiplexer : public multiplexer {
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  multithreaded_epoll_multiplexer(size_t num_threads);
+  explicit multithreaded_epoll_multiplexer(size_t num_threads);
 
   ~multithreaded_epoll_multiplexer();
 
@@ -106,6 +106,9 @@ private:
   /// Searches for timeout events and handles them.
   void handle_timeouts();
 
+  /// Sets current_timeout
+  void set_current_timeout(optional_timepoint when);
+
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_;
   pipe_socket pipe_reader_;
@@ -123,6 +126,10 @@ private:
   std::atomic_bool running_ = false;
   std::vector<std::thread> mpx_threads_;
   std::set<std::thread::id> mpx_thread_ids_;
+
+  // timeout lock
+  std::mutex current_timeout_lock_;
+  std::mutex handle_timeouts_lock_;
 };
 
 error_or<multiplexer_ptr>

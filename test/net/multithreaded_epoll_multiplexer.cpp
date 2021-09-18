@@ -105,6 +105,22 @@ struct multithreaded_epoll_multiplexer_test : public testing::Test {
     return std::get<tcp_stream_socket>(sock_res);
   }
 
+  void join_all(auto& vec) {
+    for (auto& t : vec)
+      if (t.joinable())
+        t.join();
+  }
+
+  std::vector<std::thread> run_multithreaded(size_t num_threads, bool join) {
+    auto f = [&]() { EXPECT_EQ(mpx.poll_once(true), none); };
+    std::vector<std::thread> threads(num_threads);
+    for (auto& t : threads)
+      t = std::thread{f};
+    if (join)
+      join_all(threads);
+    return threads;
+  };
+
   bool handled_read_event = false;
   bool handled_write_event = false;
   socket_manager_factory_ptr factory;
@@ -188,7 +204,7 @@ TEST_F(multithreaded_epoll_multiplexer_test, multiple_timeouts) {
     duration += 10ms;
   }
   while (handled_timeouts.size() < expected_result.size())
-    EXPECT_EQ(mpx.poll_once(true), none);
+    run_multithreaded(2, true);
   EXPECT_EQ(handled_timeouts.size(), expected_result.size());
   EXPECT_EQ(memcmp(handled_timeouts.data(), expected_result.data(),
                    handled_timeouts.size()),
@@ -196,10 +212,7 @@ TEST_F(multithreaded_epoll_multiplexer_test, multiple_timeouts) {
 }
 
 TEST_F(multithreaded_epoll_multiplexer_test, multiple_threads_polling) {
-  auto f = [&]() { EXPECT_EQ(mpx.poll_once(true), none); };
-  std::array<std::thread, 10> threads;
-  for (auto& t : threads)
-    t = std::thread{f};
+  auto threads = run_multithreaded(10, false);
   std::this_thread::sleep_for(10ms);
   for (size_t i = 0; i < threads.size(); ++i) {
     connect_to_mpx();
@@ -207,7 +220,5 @@ TEST_F(multithreaded_epoll_multiplexer_test, multiple_threads_polling) {
   }
   EXPECT_EQ(mpx.num_socket_managers(),
             default_num_socket_managers + threads.size());
-  for (auto& t : threads)
-    if (t.joinable())
-      t.join();
+  join_all(threads);
 }
