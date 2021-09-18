@@ -28,10 +28,6 @@ public:
 
   event_result handle_timeout(uint64_t timeout_id) override;
 
-  virtual std::string me() const {
-    return "acceptor";
-  }
-
 private:
   socket_manager_factory_ptr factory_;
 };

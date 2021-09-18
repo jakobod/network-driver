@@ -79,22 +79,6 @@ public:
 
   virtual event_result handle_timeout(uint64_t timeout_id) = 0;
 
-  // -- stringification --------------------------------------------------------
-
-  virtual std::string me() const {
-    return "socket_manager";
-  }
-
-  virtual std::string additional_info() const {
-    return "";
-  }
-
-  friend std::ostream& operator<<(std::ostream& os, const socket_manager& mgr) {
-    return os << "[" << mgr.me() << "]: handle = " << mgr.handle().id
-              << ", mask = " << to_string(mgr.mask()) << ", "
-              << mgr.additional_info();
-  }
-
 private:
   socket handle_;
 
