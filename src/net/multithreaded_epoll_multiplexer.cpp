@@ -172,6 +172,8 @@ void multithreaded_epoll_multiplexer::add(socket_manager_ptr mgr,
                                           operation initial) {
   if (!mgr->mask_add(initial | operation::one_shot))
     return;
+  if (!nonblocking(mgr->handle(), true))
+    handle_error(error(socket_operation_failed, "Could not set nonblocking"));
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
   managers_.emplace(mgr->handle().id, std::move(mgr));
 }

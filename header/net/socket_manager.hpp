@@ -79,6 +79,8 @@ public:
 
   virtual event_result handle_timeout(uint64_t timeout_id) = 0;
 
+  void handle_error(error err);
+
 private:
   socket handle_;
 
