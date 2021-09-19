@@ -6,8 +6,12 @@
 #pragma once
 
 #include "fwd.hpp"
+#include "net/error.hpp"
+#include "net/operation.hpp"
+#include "net/tcp_stream_socket.hpp"
 
 #include <chrono>
+#include <string>
 
 namespace net {
 
@@ -58,6 +62,19 @@ public:
                            std::chrono::system_clock::time_point when)
     = 0;
 
+  template <class Manager, class... Ts>
+  error tcp_connect(std::string host, uint16_t port, net::operation initial_op,
+                    Ts&&... xs) {
+    auto sock = net::make_connected_tcp_stream_socket(std::move(host), port);
+    if (auto err = get_error(sock))
+      return *err;
+    auto mgr = std::make_shared<Manager>(std::get<tcp_stream_socket>(sock),
+                                         this, std::forward<Ts>(xs)...);
+    if (auto err = mgr->init())
+      return err;
+    add(std::move(mgr), initial_op);
+    return none;
+  }
   // -- members ----------------------------------------------------------------
 
   /// Returns the port the multiplexer is listening on.
