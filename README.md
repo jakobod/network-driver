@@ -5,31 +5,9 @@
 - https://idea.popcount.org/2017-03-20-epoll-is-fundamentally-broken-22/
 
 # TODO
-- [ ] set nonblocking on all sockets in the multiplexer
+- [x] epoll implementation
+- [x] multithreaded epoll implementation
 - [ ] io_uring implementation
 - [ ] EBPF?! - https://www.nginx.com/blog/our-roadmap-quic-http-3-support-nginx/
 
-- [ ] Think about how to benchmark
-- [ ] Measure all things individually
-  - [ ] Latency
-  - [ ] Throughput
-
-- [ ] Include Drivers for different benchmarks
-  - Driver types
-    - Max-out driver
-    - Max-connection driver
-    - max throughput driver
-    - only reading
-    - only writing
-    - bursts of connections/data
-    - fluctuating load
-
-- Tests
-  - [x] acceptor
-  - epoll_multiplexer
-  - pipe_socket
-  - pollset_updater
-  - raw_socket
-  - [x] stream_socket
-  - [x] tcp_accept_socket
-  - [x] tcp_stream_socket
+- [ ] Implement receive-semantics at_most, at_least, exactly
