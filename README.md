@@ -10,4 +10,4 @@
 - [ ] io_uring implementation
 - [ ] EBPF?! - https://www.nginx.com/blog/our-roadmap-quic-http-3-support-nginx/
 
-- [ ] Implement receive-semantics at_most, at_least, exactly
+- [x] Implement receive-semantics at_most, at_least, exactly

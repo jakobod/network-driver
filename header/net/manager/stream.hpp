@@ -11,6 +11,7 @@
 
 #include "fwd.hpp"
 #include "net/error.hpp"
+#include "net/receive_policy.hpp"
 #include "net/stream_socket.hpp"
 
 namespace net::manager {
@@ -42,7 +43,7 @@ public:
       auto read_res = read(handle<stream_socket>(), std::span(data, size));
       if (read_res > 0) {
         received_ += read_res;
-        if (received_ == read_buffer_.size()) {
+        if (received_ >= min_read_size_) {
           if (application_.consume(*this, read_buffer_) == event_result::error)
             return event_result::error;
         }
@@ -99,10 +100,11 @@ public:
   // -- public API -------------------------------------------------------------
 
   /// Configures the amount to be read next
-  void configure_next_read(size_t size) {
+  void configure_next_read(receive_policy policy) {
     received_ = 0;
-    if (read_buffer_.size() != size)
-      read_buffer_.resize(size);
+    min_read_size_ = policy.min_size;
+    if (read_buffer_.size() != policy.max_size)
+      read_buffer_.resize(policy.max_size);
   }
 
   /// Returns a reference to the send_buffer
@@ -115,6 +117,7 @@ private:
 
   size_t received_ = 0;
   size_t written_ = 0;
+  size_t min_read_size_ = 0;
 
   util::byte_buffer read_buffer_;
   util::byte_buffer write_buffer_;

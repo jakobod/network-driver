@@ -13,6 +13,7 @@
 #include "net/error.hpp"
 #include "net/manager/stream.hpp"
 #include "net/multiplexer.hpp"
+#include "net/receive_policy.hpp"
 #include "net/stream_socket.hpp"
 
 using namespace net;
@@ -74,7 +75,7 @@ struct dummy_application {
 
   template <class Parent>
   error init(Parent& parent) {
-    parent.configure_next_read(1024);
+    parent.configure_next_read(receive_policy::exactly(1024));
     return none;
   }
 
@@ -94,7 +95,7 @@ struct dummy_application {
   template <class Parent>
   event_result consume(Parent& parent, util::const_byte_span data) {
     received_.insert(received_.end(), data.begin(), data.end());
-    parent.configure_next_read(1024);
+    parent.configure_next_read(receive_policy::exactly(1024));
     return event_result::ok;
   }
 
