@@ -13,13 +13,12 @@ namespace net {
 /// Operation abstraction with same definition as epoll.
 enum class operation : uint32_t {
   none = 0x000,
-  read = 0x001,
-  write = 0x004,
-  read_write = 0x001 | 0x004,
+  read = EPOLLIN,
+  write = EPOLLOUT,
+  read_write = read | write,
+  edge_triggered = EPOLLET,
+  exclusive = EPOLLEXCLUSIVE,
   one_shot = EPOLLONESHOT,
-  one_shot_read = read | one_shot,
-  one_shot_write = write | one_shot,
-  one_shot_read_write = read_write | one_shot,
 };
 
 /// @relates operation

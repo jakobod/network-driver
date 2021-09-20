@@ -44,7 +44,9 @@ public:
       if (read_res > 0) {
         received_ += read_res;
         if (received_ >= min_read_size_) {
-          if (application_.consume(*this, read_buffer_) == event_result::error)
+          if (application_.consume(*this,
+                                   std::span(read_buffer_.data(), received_))
+              == event_result::error)
             return event_result::error;
         }
       } else if (read_res == 0) {

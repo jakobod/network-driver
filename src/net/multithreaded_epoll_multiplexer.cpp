@@ -55,11 +55,11 @@ error multithreaded_epoll_multiplexer::init(socket_manager_factory_ptr factory,
 
 void multithreaded_epoll_multiplexer::start() {
   if (!running_) {
+    running_ = true;
     for (auto& thread : mpx_threads_) {
       thread = std::thread(&multithreaded_epoll_multiplexer::run, this);
       mpx_thread_ids_.emplace(thread.get_id());
     }
-    running_ = true;
   }
 }
 
