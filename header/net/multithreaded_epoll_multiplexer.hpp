@@ -133,6 +133,7 @@ private:
 };
 
 error_or<multiplexer_ptr>
-make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port = 0);
+make_multithreaded_epoll_multiplexer(socket_manager_factory_ptr factory,
+                                     size_t num_threads, uint16_t port = 0);
 
 } // namespace net

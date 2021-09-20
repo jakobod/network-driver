@@ -27,6 +27,7 @@ make -C build test
 # TODO
 - [x] epoll implementation
 - [x] multithreaded epoll implementation
+  - [ ] Check for race-conditions?!
 - [ ] io_uring implementation
 - [ ] EBPF?! - https://www.nginx.com/blog/our-roadmap-quic-http-3-support-nginx/
 

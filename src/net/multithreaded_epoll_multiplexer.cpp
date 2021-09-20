@@ -271,7 +271,7 @@ void multithreaded_epoll_multiplexer::run() {
 
 error_or<multiplexer_ptr>
 make_multithreaded_epoll_multiplexer(socket_manager_factory_ptr factory,
-                                     uint16_t port, size_t num_threads) {
+                                     size_t num_threads, uint16_t port) {
   auto mpx = std::make_shared<multithreaded_epoll_multiplexer>(num_threads);
   if (auto err = mpx->init(std::move(factory), port))
     return err;
