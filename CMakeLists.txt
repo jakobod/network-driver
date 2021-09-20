@@ -74,6 +74,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/multithreaded_epoll_multiplexer.cpp
     test/net/tcp_socket.cpp
     test/net/manager/stream.cpp
+    test/util/scope_guard.cpp
   )
 
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")

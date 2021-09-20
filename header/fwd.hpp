@@ -48,6 +48,9 @@ class socket_guard;
 
 namespace util {
 
+template <class Func>
+class scope_guard;
+
 using byte_buffer = std::vector<std::byte>;
 using byte_span = std::span<std::byte>;
 using const_byte_span = std::span<const std::byte>;
