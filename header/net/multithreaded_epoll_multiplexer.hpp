@@ -24,6 +24,8 @@ namespace net {
 
 class multithreaded_epoll_multiplexer : public multiplexer {
   static constexpr size_t max_epoll_events = 32;
+  static constexpr operation additional_epoll_flags
+    = (operation::edge_triggered | operation::one_shot);
 
   using optional_timepoint
     = std::optional<std::chrono::system_clock::time_point>;

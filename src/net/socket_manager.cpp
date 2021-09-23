@@ -28,14 +28,14 @@ socket_manager::~socket_manager() {
 }
 
 socket_manager::socket_manager(socket_manager&& other)
-  : handle_(other.handle_), mask_(other.mask_), mpx_(other.mpx_) {
+  : handle_(other.handle_), mask_(other.mask_.load()), mpx_(other.mpx_) {
   other.handle_ = invalid_socket;
 }
 
 socket_manager& socket_manager::operator=(socket_manager&& other) {
   handle_ = other.handle_;
   other.handle_ = invalid_socket;
-  mask_ = other.mask_;
+  mask_ = other.mask_.load();
   mpx_ = other.mpx_;
   return *this;
 }

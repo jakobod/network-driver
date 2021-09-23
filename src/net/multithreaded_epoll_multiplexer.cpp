@@ -138,26 +138,26 @@ error multithreaded_epoll_multiplexer::poll_once(bool blocking) {
     for (int i = 0; i < num_events; ++i) {
       auto& event = events[i];
       if (event.events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
-        std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
-                  << std::endl;
         del(socket{event.data.fd});
         continue;
       } else {
         auto& mgr = managers_[event.data.fd];
         auto handle_result = [&](event_result res, operation op) -> bool {
-          if (res == event_result::done) {
-            disable(*mgr, op);
+          if (res == event_result::ok) {
+            mgr->mask_add(op);
           } else if (res == event_result::error) {
             del(mgr->handle());
             return false;
           }
           return true;
         };
-        if ((event.events & operation::read) == operation::read) {
+        auto op = static_cast<operation>(event.events);
+        mgr->mask_del(op);
+        if ((op & operation::read) == operation::read) {
           if (!handle_result(mgr->handle_read_event(), operation::read))
             continue;
         }
-        if ((event.events & operation::write) == operation::write) {
+        if ((op & operation::write) == operation::write) {
           if (!handle_result(mgr->handle_write_event(), operation::write))
             continue;
         }
@@ -170,11 +170,11 @@ error multithreaded_epoll_multiplexer::poll_once(bool blocking) {
 
 void multithreaded_epoll_multiplexer::add(socket_manager_ptr mgr,
                                           operation initial) {
-  if (!mgr->mask_add(initial | operation::one_shot))
+  if (!mgr->mask_add(initial))
     return;
   if (!nonblocking(mgr->handle(), true))
     handle_error(error(socket_operation_failed, "Could not set nonblocking"));
-  mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
+  mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask() | additional_epoll_flags);
   managers_.emplace(mgr->handle().id, std::move(mgr));
 }
 
@@ -182,14 +182,14 @@ void multithreaded_epoll_multiplexer::enable(socket_manager& mgr,
                                              operation op) {
   if (!mgr.mask_add(op))
     return;
-  mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
+  mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask() | additional_epoll_flags);
 }
 
 void multithreaded_epoll_multiplexer::disable(socket_manager& mgr, operation op,
                                               bool remove) {
   if (!mgr.mask_del(op))
     return;
-  mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
+  mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask() | additional_epoll_flags);
   if (remove && (mgr.mask() & operation::read_write) == operation::none)
     del(mgr.handle());
 }
@@ -222,7 +222,7 @@ multithreaded_epoll_multiplexer::del(manager_map::iterator it) {
 }
 
 void multithreaded_epoll_multiplexer::rearm(socket_manager_ptr& mgr) {
-  mod(mgr->handle().id, EPOLL_CTL_MOD, mgr->mask());
+  mod(mgr->handle().id, EPOLL_CTL_MOD, mgr->mask() | additional_epoll_flags);
 }
 
 void multithreaded_epoll_multiplexer::mod(int fd, int op, operation events) {
@@ -243,7 +243,9 @@ void multithreaded_epoll_multiplexer::handle_timeouts() {
   for (; it != timeouts_.end(); ++it) {
     auto when = time_point_cast<milliseconds>(it->when);
     if (when <= now) {
-      managers_.at(it->hdl)->handle_timeout(it->id);
+      auto& mgr = managers_.at(it->hdl);
+      mgr->handle_timeout(it->id);
+      rearm(mgr);
     } else {
       if (timeouts_.empty())
         set_current_timeout(std::nullopt);

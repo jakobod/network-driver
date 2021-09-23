@@ -15,19 +15,19 @@ std::string to_string(operation op) {
     return (mask & what) == what;
   };
   if (op == operation::none)
-    return "none";
+    return "[ none ]";
   std::stringstream ss;
-  ss << "operation::[";
+  ss << "[";
   if (contains(op, operation::read))
-    ss << "read|";
+    ss << " read ";
   if (contains(op, operation::write))
-    ss << "write|";
+    ss << " write ";
   if (contains(op, operation::edge_triggered))
-    ss << "edge_triggered|";
+    ss << " edge_triggered ";
   if (contains(op, operation::exclusive))
-    ss << "exclusive";
+    ss << " exclusive ";
   if (contains(op, operation::one_shot))
-    ss << "one_shot";
+    ss << " one_shot ";
   ss << "]";
   return ss.str();
 }

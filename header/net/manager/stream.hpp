@@ -13,6 +13,7 @@
 #include "net/error.hpp"
 #include "net/receive_policy.hpp"
 #include "net/stream_socket.hpp"
+#include "util/scope_guard.hpp"
 
 namespace net::manager {
 
@@ -37,6 +38,12 @@ public:
   // -- socket_manager API -----------------------------------------------------
 
   event_result handle_read_event() override {
+    // TODO: This is for debugging multithreaded runs.
+    if (!read_lock_.try_lock()) {
+      std::cerr << "MULTIPLE READING" << std::endl;
+      return event_result::done;
+    }
+    util::scope_guard([&]() { read_lock_.unlock(); });
     for (size_t i = 0; i < max_consecutive_reads; ++i) {
       auto data = read_buffer_.data() + received_;
       auto size = read_buffer_.size() - received_;
@@ -65,29 +72,32 @@ public:
   }
 
   event_result handle_write_event() override {
+    // TODO: This is for debugging multithreaded runs.
+    if (!write_lock_.try_lock()) {
+      std::cerr << "MULTIPLE WRITING" << std::endl;
+      return event_result::done;
+    }
+    util::scope_guard([&]() { write_lock_.unlock(); });
     auto done_writing = [&]() {
-      return (write_buffer_.empty() && !application_.has_more_data());
+      return (write_buffer_.empty() && !application_.produce(*this));
     };
     auto fetch = [&]() {
-      auto fetched = application_.has_more_data();
-      for (size_t i = 0;
-           application_.has_more_data() && (i < max_consecutive_fetches); ++i)
-        application_.produce(*this);
-      return fetched;
+      if (!write_buffer_.empty())
+        return false;
+      size_t i = 0;
+      for (; application_.produce(*this) && (i < max_consecutive_fetches); ++i)
+        ;
+      return i != 0;
     };
-    if (write_buffer_.empty())
-      if (!fetch())
-        return event_result::done;
+    if (!fetch())
+      return event_result::done;
     for (size_t i = 0; i < max_consecutive_writes; ++i) {
-      auto num_bytes = write_buffer_.size() - written_;
-      auto write_res = write(handle<stream_socket>(),
-                             std::span(write_buffer_.data(), num_bytes));
+      auto write_res = write(handle<stream_socket>(), write_buffer_);
       if (write_res > 0) {
         write_buffer_.erase(write_buffer_.begin(),
                             write_buffer_.begin() + write_res);
-        if (write_buffer_.empty())
-          if (!fetch())
-            return event_result::done;
+        if (!fetch())
+          return event_result::done;
       } else {
         if (last_socket_error_is_temporary()) {
           return event_result::ok;
@@ -123,14 +133,18 @@ public:
   }
 
 private:
+  std::mutex buffer_lock_;
   Application application_;
 
   size_t received_ = 0;
-  size_t written_ = 0;
   size_t min_read_size_ = 0;
 
   util::byte_buffer read_buffer_;
   util::byte_buffer write_buffer_;
+  util::byte_buffer data_buffer_;
+
+  std::mutex read_lock_;
+  std::mutex write_lock_;
 };
 
 } // namespace net::manager

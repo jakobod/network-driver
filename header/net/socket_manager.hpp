@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #include "fwd.hpp"
 #include "net/event_result.hpp"
 #include "net/operation.hpp"
@@ -84,7 +86,7 @@ public:
 private:
   socket handle_;
 
-  operation mask_;
+  std::atomic<operation> mask_;
 
   multiplexer* mpx_;
 };
