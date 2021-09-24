@@ -7,8 +7,6 @@
 
 #include "util/scope_guard.hpp"
 
-using namespace net;
-
 TEST(scope_guard_test, func_executed) {
   bool executed = false;
   {

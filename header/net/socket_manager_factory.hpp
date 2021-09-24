@@ -1,7 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 07.04.2021
  */
 
 #pragma once

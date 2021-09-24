@@ -7,11 +7,15 @@
 
 #include "net/socket_manager.hpp"
 
+#include <memory>
 #include <utility>
 
 #include "fwd.hpp"
 #include "net/error.hpp"
+#include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"
+#include "net/socket.hpp"
+#include "net/socket_manager_factory.hpp"
 #include "net/stream_socket.hpp"
 #include "util/scope_guard.hpp"
 
@@ -51,9 +55,8 @@ public:
       if (read_res > 0) {
         received_ += read_res;
         if (received_ >= min_read_size_) {
-          if (application_.consume(*this,
-                                   std::span(read_buffer_.data(), received_))
-              == event_result::error)
+          if (!application_.consume(*this,
+                                    std::span(read_buffer_.data(), received_)))
             return event_result::error;
         }
       } else if (read_res == 0) {
@@ -81,22 +84,14 @@ public:
     auto done_writing = [&]() {
       return (write_buffer_.empty() && !application_.produce(*this));
     };
-    auto fetch = [&]() {
-      if (!write_buffer_.empty())
-        return false;
-      size_t i = 0;
-      for (; application_.produce(*this) && (i < max_consecutive_fetches); ++i)
-        ;
-      return i != 0;
-    };
-    if (!fetch())
+    if (done_writing())
       return event_result::done;
     for (size_t i = 0; i < max_consecutive_writes; ++i) {
       auto write_res = write(handle<stream_socket>(), write_buffer_);
       if (write_res > 0) {
         write_buffer_.erase(write_buffer_.begin(),
                             write_buffer_.begin() + write_res);
-        if (!fetch())
+        if (done_writing())
           return event_result::done;
       } else {
         if (last_socket_error_is_temporary()) {
@@ -145,6 +140,16 @@ private:
 
   std::mutex read_lock_;
   std::mutex write_lock_;
+};
+
+template <class Application>
+class stream_factory : public socket_manager_factory {
+public:
+  socket_manager_ptr make(socket handle, multiplexer* mpx) override {
+    using manager_type = stream<Application>;
+    return std::make_shared<manager_type>(socket_cast<stream_socket>(handle),
+                                          mpx);
+  };
 };
 
 } // namespace net::manager

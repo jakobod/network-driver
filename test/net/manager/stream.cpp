@@ -80,23 +80,21 @@ struct dummy_application {
   }
 
   template <class Parent>
-  event_result produce(Parent& parent) {
+  bool produce(Parent& parent) {
+    if (data_.empty())
+      return false;
     auto& buf = parent.write_buffer();
     auto size = std::min(size_t{1024}, data_.size());
     buf.insert(buf.end(), data_.begin(), data_.begin() + size);
     data_ = data_.subspan(size);
-    return event_result::ok;
-  }
-
-  bool has_more_data() {
-    return !data_.empty();
+    return true;
   }
 
   template <class Parent>
-  event_result consume(Parent& parent, util::const_byte_span data) {
+  bool consume(Parent& parent, util::const_byte_span data) {
     received_.insert(received_.end(), data.begin(), data.end());
     parent.configure_next_read(receive_policy::exactly(1024));
-    return event_result::ok;
+    return true;
   }
 
   template <class Parent>
