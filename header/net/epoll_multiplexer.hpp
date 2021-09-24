@@ -81,7 +81,7 @@ public:
 
   // -- members ----------------------------------------------------------------
 
-  [[nodiscard]] uint16_t num_socket_managers() const {
+  size_t num_socket_managers() override {
     return managers_.size();
   }
 

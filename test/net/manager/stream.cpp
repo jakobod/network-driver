@@ -65,6 +65,10 @@ struct dummy_multiplexer : public multiplexer {
                    std::chrono::system_clock::time_point) override {
     // nop
   }
+
+  size_t num_socket_managers() override {
+    return 0;
+  }
 };
 
 struct dummy_application {

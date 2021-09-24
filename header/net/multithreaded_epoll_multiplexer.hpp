@@ -84,7 +84,7 @@ public:
 
   // -- members ----------------------------------------------------------------
 
-  [[nodiscard]] size_t num_socket_managers() const {
+  [[nodiscard]] size_t num_socket_managers() override {
     return managers_.size();
   }
 

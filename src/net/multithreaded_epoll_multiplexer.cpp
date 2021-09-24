@@ -129,8 +129,11 @@ error multithreaded_epoll_multiplexer::poll_once(bool blocking) {
   };
   auto to = timeout();
   pollset events;
+  std::cerr << std::this_thread::get_id() << " polling" << std::endl;
   auto num_events = epoll_wait(epoll_fd_, events.data(),
                                static_cast<int>(events.size()), to);
+  std::cerr << std::this_thread::get_id() << " handling " << num_events
+            << std::endl;
   if (num_events < 0) {
     return (errno == EINTR) ? none : error{runtime_error, strerror(errno)};
   } else {

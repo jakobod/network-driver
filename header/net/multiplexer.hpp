@@ -75,12 +75,15 @@ public:
     add(std::move(mgr), initial_op);
     return none;
   }
+
   // -- members ----------------------------------------------------------------
 
   /// Returns the port the multiplexer is listening on.
   [[nodiscard]] uint16_t port() const noexcept {
     return port_;
   }
+
+  virtual size_t num_socket_managers() = 0;
 
 protected:
   uint16_t port_ = 0;

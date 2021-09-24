@@ -63,6 +63,10 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
+  size_t num_socket_managers() override {
+    return 0;
+  }
+
   error last_error;
   socket_manager_ptr mgr = nullptr;
 };
