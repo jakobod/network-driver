@@ -47,6 +47,11 @@ error* get_error(error_or<T>& maybe_error) {
   return std::get_if<error>(&maybe_error);
 }
 
+template <class T>
+T& get(error_or<T>& maybe_error) {
+  return std::get<T>(maybe_error);
+}
+
 std::string to_string(const error& err);
 
 } // namespace net

@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_compile_options(-Wall -Wextra -pedantic)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # -- find or fetch dependencies ------------------------------------------------
 
@@ -28,6 +29,10 @@ if (LIB_NET_ENABLE_TESTS)
     URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
   )
   FetchContent_MakeAvailable(googletest)
+endif()
+
+if(LIB_NET_ENABLE_URING)
+  find_package(IoUring REQUIRED)
 endif()
 
 # -- project files -------------------------------------------------------------
@@ -60,6 +65,14 @@ add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
 target_link_libraries(net Threads::Threads)
+
+# -- io_uring ------------------------------------------------------------------
+
+if(LIB_NET_ENABLE_URING)
+  add_executable(uring src/main.cpp)
+  target_include_directories(uring PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
+  target_link_libraries(uring net IoUring::IoUring)
+endif()
 
 # -- test setup ----------------------------------------------------------------
 

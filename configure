@@ -17,10 +17,6 @@ General CMake options:
   --cxx-flags=STRING        set CMAKE_CXX_FLAGS when running CMake
   --prefix=PATH             set installation directory
 
-Locating packages in non-standard locations:
-
-  --with-caf=PATH           use a local CAF version instead of fetching a tag
-
 Debugging options:
   --log-level=STRING      build with debugging output, possible values:
                             - ERROR
@@ -31,6 +27,8 @@ Debugging options:
   --sanitizers=STRING     build with this list of sanitizers enabled
 
 Flags (use --enable-<name> to activate and --disable-<name> to deactivate):
+  testing                   enable and build tests [OFF]
+  uring                  enable io-uring [ON]
   shared-libs               build shared library targets [ON]
   export-compile-commands   write JSON compile commands database [ON]
   prefer-pthread-flag       prefer -pthread flag if available  [ON]
@@ -69,6 +67,7 @@ set_build_flag() {
   FlagName=''
   case "$1" in
     testing)                 FlagName='LIB_NET_ENABLE_TESTS' ;;
+    uring)                 FlagName='LIB_NET_ENABLE_URING' ;;
     prefer-pthread-flag)     FlagName='THREADS_PREFER_PTHREAD_FLAG' ;;
     *)
       echo "Invalid flag '$1'.  Try $0 --help to see available options."
