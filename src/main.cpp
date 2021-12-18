@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <ctype.h>
 #include <fcntl.h>
 #include <iostream>
@@ -8,11 +9,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <string_view>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "net/acceptor.hpp"
 #include "net/error.hpp"
+#include "net/socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 #include "util/scope_guard.hpp"
 
@@ -25,15 +28,24 @@ enum class event {
 };
 
 struct request {
-  event ev;
-  net::tcp_stream_socket sock;
-  std::array<iovec, 1> iov;
+  request(event e, net::socket sock, size_t size)
+    : ev{e}, sock{sock}, iov{new std::byte[size], size} {
+    // nop
+  }
+
+  ~request() {
+    delete[] reinterpret_cast<std::byte*>(iov.iov_base);
+  }
+
+  const event ev;
+  const net::socket sock;
+  iovec iov;
 };
 
 io_uring ring;
 
-static constexpr const char* http_response
-  = "HTTP/1.0 404 Not Found\r\n"
+static constexpr std::string_view http_response
+  = "HTTP/2 200 OK\r\n"
     "Content-type: text/html\r\n"
     "\r\n"
     "<html>"
@@ -43,7 +55,7 @@ static constexpr const char* http_response
     "<body>"
     "<h1>Hello World</h1>"
     "</body>"
-    "</html>";
+    "</html>\r\n";
 
 [[noreturn]] void fail(const std::string& msg) {
   std::cerr << "ERROR: " << msg << std::endl;
@@ -52,60 +64,36 @@ static constexpr const char* http_response
 
 /// This function is responsible for setting up the main listening socket used
 /// by the web server.
-int add_accept_request(net::tcp_accept_socket acc, sockaddr_in* client_addr,
-                       socklen_t* client_addr_len) {
+void add_accept_request(net::tcp_accept_socket acc, sockaddr_in* client_addr,
+                        socklen_t* client_addr_len) {
+  std::cout << "adding accept request" << std::endl;
   auto sqe = io_uring_get_sqe(&ring);
   io_uring_prep_accept(sqe, acc.id, reinterpret_cast<sockaddr*>(client_addr),
                        client_addr_len, 0);
-  auto req = new request;
-  req->ev = event::accept;
+  auto req = new request(event::accept, acc, 0);
   io_uring_sqe_set_data(sqe, req);
   io_uring_submit(&ring);
-  return 0;
 }
 
-int add_read_request(net::tcp_stream_socket sock) {
+void add_read_request(net::tcp_stream_socket sock) {
+  std::cout << "adding read request" << std::endl;
   auto sqe = io_uring_get_sqe(&ring);
-  auto req = new request;
-  req->iov[0].iov_base = new uint8_t[READ_SZ];
-  req->iov[0].iov_len = READ_SZ;
-  req->ev = event::read;
-  req->sock = sock;
+  auto req = new request(event::read, sock, READ_SZ);
   /* Linux kernel 5.5 has support for readv, but not for recv() or read() */
-  io_uring_prep_readv(sqe, sock.id, req->iov.data(), 1, 0);
+  io_uring_prep_readv(sqe, sock.id, &req->iov, 1, 0);
   io_uring_sqe_set_data(sqe, req);
   io_uring_submit(&ring);
-  return 0;
 }
 
-void add_write_request(request* req) {
+void add_write_request(util::const_byte_span bytes,
+                       net::tcp_stream_socket sock) {
   std::cout << "add_write_request" << std::endl;
-  struct io_uring_sqe* sqe = io_uring_get_sqe(&ring);
-  req->ev = event::write;
-  io_uring_prep_writev(sqe, req->sock.id, req->iov.data(), req->iov.size(), 0);
+  io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+  auto req = new request(event::write, sock, bytes.size());
+  mempcpy(req->iov.iov_base, bytes.data(), bytes.size());
+  io_uring_prep_writev(sqe, req->sock.id, &req->iov, 1, 0);
   io_uring_sqe_set_data(sqe, &req);
   io_uring_submit(&ring);
-}
-
-void reply(const std::string& line, net::tcp_stream_socket sock) {
-  std::cout << "reply " << line << std::endl;
-  auto req = new request;
-  req->sock = sock;
-  req->iov[0].iov_base = new uint8_t[line.size()];
-  req->iov[0].iov_len = line.size();
-  memcpy(req->iov[0].iov_base, line.c_str(), line.size());
-  add_write_request(req);
-}
-
-int handle_client_request(request* req) {
-  std::istringstream iss(
-    std::string(reinterpret_cast<const char*>(req->iov.begin()->iov_base),
-                req->iov.begin()->iov_len));
-  std::string line;
-  std::getline(iss, line);
-  std::cout << "handle_client_request with line: " << line << std::endl;
-  reply(line, {req->sock});
-  return 0;
 }
 
 void server_loop(net::tcp_accept_socket server_socket) {
@@ -116,7 +104,9 @@ void server_loop(net::tcp_accept_socket server_socket) {
   add_accept_request(server_socket, &client_addr, &client_addr_len);
 
   while (1) {
-    int ret = io_uring_wait_cqe(&ring, &cqe);
+    std::cout << "------- waiting for events -------" << std::endl;
+    auto ret = io_uring_wait_cqe(&ring, &cqe);
+    std::cout << "got event " << std::endl;
     auto req = reinterpret_cast<request*>(cqe->user_data);
     if (ret < 0)
       fail("io_uring_wait_cqe");
@@ -129,7 +119,7 @@ void server_loop(net::tcp_accept_socket server_socket) {
         std::cout << "ACCEPT " << cqe->res << std::endl;
         add_accept_request(server_socket, &client_addr, &client_addr_len);
         add_read_request(net::tcp_stream_socket{cqe->res});
-        delete (req);
+        delete req;
         break;
       case event::read:
         std::cout << "READ " << cqe->res << std::endl;
@@ -137,16 +127,17 @@ void server_loop(net::tcp_accept_socket server_socket) {
           std::cerr << "Empty request!" << std::endl;
           break;
         }
-        handle_client_request(req);
-        delete[] reinterpret_cast<char*>(req->iov[0].iov_base);
+        add_write_request(
+          util::const_byte_span{reinterpret_cast<const std::byte*>(
+                                  http_response.data()),
+                                http_response.size()},
+          net::socket_cast<net::tcp_stream_socket>(req->sock));
         delete req;
         break;
       case event::write:
         std::cout << "WRITE: " << cqe->res << std::endl;
-        for (auto& iov : req->iov)
-          delete[] reinterpret_cast<char*>(iov.iov_base);
         close(req->sock);
-        free(req);
+        delete req;
         break;
     }
     /* Mark this request as processed */
@@ -156,12 +147,14 @@ void server_loop(net::tcp_accept_socket server_socket) {
 
 int main() {
   util::scope_guard guard([&]() { io_uring_queue_exit(&ring); });
-  auto acceptor_res = net::make_tcp_accept_socket(8080);
+  auto acceptor_res = net::make_tcp_accept_socket(0);
   if (auto err = net::get_error(acceptor_res))
     fail("Failed to create an acceptor: " + net::to_string(*err));
   auto [server_socket, port] = std::get<net::acceptor_pair>(acceptor_res);
   if (!net::reuseaddr(server_socket, true))
     fail("reuseaddr");
+  std::cout << "http://127.0.0.1:" << port << std::endl;
+  std::cout << "telnet 127.0.0.1 " << port << std::endl;
   io_uring_queue_init(10, &ring, 0);
   server_loop(server_socket);
   return 0;
