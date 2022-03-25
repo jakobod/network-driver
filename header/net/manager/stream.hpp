@@ -11,6 +11,7 @@
 
 #include "fwd.hpp"
 #include "net/error.hpp"
+#include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"
 #include "net/stream_socket.hpp"
 
@@ -68,6 +69,54 @@ public:
     auto done_writing = [&]() {
       return (write_buffer_.empty() && !application_.has_more_data());
     };
+    auto fetch = [&]() {
+      auto fetched = application_.has_more_data();
+      for (size_t i = 0;
+           application_.has_more_data() && (i < max_consecutive_fetches); ++i)
+        application_.produce(*this);
+      return fetched;
+    };
+    if (write_buffer_.empty())
+      if (!fetch())
+        return event_result::done;
+    for (size_t i = 0; i < max_consecutive_writes; ++i) {
+      auto num_bytes = write_buffer_.size() - written_;
+      auto write_res = write(handle<stream_socket>(),
+                             std::span(write_buffer_.data(), num_bytes));
+      if (write_res > 0) {
+        write_buffer_.erase(write_buffer_.begin(),
+                            write_buffer_.begin() + write_res);
+        if (write_buffer_.empty())
+          if (!fetch())
+            return event_result::done;
+      } else {
+        if (last_socket_error_is_temporary()) {
+          return event_result::ok;
+        } else {
+          handle_error(
+            error(socket_operation_failed,
+                  "[stream::write()] " + last_socket_error_as_string()));
+
+          return event_result::error;
+        }
+      }
+    }
+    return done_writing() ? event_result::done : event_result::ok;
+  }
+
+  event_result handle_data(util::const_byte_span data) override {
+    // TODO this is an unnessecary copy.
+    read_buffer_.insert(read_buffer_.end(), data.begin(), data.end());
+    if (read_buffer_.size() >= min_read_size_) {
+      if (application_.consume(*this, read_buffer_) == event_result::error)
+        return event_result::error;
+      read_buffer_.clear();
+    }
+    return event_result::ok;
+  }
+
+  event_result write_data(util::const_byte_span data) override {
+    auto done_writing = [&]() { return !application_.has_more_data(); };
     auto fetch = [&]() {
       auto fetched = application_.has_more_data();
       for (size_t i = 0;

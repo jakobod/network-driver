@@ -22,6 +22,8 @@ public:
 
   // -- properties -------------------------------------------------------------
 
+  socket_manager_ptr handle_accept(tcp_stream_socket accepted) override;
+
   event_result handle_read_event() override;
 
   event_result handle_write_event() override;

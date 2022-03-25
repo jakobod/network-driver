@@ -27,6 +27,26 @@ error acceptor::init() {
 
 // -- properties -------------------------------------------------------------
 
+socket_manager_ptr acceptor::handle_accept(tcp_stream_socket accepted) {
+  if (accepted == invalid_socket) {
+    mpx()->handle_error(
+      error(socket_operation_failed,
+            "accepting failed: " + last_socket_error_as_string()));
+    return nullptr;
+  }
+  if (!nonblocking(accepted, true)) {
+    mpx()->handle_error(
+      error(socket_operation_failed,
+            "nonblocking failed " + last_socket_error_as_string()));
+    return nullptr;
+  }
+  auto mgr = factory_->make(accepted, mpx());
+  if (auto err = mgr->init()) {
+    mpx()->handle_error(err);
+    return nullptr;
+  }
+}
+
 event_result acceptor::handle_read_event() {
   auto hdl = handle<tcp_accept_socket>();
   auto accepted = accept(hdl);

@@ -45,6 +45,15 @@ public:
   /// @warning This function is *NOT* thread-safe.
   virtual void add(socket_manager_ptr mgr, operation initial) = 0;
 
+  /// Adds a new fd to the multiplexer.
+  void add(socket_manager_ptr) {
+    // nop
+  }
+
+  void add(request_ptr) {
+    // nop
+  }
+
   /// Enables an operation `op` for socket manager `mgr`.
   /// @warning This function is *NOT* thread-safe.
   virtual void enable(socket_manager&, operation op) = 0;

@@ -21,16 +21,36 @@
 
 static constexpr size_t READ_SZ = 8192;
 
-enum class event {
+enum class event : uint8_t {
   accept = 0,
   read = 1,
   write = 2,
+  none = 255,
 };
 
+std::string to_string(event e) {
+  switch (e) {
+    case event::none:
+      return "event::none";
+    case event::accept:
+      return "event::accept";
+    case event::read:
+      return "event::read";
+    case event::write:
+      return "event::write";
+    default:
+      return std::to_string(static_cast<uint8_t>(e));
+  }
+}
+
 struct request {
+  request() : ev{event::none}, sock{net::invalid_socket}, iov{nullptr, 0} {
+    std::cout << "default init of request" << std::endl;
+  }
+
   request(event e, net::socket sock, size_t size)
     : ev{e}, sock{sock}, iov{new std::byte[size], size} {
-    // nop
+    std::cout << "qualified init of request" << std::endl;
   }
 
   ~request() {
@@ -39,7 +59,7 @@ struct request {
 
   const event ev;
   const net::socket sock;
-  iovec iov;
+  const iovec iov;
 };
 
 io_uring ring;
@@ -55,7 +75,7 @@ static constexpr std::string_view http_response
     "<body>"
     "<h1>Hello World</h1>"
     "</body>"
-    "</html>\r\n";
+    "</html>";
 
 [[noreturn]] void fail(const std::string& msg) {
   std::cerr << "ERROR: " << msg << std::endl;
@@ -90,36 +110,49 @@ void add_write_request(util::const_byte_span bytes,
   std::cout << "add_write_request" << std::endl;
   io_uring_sqe* sqe = io_uring_get_sqe(&ring);
   auto req = new request(event::write, sock, bytes.size());
+  std::cout << "new request @ " << std::hex << req << std::endl;
   mempcpy(req->iov.iov_base, bytes.data(), bytes.size());
   io_uring_prep_writev(sqe, req->sock.id, &req->iov, 1, 0);
-  io_uring_sqe_set_data(sqe, &req);
+  io_uring_sqe_set_data(sqe, req);
   io_uring_submit(&ring);
 }
 
 void server_loop(net::tcp_accept_socket server_socket) {
-  struct io_uring_cqe* cqe;
-  struct sockaddr_in client_addr;
+  io_uring_cqe* cqe = nullptr;
+  sockaddr_in client_addr = {};
   socklen_t client_addr_len = sizeof(client_addr);
 
   add_accept_request(server_socket, &client_addr, &client_addr_len);
 
-  while (1) {
+  while (true) {
     std::cout << "------- waiting for events -------" << std::endl;
     auto ret = io_uring_wait_cqe(&ring, &cqe);
-    std::cout << "got event " << std::endl;
-    auto req = reinterpret_cast<request*>(cqe->user_data);
+    std::cout << "got event" << std::endl;
+
+    auto req = reinterpret_cast<request*>(io_uring_cqe_get_data(cqe));
+    util::scope_guard g([req] {
+      std::cout << "scope_guard" << std::endl;
+      delete req;
+    });
+    std::cout << "request from cqe @ " << std::hex << req << std::endl;
+
     if (ret < 0)
       fail("io_uring_wait_cqe");
+    if (!cqe) {
+      std::cerr << "Got empty cqe" << std::endl;
+      continue;
+    }
     if (cqe->res < 0)
       fail("Async request failed: " + std::string(strerror(-cqe->res))
-           + " for event: " + std::to_string(static_cast<int>(req->ev)));
-
-    switch (req->ev) {
+           + " for event: " + to_string(req->ev));
+    auto ev = req->ev;
+    std::cout << "req->ev = " << to_string(ev) << "cqe->res = " << cqe->res
+              << std::endl;
+    switch (ev) {
       case event::accept:
         std::cout << "ACCEPT " << cqe->res << std::endl;
         add_accept_request(server_socket, &client_addr, &client_addr_len);
         add_read_request(net::tcp_stream_socket{cqe->res});
-        delete req;
         break;
       case event::read:
         std::cout << "READ " << cqe->res << std::endl;
@@ -132,16 +165,18 @@ void server_loop(net::tcp_accept_socket server_socket) {
                                   http_response.data()),
                                 http_response.size()},
           net::socket_cast<net::tcp_stream_socket>(req->sock));
-        delete req;
         break;
       case event::write:
         std::cout << "WRITE: " << cqe->res << std::endl;
         close(req->sock);
-        delete req;
+        break;
+      default:
+        fail("Got unknown event type: " + to_string(ev));
         break;
     }
     /* Mark this request as processed */
     io_uring_cqe_seen(&ring, cqe);
+    cqe = nullptr;
   }
 }
 

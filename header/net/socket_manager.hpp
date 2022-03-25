@@ -79,6 +79,23 @@ public:
 
   virtual event_result handle_timeout(uint64_t timeout_id) = 0;
 
+  // -- result handling --------------------------------------------------------
+
+  virtual socket_manager_ptr handle_accept(tcp_stream_socket handle) {
+    mpx()->handle_error(error{runtime_error, "handle_accept not implemented"});
+    return nullptr;
+  };
+
+  virtual event_result handle_data(util::const_byte_span data) {
+    mpx()->handle_error(error{runtime_error, "handle_data not implemented"});
+    return event_result::error;
+  };
+
+  virtual event_result write_data(util::const_byte_span data) {
+    mpx()->handle_error(error{runtime_error, "write_data not implemented"});
+    return event_result::error;
+  }
+
   void handle_error(error err);
 
 private:
