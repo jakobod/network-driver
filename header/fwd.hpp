@@ -48,6 +48,9 @@ class socket_guard;
 
 namespace util {
 
+class binary_serializer;
+class serialized_size;
+
 template <class Func>
 class scope_guard;
 
@@ -57,5 +60,11 @@ using const_byte_span = std::span<const std::byte>;
 
 template <size_t Size>
 using byte_array = std::array<std::byte, Size>;
+
+template <typename... Ts>
+constexpr std::array<std::byte, sizeof...(Ts)>
+make_byte_array(Ts&&... args) noexcept {
+  return {std::byte(std::forward<Ts>(args))...};
+}
 
 } // namespace util

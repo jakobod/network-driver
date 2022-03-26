@@ -52,6 +52,7 @@ set(LIB_NET_SOURCES
   src/net/tcp_accept_socket.cpp
   src/net/tcp_stream_socket.cpp
   src/net/multithreaded_epoll_multiplexer.cpp
+  src/util/binary_serializer.cpp
 )
 
 # -- Object for different targets ----------------------------------------------
@@ -74,6 +75,8 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/multithreaded_epoll_multiplexer.cpp
     test/net/tcp_socket.cpp
     test/net/manager/stream.cpp
+    test/util/binary_serializer.cpp
+    test/util/serialized_size.cpp
     test/util/scope_guard.cpp
   )
 
@@ -88,3 +91,14 @@ if (LIB_NET_ENABLE_TESTS)
 
   gtest_discover_tests(lib_net_test)
 endif()
+
+
+add_executable(
+  main
+  main.cpp
+)
+target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
+target_link_libraries(
+  main
+  net
+)
