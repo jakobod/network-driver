@@ -58,17 +58,6 @@ constexpr const std::size_t all_sizes_sum
 const std::string s1 = "hello";
 const std::string s2 = "nhaqqhviueshvoiuenhvirejvre";
 
-// containers
-
-constexpr const std::array<std::uint64_t, 10> u64_arr{0, 1, 2, 3, 4,
-                                                      5, 6, 7, 8, 9};
-
-const std::array<std::string, 2> s_arr{s1, s2};
-
-const std::array<dummy, 2> dummy_arr{
-  dummy{s1, 1, 2, 3, 4, 5, 6, 7, 8, 9.0, 10.0},
-  dummy{s2, 11, 12, 13, 14, 15, 16, 17, 18, 19.0, 20.0}};
-
 std::size_t string_size(const std::string& str) noexcept {
   return sizeof(std::size_t) + str.size();
 }
@@ -123,19 +112,44 @@ TEST(serialized_size, visit) {
   ASSERT_EQ(serialized_size::calculate(dumm), expected_size);
 }
 
-TEST(serialized_size, container) {
-  static constexpr const auto expected_size
-    = sizeof(std::size_t) + (u64_arr.size() * sizeof(std::uint64_t));
-  ASSERT_EQ(serialized_size::calculate(u64_arr), expected_size);
-}
+// -- Container tests ----------------------------------------------------------
 
 TEST(serialized_size, integral_container) {
+  static constexpr const std::array<std::uint64_t, 10> u64_arr{0, 1, 2, 3, 4,
+                                                               5, 6, 7, 8, 9};
   static constexpr const auto expected_size
     = sizeof(std::size_t) + (u64_arr.size() * sizeof(std::uint64_t));
   ASSERT_EQ(serialized_size::calculate(u64_arr), expected_size);
 }
 
-TEST(serialized_size, dummy_container) {
+TEST(serialized_size, float_container) {
+  static constexpr const std::array<float, 10> float_arr{0, 1, 2, 3, 4,
+                                                         5, 6, 7, 8, 9};
+  static constexpr const auto expected_size
+    = sizeof(std::size_t) + (float_arr.size() * sizeof(float));
+  ASSERT_EQ(serialized_size::calculate(float_arr), expected_size);
+}
+
+TEST(serialized_size, double_container) {
+  static constexpr const std::array<double, 10> double_arr{0, 1, 2, 3, 4,
+                                                           5, 6, 7, 8, 9};
+  static constexpr const auto expected_size
+    = sizeof(std::size_t) + (double_arr.size() * sizeof(double));
+  ASSERT_EQ(serialized_size::calculate(double_arr), expected_size);
+}
+
+TEST(serialized_size, string_container) {
+  static const std::array<std::string, 2> s_arr{s1, s2};
+  static const auto expected_size = sizeof(std::size_t) + string_size(s1)
+                                    + string_size(s2);
+  ASSERT_EQ(serialized_size::calculate(s_arr), expected_size);
+}
+
+TEST(serialized_size, visitable_container) {
+  static const std::array<dummy, 2> dummy_arr{
+    dummy{s1, 1, 2, 3, 4, 5, 6, 7, 8, 9.0, 10.0},
+    dummy{s2, 11, 12, 13, 14, 15, 16, 17, 18, 19.0, 20.0}};
+
   static const auto expected_size
     = sizeof(std::size_t)
       + (string_size(s1) + string_size(s2) + (2 * all_sizes_sum));

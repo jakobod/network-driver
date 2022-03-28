@@ -60,13 +60,21 @@ private:
   }
 
   // Calculates size for integral types
-  template <class T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
-  std::size_t calculate_size(const T*, std::size_t size) {
+  template <
+    class T,
+    std::enable_if_t<
+      std::is_integral_v<
+        T> || std::is_floating_point_v<T> || std::is_same_v<T, std::byte>>* = nullptr>
+  constexpr std::size_t calculate_size(const T*, std::size_t size) {
     return sizeof(std::size_t) + (size * sizeof(T));
   }
 
   // Calculates size for visitable types
-  template <class T, std::enable_if_t<!std::is_integral_v<T>>* = nullptr>
+  template <
+    class T,
+    std::enable_if_t<
+      !std::is_integral_v<
+        T> && !std::is_floating_point_v<T> && !std::is_same_v<T, std::byte>>* = nullptr>
   std::size_t calculate_size(const T* ptr, std::size_t size) {
     auto num_bytes = sizeof(std::size_t);
     for (const auto& val : make_span(ptr, size))
