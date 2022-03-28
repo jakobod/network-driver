@@ -25,36 +25,51 @@ namespace meta {
 
 // -- Visitable trait ----------------------------------------------------------
 
-template <class T, class Visitor, class = void>
+struct visitor {
+  template <class T, class... Ts>
+  auto operator()(const T&, const Ts&...) {
+    // nop
+  }
+};
+
+template <class T, class = void>
 struct is_visitable : std::false_type {};
 
-template <class T, class Visitor>
-struct is_visitable<
-  T, Visitor, decltype(visit(std::declval<T>(), std::declval<Visitor&>()))>
+template <class T>
+struct is_visitable<T, decltype(visit(std::declval<T>(),
+                                      std::declval<visitor&>()))>
   : std::true_type {};
 
-template <class T, class Visitor>
-constexpr bool is_visitable_v = is_visitable<T, Visitor>::value;
+template <class T>
+constexpr bool is_visitable_v = is_visitable<T>::value;
 
 // -- Data-member trait --------------------------------------------------------
-member_trait(has_data_member, data());
+
+template <class T, class = void>
+struct has_data_member : std::false_type {};
+
+template <class T>
+struct has_data_member<T, decltype(std::declval<T>().data(), void())>
+  : std::true_type {};
+
+template <class T>
+constexpr bool has_data_member_v = has_data_member<T>::value;
 
 // -- Size-member trait --------------------------------------------------------
-member_trait(has_size_member, size());
 
-// -- Size-member trait --------------------------------------------------------
-member_trait(has_begin_member, begin());
+template <class T, class = void>
+struct has_size_member : std::false_type {};
 
-// -- Size-member trait --------------------------------------------------------
-member_trait(has_end_member, end());
+template <class T>
+struct has_size_member<T, decltype(std::declval<T>().size(), void())>
+  : std::true_type {};
+
+template <class T>
+constexpr bool has_size_member_v = has_size_member<T>::value;
 
 // -- Container trait ----------------------------------------------------------
-// clang-format off
+
 template <class T>
-constexpr bool is_container_v = has_data_member_v<T> && 
-                                has_size_member_v<T> &&
-                                has_begin_member_v<T> && 
-                                has_end_member_v<T>;
-// clang-format on
+constexpr bool is_container_v = has_data_member_v<T>&& has_size_member_v<T>;
 
 } // namespace meta

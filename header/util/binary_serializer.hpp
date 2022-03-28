@@ -23,7 +23,7 @@ public:
 
   template <class T, class... Ts>
   void operator()(const T& what, const Ts&... ts) {
-    realloc(serialized_size::calculate(what, ts...));
+    realloc(serialized_size{}(what, ts...));
     unpack(what, ts...);
   }
 
@@ -40,7 +40,7 @@ private:
   }
 
   template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
-  void serialize([[maybe_unused]] const T& what) {
+  void serialize(const T& what) {
     visit(what, *this);
   }
 
@@ -48,12 +48,31 @@ private:
             std::enable_if_t<std::numeric_limits<T>::is_integer>* = nullptr>
   void serialize(T i) {
     std::memcpy(free_space_.data(), &i, sizeof(T));
+    free_space_ = free_space_.subspan(sizeof(T));
   }
 
   template <class C, std::enable_if_t<meta::is_container_v<C>>* = nullptr>
-  void serialize([[maybe_unused]] const C& container) {
-    serialize(container.size());
-    for (const auto& val : container)
+  void serialize(const C& container) {
+    serialize(container.data(), container.size());
+  }
+
+  // -- range serialize functions ----------------------------------------------
+
+  // Serializes integral types
+  template <class T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
+  void serialize(const T* ptr, std::size_t size) {
+    serialize(size);
+    const auto num_bytes = size * sizeof(T);
+    std::memcpy(free_space_.data(), ptr, num_bytes);
+    free_space_ = free_space_.subspan(sizeof(std::size_t) + num_bytes);
+  }
+
+  // Serializes visitable types
+  template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
+  void serialize(const T* ptr, std::size_t size) {
+    serialize(size);
+    const auto num_bytes = size * sizeof(T);
+    for (const auto& val : make_span(ptr, size))
       serialize(val);
   }
 

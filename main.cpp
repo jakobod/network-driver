@@ -9,10 +9,25 @@
 
 #include <iostream>
 
-int main(int, char**) {
-  static constexpr const auto expected_result = util::make_byte_array(0x2A);
+struct dummy {
+  void operator()() {
+    std::cout << "THIS WORKS" << std::endl;
+  }
+};
 
-  util::byte_buffer buf;
-  util::binary_serializer serializer{buf};
-  serializer(std::uint8_t{42});
+template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>
+void visit(T& t) {
+  std::cout << "is container" << std::endl;
+}
+
+// template <class T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
+// void visit(T& t) {
+//   std::cout << "is integral" << std::endl;
+// }
+
+int main(int, char**) {
+  std::cout << "has data member = "
+            << meta::has_data_member_v<std::vector<std::uint8_t>> << std::endl;
+  std::cout << "has size member = "
+            << meta::has_size_member_v<std::vector<std::uint8_t>> << std::endl;
 }

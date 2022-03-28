@@ -61,10 +61,17 @@ using const_byte_span = std::span<const std::byte>;
 template <size_t Size>
 using byte_array = std::array<std::byte, Size>;
 
+// -- helper functions ---------------------------------------------------------
+
 template <typename... Ts>
 constexpr std::array<std::byte, sizeof...(Ts)>
 make_byte_array(Ts&&... args) noexcept {
   return {std::byte(std::forward<Ts>(args))...};
+}
+
+template <class T>
+constexpr std::span<T> make_span(T* ptr, std::size_t size) noexcept {
+  return {ptr, size};
 }
 
 } // namespace util

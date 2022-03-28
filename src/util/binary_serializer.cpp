@@ -13,8 +13,7 @@ binary_serializer::binary_serializer(byte_buffer& buf)
 }
 
 void binary_serializer::serialize(const std::string& str) {
-  serialize(str.size());
-  std::memcpy(free_space_.data(), str.data(), str.size());
+  serialize(str.data(), str.size());
 }
 
 void binary_serializer::realloc(std::size_t required_free_space) {
