@@ -51,6 +51,12 @@ private:
     free_space_ = free_space_.subspan(sizeof(T));
   }
 
+  template <class T,
+            std::enable_if_t<std::numeric_limits<T>::is_float>* = nullptr>
+  void serialize(T i) {
+    throw std::runtime_error("serializing floats is currently not implemented");
+  }
+
   template <class C, std::enable_if_t<meta::is_container_v<C>>* = nullptr>
   void serialize(const C& container) {
     serialize(container.data(), container.size());

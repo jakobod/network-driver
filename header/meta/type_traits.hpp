@@ -67,9 +67,34 @@ struct has_size_member<T, decltype(std::declval<T>().size(), void())>
 template <class T>
 constexpr bool has_size_member_v = has_size_member<T>::value;
 
+// -- Begin-member trait -------------------------------------------------------
+
+template <class T, class = void>
+struct has_begin_member : std::false_type {};
+
+template <class T>
+struct has_begin_member<T, decltype(std::declval<T>().begin(), void())>
+  : std::true_type {};
+
+template <class T>
+constexpr bool has_begin_member_v = has_begin_member<T>::value;
+
+// -- End-member trait -------------------------------------------------------
+
+template <class T, class = void>
+struct has_end_member : std::false_type {};
+
+template <class T>
+struct has_end_member<T, decltype(std::declval<T>().end(), void())>
+  : std::true_type {};
+
+template <class T>
+constexpr bool has_end_member_v = has_end_member<T>::value;
+
 // -- Container trait ----------------------------------------------------------
 
 template <class T>
-constexpr bool is_container_v = has_data_member_v<T>&& has_size_member_v<T>;
+constexpr bool is_container_v = has_data_member_v<T>&& has_size_member_v<T>&&
+  has_begin_member_v<T>&& has_end_member_v<T>;
 
 } // namespace meta

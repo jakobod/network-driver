@@ -25,9 +25,19 @@ void visit(T& t) {
 //   std::cout << "is integral" << std::endl;
 // }
 
+template <class T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
+void check() {
+  std::cout << "is_integral" << std::endl;
+}
+
+template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>
+void check() {
+  std::cout << "is_container" << std::endl;
+}
+
 int main(int, char**) {
-  std::cout << "has data member = "
-            << meta::has_data_member_v<std::vector<std::uint8_t>> << std::endl;
-  std::cout << "has size member = "
-            << meta::has_size_member_v<std::vector<std::uint8_t>> << std::endl;
+  check<std::uint8_t>();
+  check<std::vector<uint8_t>>();
+
+  return 0;
 }
