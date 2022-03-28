@@ -12,15 +12,11 @@ binary_serializer::binary_serializer(byte_buffer& buf)
   // nop
 }
 
-void binary_serializer::serialize(const std::string& str) {
-  serialize(str.data(), str.size());
-}
-
 void binary_serializer::realloc(std::size_t required_free_space) {
   if (free_space_.size() < required_free_space) {
     const auto missing = required_free_space - free_space_.size();
     buf_.resize(buf_.size() + missing);
-    free_space_ = byte_span{buf_}.last(free_space_.size() + missing);
+    free_space_ = byte_span{buf_}.last(required_free_space);
   }
 }
 

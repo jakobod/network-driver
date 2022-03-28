@@ -5,39 +5,20 @@
 
 #include "fwd.hpp"
 
+#include "meta/type_traits.hpp"
+
 #include "util/binary_serializer.hpp"
 
 #include <iostream>
 
-struct dummy {
-  void operator()() {
-    std::cout << "THIS WORKS" << std::endl;
-  }
-};
-
-template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>
-void visit(T& t) {
-  std::cout << "is container" << std::endl;
-}
-
-// template <class T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
-// void visit(T& t) {
-//   std::cout << "is integral" << std::endl;
-// }
-
-template <class T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
-void check() {
-  std::cout << "is_integral" << std::endl;
-}
-
-template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>
-void check() {
-  std::cout << "is_container" << std::endl;
-}
+using namespace util;
 
 int main(int, char**) {
-  check<std::uint8_t>();
-  check<std::vector<uint8_t>>();
-
+  byte_buffer buf;
+  binary_serializer serializer{buf};
+  serializer(float{19.0}, double{20.0});
+  for (const auto& b : buf)
+    std::cout << std::hex << "0x" << static_cast<std::uint16_t>(b) << ", ";
+  std::cout << std::endl;
   return 0;
 }

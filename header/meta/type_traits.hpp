@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <type_traits>
 
 namespace {
@@ -96,5 +97,21 @@ constexpr bool has_end_member_v = has_end_member<T>::value;
 template <class T>
 constexpr bool is_container_v = has_data_member_v<T>&& has_size_member_v<T>&&
   has_begin_member_v<T>&& has_end_member_v<T>;
+
+// -- Sizeoffable trait --------------------------------------------------------
+
+// Type Trait for types that can safely be used with sizeof() to determine their
+// size
+template <class T>
+constexpr bool has_trivial_size_v
+  = std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_enum_v<T>;
+
+// -- Trivially serializable trait ---------------------------------------------
+
+// Type Trait for types that  to determine their
+// size
+template <class T>
+constexpr bool is_trivially_serializable_v
+  = std::is_integral_v<T> || std::is_enum_v<T>;
 
 } // namespace meta
