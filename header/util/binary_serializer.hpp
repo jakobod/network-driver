@@ -57,6 +57,17 @@ private:
     serialize(i);
   }
 
+  template <class T, class U>
+  void serialize(const std::pair<T, U>& p) {
+    serialize(p.first);
+    serialize(p.second);
+  }
+
+  template <class... Ts>
+  void serialize(const std::tuple<Ts...>& t) {
+    (serialize(std::get<Ts>(t)), ...);
+  }
+
   template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
   void serialize(const T& what) {
     visit(what, *this);

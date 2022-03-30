@@ -13,10 +13,14 @@
 
 using namespace util;
 
+struct dummy {
+  std::vector<std::uint8_t> buf;
+};
+
 int main(int, char**) {
   byte_buffer buf;
   binary_serializer serializer{buf};
-  serializer(float{19.0}, double{20.0});
+  serializer(std::make_pair(std::uint32_t{420}, std::uint64_t{69}));
   for (const auto& b : buf)
     std::cout << std::hex << "0x" << static_cast<std::uint16_t>(b) << ", ";
   std::cout << std::endl;

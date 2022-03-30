@@ -110,6 +110,24 @@ TEST(serialized_size, mixed_types) {
             expected_size);
 }
 
+TEST(serialized_size, pair) {
+  static constexpr const std::size_t expected_size
+    = (sizeof(std::uint32_t) + sizeof(std::uint64_t));
+  ASSERT_EQ(serialized_size::calculate(
+              std::make_pair(std::uint32_t{420}, std::uint64_t{69})),
+            expected_size);
+}
+
+TEST(serialized_size, tuple) {
+  static constexpr const std::size_t expected_size
+    = (sizeof(std::uint32_t) + sizeof(std::uint64_t) + sizeof(std::uint8_t)
+       + sizeof(std::uint16_t));
+  ASSERT_EQ(serialized_size::calculate(
+              std::make_tuple(std::uint32_t{420}, std::uint64_t{69},
+                              std::uint8_t{42}, std::uint16_t{1337})),
+            expected_size);
+}
+
 TEST(serialized_size, visit) {
   static const auto expected_size = serialized_size::calculate(s1, u8, u16, u32,
                                                                u64, i8, i16,

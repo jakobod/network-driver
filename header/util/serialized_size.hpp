@@ -27,7 +27,7 @@ public:
 
   template <class... Ts>
   std::size_t operator()(const Ts&... ts) {
-    if constexpr (sizeof...(Ts))
+    if constexpr (sizeof...(Ts) > 0)
       return (calculate_size(ts) + ...);
     else
       return 0;
@@ -41,6 +41,16 @@ private:
 
   static std::size_t calculate_size(const std::string& str) noexcept {
     return sizeof(std::size_t) + str.size();
+  }
+
+  template <class T, class U>
+  std::size_t calculate_size(const std::pair<T, U>& p) {
+    return calculate_size(p.first) + calculate_size(p.second);
+  }
+
+  template <class... Ts>
+  std::size_t calculate_size(const std::tuple<Ts...>& t) {
+    return calculate(std::get<Ts>(t)...);
   }
 
   template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
