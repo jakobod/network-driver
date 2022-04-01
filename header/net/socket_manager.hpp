@@ -19,7 +19,7 @@ namespace net {
 /// Manages the lifetime of a socket.
 class socket_manager {
 public:
-  socket_manager(socket handle, multiplexer* parent);
+  socket_manager(socket handle, multiplexer* mpx);
 
   virtual ~socket_manager();
 

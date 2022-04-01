@@ -69,9 +69,10 @@ if (LIB_NET_ENABLE_TESTS)
 
   add_executable(
     lib_net_test
-    test/net/socket_guard.cpp
     test/net/acceptor.cpp
     test/net/epoll_multiplexer.cpp
+    test/net/socket_guard.cpp
+    test/net/socket_manager.cpp
     test/net/tcp_socket.cpp
     test/net/manager/stream.cpp
     test/util/binary_deserializer.cpp

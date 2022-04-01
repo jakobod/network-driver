@@ -17,32 +17,11 @@ General CMake options:
   --cxx-flags=STRING        set CMAKE_CXX_FLAGS when running CMake
   --prefix=PATH             set installation directory
 
-Locating packages in non-standard locations:
-
-  --with-caf=PATH           use a local CAF version instead of fetching a tag
-
 Debugging options:
-  --log-level=STRING      build with debugging output, possible values:
-                            - ERROR
-                            - WARNING
-                            - INFO
-                            - DEBUG
-                            - TRACE
   --sanitizers=STRING     build with this list of sanitizers enabled
 
 Flags (use --enable-<name> to activate and --disable-<name> to deactivate):
-  shared-libs               build shared library targets [ON]
-  export-compile-commands   write JSON compile commands database [ON]
-  prefer-pthread-flag       prefer -pthread flag if available  [ON]
-  runtime-checks            build CAF with extra runtime assertions [OFF]
-  utility-targets           include targets like consistency-check [OFF]
-  actor-profiler            enable experimental proiler API [OFF]
-  with-exceptions           build CAF with support for exceptions [ON]
-
-Influential Environment Variables (only on first invocation):
-  CXX                       C++ compiler command
-  CXXFLAGS                  Additional C++ compiler flags
-  LDFLAGS                   Additional linker flags
+  testing                 build tests [OFF]
 "
 
 # Appends a CMake cache entry definition to the CMakeCacheEntries variable.

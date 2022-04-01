@@ -22,7 +22,7 @@
 namespace net {
 
 class epoll_multiplexer : public multiplexer {
-  static constexpr size_t max_epoll_events = 32;
+  static constexpr const size_t max_epoll_events = 32;
 
   using optional_timepoint
     = std::optional<std::chrono::system_clock::time_point>;

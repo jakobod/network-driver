@@ -56,6 +56,12 @@ bool socket_manager::mask_del(operation flag) noexcept {
   return true;
 }
 
+void socket_manager::register_reading() {
+  if ((mask() & operation::read) == operation::read)
+    return;
+  mpx_->enable(*this, operation::read);
+}
+
 void socket_manager::register_writing() {
   if ((mask() & operation::write) == operation::write)
     return;
@@ -65,16 +71,16 @@ void socket_manager::register_writing() {
 void socket_manager::set_timeout_in(std::chrono::milliseconds duration,
                                     uint64_t timeout_id) {
   auto tp = std::chrono::system_clock::now() + duration;
-  mpx()->set_timeout(*this, timeout_id, tp);
+  mpx_->set_timeout(*this, timeout_id, tp);
 }
 
 void socket_manager::set_timeout_at(std::chrono::system_clock::time_point point,
                                     uint64_t timeout_id) {
-  mpx()->set_timeout(*this, timeout_id, point);
+  mpx_->set_timeout(*this, timeout_id, point);
 }
 
 void socket_manager::handle_error(error err) {
-  mpx()->handle_error(err);
+  mpx_->handle_error(err);
 }
 
 } // namespace net
