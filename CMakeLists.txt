@@ -51,7 +51,6 @@ set(LIB_NET_SOURCES
   src/net/stream_socket.cpp
   src/net/tcp_accept_socket.cpp
   src/net/tcp_stream_socket.cpp
-  src/net/multithreaded_epoll_multiplexer.cpp
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
 )
@@ -73,7 +72,6 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/socket_guard.cpp
     test/net/acceptor.cpp
     test/net/epoll_multiplexer.cpp
-    test/net/multithreaded_epoll_multiplexer.cpp
     test/net/tcp_socket.cpp
     test/net/manager/stream.cpp
     test/util/binary_deserializer.cpp
