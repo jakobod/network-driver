@@ -37,7 +37,7 @@ template <class T, class = void>
 struct is_visitable : std::false_type {};
 
 template <class T>
-struct is_visitable<T, decltype(visit(std::declval<T>(),
+struct is_visitable<T, decltype(visit(std::declval<T&>(),
                                       std::declval<visitor&>()))>
   : std::true_type {};
 
@@ -91,6 +91,19 @@ struct has_end_member<T, decltype(std::declval<T>().end(), void())>
 
 template <class T>
 constexpr bool has_end_member_v = has_end_member<T>::value;
+
+// -- resize-member trait ------------------------------------------------------
+
+template <class T, class = void>
+struct has_resize_member : std::false_type {};
+
+template <class T>
+struct has_resize_member<
+  T, decltype(std::declval<T>().resize(std::declval<std::size_t>()), void())>
+  : std::true_type {};
+
+template <class T>
+constexpr bool has_resize_member_v = has_resize_member<T>::value;
 
 // -- Container trait ----------------------------------------------------------
 

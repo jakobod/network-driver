@@ -20,4 +20,22 @@ void binary_serializer::realloc(std::size_t required_free_space) {
   }
 }
 
+void binary_serializer::serialize(const float& val) {
+  union {
+    float f;
+    std::uint32_t i;
+  };
+  f = val;
+  serialize(i);
+}
+
+void binary_serializer::serialize(const double& val) {
+  union {
+    double f;
+    std::uint64_t i;
+  };
+  f = val;
+  serialize(i);
+}
+
 } // namespace util

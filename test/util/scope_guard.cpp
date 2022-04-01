@@ -7,7 +7,7 @@
 
 #include "util/scope_guard.hpp"
 
-TEST(scope_guard_test, func_executed) {
+TEST(scope_guard, func_executed) {
   bool executed = false;
   {
     util::scope_guard guard([&]() { executed = true; });
@@ -15,8 +15,17 @@ TEST(scope_guard_test, func_executed) {
   EXPECT_TRUE(executed);
 }
 
-TEST(scope_guard_test, func_not_executed) {
+TEST(scope_guard, func_not_executed) {
   bool executed = false;
   util::scope_guard guard([&]() { executed = true; });
+  EXPECT_FALSE(executed);
+}
+
+TEST(scope_guard, reset) {
+  bool executed = false;
+  {
+    util::scope_guard guard([&]() { executed = true; });
+    guard.reset();
+  }
   EXPECT_FALSE(executed);
 }

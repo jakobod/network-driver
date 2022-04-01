@@ -48,6 +48,7 @@ class socket_guard;
 
 namespace util {
 
+class binary_deserializer;
 class binary_serializer;
 class serialized_size;
 

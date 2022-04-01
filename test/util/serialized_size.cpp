@@ -138,6 +138,14 @@ TEST(serialized_size, visit) {
 
 // -- Container tests ----------------------------------------------------------
 
+TEST(serialized_size, c_style_array) {
+  static constexpr const std::uint64_t u64_arr[10] = {0, 1, 2, 3, 4,
+                                                      5, 6, 7, 8, 9};
+  static constexpr const auto expected_size = sizeof(std::size_t)
+                                              + sizeof(u64_arr);
+  ASSERT_EQ(serialized_size::calculate(u64_arr), expected_size);
+}
+
 TEST(serialized_size, integral_container) {
   static constexpr const std::array<std::uint64_t, 10> u64_arr{0, 1, 2, 3, 4,
                                                                5, 6, 7, 8, 9};

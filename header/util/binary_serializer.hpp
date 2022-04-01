@@ -12,8 +12,6 @@
 #include "meta/type_traits.hpp"
 
 #include <cstring>
-#include <numeric>
-#include <type_traits>
 
 namespace util {
 
@@ -23,10 +21,8 @@ public:
 
   template <class... Ts>
   void operator()(const Ts&... ts) {
-    if constexpr (sizeof...(Ts)) {
-      realloc(serialized_size{}(ts...));
-      (serialize(ts), ...);
-    }
+    realloc(serialized_size{}(ts...));
+    (serialize(ts), ...);
   }
 
 private:
@@ -39,23 +35,9 @@ private:
     free_space_ = free_space_.subspan(sizeof(T));
   }
 
-  void serialize(const float& val) {
-    union {
-      float f;
-      std::uint32_t i;
-    };
-    f = val;
-    serialize(i);
-  }
+  void serialize(const float& val);
 
-  void serialize(const double& val) {
-    union {
-      double f;
-      std::uint64_t i;
-    };
-    f = val;
-    serialize(i);
-  }
+  void serialize(const double& val);
 
   template <class T, class U>
   void serialize(const std::pair<T, U>& p) {
@@ -70,7 +52,12 @@ private:
 
   template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
   void serialize(const T& what) {
-    visit(what, *this);
+    visit(const_cast<T&>(what), *this);
+  }
+
+  template <class T, size_t Size>
+  void serialize(const T (&arr)[Size]) noexcept {
+    serialize(arr, Size);
   }
 
   template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>

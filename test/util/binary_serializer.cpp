@@ -32,7 +32,7 @@ struct dummy_class {
 };
 
 template <class Visitor>
-auto visit(const dummy_class& d, Visitor& f) {
+auto visit(dummy_class& d, Visitor& f) {
   return f(d.s_, d.u8_, d.u16_, d.u32_, d.u64_, d.i8_, d.i16_, d.i32_, d.i64_,
            d.f_, d.d_);
 }
@@ -48,14 +48,14 @@ auto visit(const dummy_class& d, Visitor& f) {
 
 } // namespace
 
-TEST(serializer_test, empty_call) {
+TEST(binary_serializer, empty_call) {
   byte_buffer buf;
   binary_serializer serializer{buf};
   serializer();
   ASSERT_TRUE(buf.empty());
 }
 
-TEST(serializer_test, integer) {
+TEST(binary_serializer, integer) {
   static constexpr const auto expected_result
     = make_byte_array(0x01, 0x02, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00,
                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0x00,
@@ -66,18 +66,18 @@ TEST(serializer_test, integer) {
                     std::int16_t{6}, std::int32_t{7}, std::int64_t{8});
 }
 
-TEST(serializer_test, byte) {
+TEST(binary_serializer, byte) {
   static constexpr const auto expected_result = make_byte_array(0x2A, 0x45);
   check_serializing(expected_result, std::byte{42}, std::byte{69});
 }
 
-TEST(serializer_test, floats) {
+TEST(binary_serializer, floats) {
   static constexpr const auto expected_result = make_byte_array(
     0xd7, 0xa3, 0x70, 0x3d, 0xa, 0x4b, 0x7a, 0x40, 0xa, 0xd7, 0x8a, 0x42);
   check_serializing(expected_result, double{420.69}, float{69.42});
 }
 
-TEST(serializer_test, string) {
+TEST(binary_serializer, string) {
   {
     static constexpr const auto expected_result
       = make_byte_array(0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 'H',
@@ -95,14 +95,14 @@ TEST(serializer_test, string) {
   }
 }
 
-TEST(serializer_test, pair) {
+TEST(binary_serializer, pair) {
   static constexpr const auto expected_result = make_byte_array(
     0xA4, 0x01, 0x00, 0x00, 0x45, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
   check_serializing(expected_result,
                     std::make_pair(std::uint32_t{420}, std::uint64_t{69}));
 }
 
-TEST(serializer_test, tuple) {
+TEST(binary_serializer, tuple) {
   static constexpr const auto expected_result
     = make_byte_array(0xA4, 0x01, 0x00, 0x00, 0x45, 0x00, 0x00, 0x00, 0x00,
                       0x00, 0x00, 0x00, 0x2A, 0x39, 0x05);
@@ -129,7 +129,27 @@ TEST(serializer_tests, visit) {
     dummy_class{"World", 11, 12, 13, 14, 15, 16, 17, 18, 19.0, 20.0});
 }
 
-TEST(serializer_test, vector) {
+TEST(binary_serializer, c_style_array) {
+  static constexpr const std::uint64_t input[10] = {0, 1, 2, 3, 4,
+                                                    5, 6, 7, 8, 9};
+  static constexpr const auto expected_result = make_byte_array(
+    0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00);
+
+  byte_buffer buf;
+  binary_serializer serializer{buf};
+  serializer(input);
+  ASSERT_EQ(buf.size(), expected_result.size());
+  ASSERT_TRUE(std::equal(buf.begin(), buf.end(), expected_result.begin()));
+}
+
+TEST(binary_serializer, vector) {
   static constexpr const std::array<std::uint64_t, 10> input{0, 1, 2, 3, 4,
                                                              5, 6, 7, 8, 9};
   static constexpr const auto expected_result = make_byte_array(
