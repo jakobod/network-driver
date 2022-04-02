@@ -52,6 +52,7 @@ set(LIB_NET_SOURCES
   src/net/tcp_accept_socket.cpp
   src/net/tcp_stream_socket.cpp
   src/net/ip/v4_address.cpp
+  src/net/ip/v4_endpoint.cpp
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
   src/util/format.cpp
@@ -78,6 +79,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/tcp_socket.cpp
     test/net/stream_transport.cpp
     test/net/ip/v4_address.cpp
+    test/net/ip/v4_endpoint.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/format.cpp

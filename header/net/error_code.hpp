@@ -15,6 +15,7 @@ enum error_code {
   runtime_error,
   socket_operation_failed,
   invalid_argument,
+  parser_error,
 };
 
 std::string to_string(error_code err);

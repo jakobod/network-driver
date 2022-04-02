@@ -17,6 +17,8 @@ std::string to_string(error_code err) {
       return "socket_operation_failed";
     case invalid_argument:
       return "invalid_argument";
+    case parser_error:
+      return "parser_error";
     default:
       return "???";
   }

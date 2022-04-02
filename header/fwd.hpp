@@ -12,32 +12,36 @@
 #include <variant>
 #include <vector>
 
+// -- net namespace forward declarations ---------------------------------------
+
 namespace net {
 
+class acceptor;
+class epoll_multiplexer;
+class multiplexer;
+class pollset_updater;
 class socket_manager;
 class socket_manager_factory;
-class acceptor;
-class pollset_updater;
-class multiplexer;
-class epoll_multiplexer;
-class multithreaded_epoll_multiplexer;
 
-struct socket;
-struct raw_socket;
-struct stream_socket;
+struct datagram_socket;
+struct error;
 struct pipe_socket;
+struct raw_socket;
+struct socket;
+struct stream_socket;
 struct tcp_stream_socket;
 struct tcp_accept_socket;
 struct timeout_entry;
-struct error;
 
-enum class operation : uint32_t;
 enum class event_result : uint8_t;
+enum class operation : uint32_t;
 
+using datagram_socket_pair = std::pair<datagram_socket, datagram_socket>;
 using stream_socket_pair = std::pair<stream_socket, stream_socket>;
+
+using multiplexer_ptr = std::shared_ptr<multiplexer>;
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
 using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
-using multiplexer_ptr = std::shared_ptr<multiplexer>;
 
 template <class T>
 using error_or = std::variant<T, error>;
@@ -45,6 +49,16 @@ template <class Socket>
 class socket_guard;
 
 } // namespace net
+
+// -- net::ip namespace forward declarations -----------------------------------
+
+namespace net::ip {
+
+class v4_address;
+
+}
+
+// -- util namespace forward declarations --------------------------------------
 
 namespace util {
 
