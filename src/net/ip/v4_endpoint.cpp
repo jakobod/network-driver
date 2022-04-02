@@ -23,8 +23,8 @@ std::string to_string(const v4_endpoint& ep) {
   return util::format("{0}:{1}", to_string(ep.address()), ep.port());
 }
 
-error_or<v4_endpoint> parse_v4_endpoint(std::string str) {
-  const auto parts = util::split(std::move(str), ':');
+error_or<v4_endpoint> parse_v4_endpoint(const std::string& str) {
+  const auto parts = util::split(str, ':');
   if (parts.size() != 2)
     return error{error_code::parser_error,
                  "Parsing to v4_endpoint failed: needs address and port, "
@@ -34,6 +34,14 @@ error_or<v4_endpoint> parse_v4_endpoint(std::string str) {
     return *err;
   auto port = static_cast<std::uint16_t>(std::stoi(parts.back()));
   return v4_endpoint{std::move(std::get<v4_address>(maybe_addr)), port};
+}
+
+sockaddr_in to_sockaddr_in(const v4_endpoint& ep) {
+  sockaddr_in saddr;
+  saddr.sin_addr.s_addr = ep.address().bits();
+  saddr.sin_port = ep.port();
+  saddr.sin_family = AF_INET;
+  return saddr;
 }
 
 } // namespace net::ip

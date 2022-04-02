@@ -111,7 +111,7 @@ TEST(binary_serializer, tuple) {
                                     std::uint8_t{42}, std::uint16_t{1337}));
 }
 
-TEST(serializer_tests, visit) {
+TEST(binary_serializer, visit) {
   static constexpr const auto expected_result = make_byte_array(
     0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 'H', 'e', 'l', 'l', 'o',
     0x01, 0x02, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00,
