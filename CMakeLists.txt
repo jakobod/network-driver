@@ -37,22 +37,26 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/header/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
+  # net sources
   src/net/acceptor.cpp
-  src/net/operation.cpp
+  src/net/datagram_socket.cpp
   src/net/error.cpp
-  src/net/epoll_multiplexer.cpp
   src/net/error_code.cpp
+  src/net/epoll_multiplexer.cpp
+  src/net/event_result.cpp
+  src/net/operation.cpp
   src/net/pipe_socket.cpp
   src/net/pollset_updater.cpp
   src/net/raw_socket.cpp
   src/net/socket_manager.cpp
   src/net/socket.cpp
-  src/net/event_result.cpp
   src/net/stream_socket.cpp
   src/net/tcp_accept_socket.cpp
   src/net/tcp_stream_socket.cpp
+  # net::ip sources
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
+  # util sources
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
   src/util/format.cpp
@@ -73,6 +77,7 @@ if (LIB_NET_ENABLE_TESTS)
   add_executable(
     lib_net_test
     test/net/acceptor.cpp
+    test/net/datagram_socket.cpp
     test/net/epoll_multiplexer.cpp
     test/net/socket_guard.cpp
     test/net/socket_manager.cpp
