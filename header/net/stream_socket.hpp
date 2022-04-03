@@ -40,6 +40,6 @@ bool reuseaddr(socket x, bool new_value);
 ptrdiff_t read(stream_socket x, util::byte_span buf);
 
 /// Sends data to `x`.
-ptrdiff_t write(stream_socket x, util::byte_span buf);
+ptrdiff_t write(stream_socket x, util::const_byte_span buf);
 
 } // namespace net

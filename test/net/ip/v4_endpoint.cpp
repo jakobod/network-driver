@@ -68,7 +68,7 @@ TEST(v4_endpoint_test, from_sockaddr) {
     sockaddr_in saddr{};
     saddr.sin_addr.s_addr
       = std::uint32_t{0b00000000'00000000'00000000'00000000};
-    saddr.sin_port = 22;
+    saddr.sin_port = htons(22);
     saddr.sin_family = AF_INET;
     v4_endpoint ep{saddr};
     ASSERT_EQ(any_endpoint, ep);
@@ -77,7 +77,7 @@ TEST(v4_endpoint_test, from_sockaddr) {
     sockaddr_in saddr{};
     saddr.sin_addr.s_addr
       = std::uint32_t{0b00000001'00000000'00000000'01111111};
-    saddr.sin_port = 23;
+    saddr.sin_port = htons(23);
     saddr.sin_family = AF_INET;
     v4_endpoint ep{saddr};
     ASSERT_EQ(localhost_endpoint, ep);
@@ -86,7 +86,7 @@ TEST(v4_endpoint_test, from_sockaddr) {
     sockaddr_in saddr{};
     saddr.sin_addr.s_addr
       = std::uint32_t{0b11111111'11111111'11111111'11111111};
-    saddr.sin_port = 24;
+    saddr.sin_port = htons(24);
     saddr.sin_family = AF_INET;
     v4_endpoint ep{saddr};
     ASSERT_EQ(multicast_endpoint, ep);
@@ -97,19 +97,19 @@ TEST(v4_endpoint_test, to_sockaddr) {
   {
     const auto saddr = to_sockaddr_in(any_endpoint);
     ASSERT_EQ(saddr.sin_addr.s_addr, any_endpoint.address().bits());
-    ASSERT_EQ(saddr.sin_port, any_endpoint.port());
+    ASSERT_EQ(ntohs(saddr.sin_port), any_endpoint.port());
     ASSERT_EQ(saddr.sin_family, AF_INET);
   }
   {
     const auto saddr = to_sockaddr_in(localhost_endpoint);
     ASSERT_EQ(saddr.sin_addr.s_addr, localhost_endpoint.address().bits());
-    ASSERT_EQ(saddr.sin_port, localhost_endpoint.port());
+    ASSERT_EQ(ntohs(saddr.sin_port), localhost_endpoint.port());
     ASSERT_EQ(saddr.sin_family, AF_INET);
   }
   {
     const auto saddr = to_sockaddr_in(multicast_endpoint);
     ASSERT_EQ(saddr.sin_addr.s_addr, multicast_endpoint.address().bits());
-    ASSERT_EQ(saddr.sin_port, multicast_endpoint.port());
+    ASSERT_EQ(ntohs(saddr.sin_port), multicast_endpoint.port());
     ASSERT_EQ(saddr.sin_family, AF_INET);
   }
 }

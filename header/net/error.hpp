@@ -14,7 +14,7 @@
 
 namespace net {
 
-struct error {
+struct [[nodiscard]] error {
   error(error_code err, std::string err_msg);
 
   error(error_code err);

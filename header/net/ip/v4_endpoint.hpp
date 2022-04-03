@@ -17,10 +17,7 @@ namespace net::ip {
 /// IPv4 Endpoint representation (v4_address + port).
 class v4_endpoint {
 public:
-  constexpr v4_endpoint(sockaddr_in saddr)
-    : address_{saddr.sin_addr.s_addr}, port_{saddr.sin_port} {
-    // nop
-  }
+  v4_endpoint(sockaddr_in saddr);
 
   constexpr v4_endpoint(v4_address address, std::uint16_t port)
     : address_{std::move(address)}, port_{port} {

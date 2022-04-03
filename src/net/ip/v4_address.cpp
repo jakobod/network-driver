@@ -35,7 +35,7 @@ error_or<v4_address> parse_v4_address(const std::string& str) {
                  "Parsing to v4_endpoint failed: needs exactly 4 octets"};
   auto it = bytes.begin();
   for (const auto& part : parts)
-    *it++ = std::byte{std::stoi(part)};
+    *it++ = std::byte{static_cast<std::uint8_t>(std::stoi(part))};
   return {bytes};
 }
 

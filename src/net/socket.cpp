@@ -26,6 +26,15 @@ void shutdown(socket hdl, int how) {
     ::shutdown(hdl.id, how);
 }
 
+error bind(socket sock, ip::v4_endpoint ep) {
+  auto addr = ip::to_sockaddr_in(ep);
+  if ((::bind(sock.id, reinterpret_cast<sockaddr*>(&addr), sizeof(sockaddr_in)))
+      != 0)
+    return error(socket_operation_failed,
+                 "Failed to bind socket: " + last_socket_error_as_string());
+  return none;
+}
+
 int last_socket_error() {
   return errno;
 }
@@ -50,6 +59,22 @@ bool nonblocking(socket hdl, bool new_value) {
     return false;
   flags = new_value ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
   return (fcntl(hdl.id, F_SETFL, flags) == 0);
+}
+
+error_or<uint16_t> port_of(socket x) {
+  struct sockaddr_in sin;
+  socklen_t len = sizeof(sin);
+  if (getsockname(x.id, (struct sockaddr*) &sin, &len) == -1)
+    return error(socket_operation_failed, last_socket_error_as_string());
+  return ntohs(sin.sin_port);
+}
+
+bool reuseaddr(socket x, bool new_value) {
+  int on = new_value ? 1 : 0;
+  auto res = setsockopt(x.id, SOL_SOCKET, SO_REUSEADDR,
+                        reinterpret_cast<const void*>(&on),
+                        static_cast<unsigned>(sizeof(on)));
+  return res == 0;
 }
 
 /// Returns the mac address of the specified interface.

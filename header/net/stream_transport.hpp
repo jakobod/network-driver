@@ -14,18 +14,18 @@
 #include "net/receive_policy.hpp"
 #include "net/stream_socket.hpp"
 
-namespace net::manager {
+namespace net {
 
-/// Manages a stream oriented transport socket.
+/// Implements a stream oriented transport.
 template <class Application>
-class stream : public socket_manager {
-  static constexpr size_t max_consecutive_fetches = 20;
-  static constexpr size_t max_consecutive_reads = 20;
-  static constexpr size_t max_consecutive_writes = 20;
+class stream_transport : public socket_manager {
+  static constexpr const size_t max_consecutive_fetches = 20;
+  static constexpr const size_t max_consecutive_reads = 20;
+  static constexpr const size_t max_consecutive_writes = 20;
 
 public:
   template <class... Ts>
-  stream(stream_socket handle, multiplexer* mpx, Ts&&... xs)
+  stream_transport(stream_socket handle, multiplexer* mpx, Ts&&... xs)
     : socket_manager(handle, mpx), application_(std::forward<Ts>(xs)...) {
     // nop
   }
@@ -133,4 +133,4 @@ private:
   util::byte_buffer write_buffer_;
 };
 
-} // namespace net::manager
+} // namespace net

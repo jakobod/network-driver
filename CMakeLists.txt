@@ -53,6 +53,7 @@ set(LIB_NET_SOURCES
   src/net/stream_socket.cpp
   src/net/tcp_accept_socket.cpp
   src/net/tcp_stream_socket.cpp
+  src/net/udp_datagram_socket.cpp
   # net::ip sources
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
@@ -83,6 +84,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/socket_manager.cpp
     test/net/tcp_socket.cpp
     test/net/stream_transport.cpp
+    test/net/udp_datagram_socket.cpp
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
     test/util/binary_deserializer.cpp

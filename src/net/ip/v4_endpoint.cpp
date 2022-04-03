@@ -11,6 +11,11 @@
 
 namespace net::ip {
 
+v4_endpoint::v4_endpoint(sockaddr_in saddr)
+  : address_{saddr.sin_addr.s_addr}, port_{ntohs(saddr.sin_port)} {
+  // nop
+}
+
 bool operator==(const v4_endpoint& lhs, const v4_endpoint& rhs) {
   return (lhs.address() == rhs.address()) && (lhs.port() == rhs.port());
 }
@@ -39,7 +44,7 @@ error_or<v4_endpoint> parse_v4_endpoint(const std::string& str) {
 sockaddr_in to_sockaddr_in(const v4_endpoint& ep) {
   sockaddr_in saddr;
   saddr.sin_addr.s_addr = ep.address().bits();
-  saddr.sin_port = ep.port();
+  saddr.sin_port = htons(ep.port());
   saddr.sin_family = AF_INET;
   return saddr;
 }

@@ -44,7 +44,7 @@ ptrdiff_t read(stream_socket x, util::byte_span buf) {
                 no_sigpipe_io_flag);
 }
 
-ptrdiff_t write(stream_socket x, util::byte_span buf) {
+ptrdiff_t write(stream_socket x, util::const_byte_span buf) {
   return ::send(x.id, reinterpret_cast<const char*>(buf.data()), buf.size(),
                 no_sigpipe_io_flag);
 }

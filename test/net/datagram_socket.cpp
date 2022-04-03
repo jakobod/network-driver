@@ -11,7 +11,6 @@
 #include "net/error.hpp"
 
 #include <algorithm>
-#include <numeric>
 
 using namespace net;
 

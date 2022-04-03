@@ -5,21 +5,22 @@
 
 #include "fwd.hpp"
 
-#include "meta/type_traits.hpp"
-
-#include "util/binary_serializer.hpp"
+#include "util/format.hpp"
 
 #include <iostream>
+#include <regex>
 
 using namespace util;
+using namespace std::string_literals;
 
 struct dummy {
   std::vector<std::uint8_t> buf;
 };
 
 int main(int, char**) {
-  std::cout << "std::string = "
-            << meta::has_resize_member_v<std::string> << std::endl;
+  std::string form = "Hello {0}";
+  auto res = util::format("Hello {0}", "world");
+  std::cout << form << " <-> " << res << std::endl;
   // byte_buffer buf;
   // binary_serializer serializer{buf};
   // serializer(std::make_pair(std::uint32_t{420}, std::uint64_t{69}));
