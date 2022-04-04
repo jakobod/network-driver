@@ -27,7 +27,7 @@ public:
 
   socket_manager(const socket_manager&) = delete;
 
-  virtual error init() = 0;
+  virtual util::error init() = 0;
 
   // -- Assignment operators ---------------------------------------------------
 
@@ -79,7 +79,7 @@ public:
 
   virtual event_result handle_timeout(uint64_t timeout_id) = 0;
 
-  void handle_error(error err);
+  void handle_error(util::error err);
 
 private:
   socket handle_;

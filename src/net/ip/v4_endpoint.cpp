@@ -5,8 +5,7 @@
 
 #include "net/ip/v4_endpoint.hpp"
 
-#include "net/error.hpp"
-
+#include "util/error.hpp"
 #include "util/format.hpp"
 
 namespace net::ip {
@@ -28,12 +27,12 @@ std::string to_string(const v4_endpoint& ep) {
   return util::format("{0}:{1}", to_string(ep.address()), ep.port());
 }
 
-error_or<v4_endpoint> parse_v4_endpoint(const std::string& str) {
+util::error_or<v4_endpoint> parse_v4_endpoint(const std::string& str) {
   const auto parts = util::split(str, ':');
   if (parts.size() != 2)
-    return error{error_code::parser_error,
-                 "Parsing to v4_endpoint failed: needs address and port, "
-                 "separated by ':'"};
+    return util::error{util::error_code::parser_error,
+                       "Parsing to v4_endpoint failed: needs address and port, "
+                       "separated by ':'"};
   auto maybe_addr = parse_v4_address(parts.front());
   if (auto err = get_error(maybe_addr))
     return *err;

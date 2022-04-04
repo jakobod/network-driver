@@ -26,13 +26,14 @@ void shutdown(socket hdl, int how) {
     ::shutdown(hdl.id, how);
 }
 
-error bind(socket sock, ip::v4_endpoint ep) {
+util::error bind(socket sock, ip::v4_endpoint ep) {
   auto addr = ip::to_sockaddr_in(ep);
   if ((::bind(sock.id, reinterpret_cast<sockaddr*>(&addr), sizeof(sockaddr_in)))
       != 0)
-    return error(socket_operation_failed,
-                 "Failed to bind socket: " + last_socket_error_as_string());
-  return none;
+    return util::error(util::error_code::socket_operation_failed,
+                       "Failed to bind socket: "
+                         + last_socket_error_as_string());
+  return util::none;
 }
 
 int last_socket_error() {
@@ -61,11 +62,12 @@ bool nonblocking(socket hdl, bool new_value) {
   return (fcntl(hdl.id, F_SETFL, flags) == 0);
 }
 
-error_or<uint16_t> port_of(socket x) {
+util::error_or<uint16_t> port_of(socket x) {
   struct sockaddr_in sin;
   socklen_t len = sizeof(sin);
   if (getsockname(x.id, (struct sockaddr*) &sin, &len) == -1)
-    return error(socket_operation_failed, last_socket_error_as_string());
+    return util::error(util::error_code::socket_operation_failed,
+                       last_socket_error_as_string());
   return ntohs(sin.sin_port);
 }
 

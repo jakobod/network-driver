@@ -5,9 +5,10 @@
 
 #pragma once
 
+#include "fwd.hpp"
+
 #include "net/socket_manager.hpp"
 
-#include "fwd.hpp"
 #include "net/tcp_accept_socket.hpp"
 
 namespace net {
@@ -18,7 +19,7 @@ public:
   acceptor(tcp_accept_socket handle, multiplexer* mpx,
            socket_manager_factory_ptr factory);
 
-  error init() override;
+  util::error init() override;
 
   // -- properties -------------------------------------------------------------
 

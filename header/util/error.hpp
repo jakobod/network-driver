@@ -5,14 +5,15 @@
 
 #pragma once
 
+#include "fwd.hpp"
+
+#include "util/error_code.hpp"
+
 #include <sstream>
 #include <string>
 #include <variant>
 
-#include "fwd.hpp"
-#include "net/error_code.hpp"
-
-namespace net {
+namespace util {
 
 struct [[nodiscard]] error {
   error(error_code err, std::string err_msg);
@@ -49,4 +50,4 @@ error* get_error(error_or<T>& maybe_error) {
 
 std::string to_string(const error& err);
 
-} // namespace net
+} // namespace util

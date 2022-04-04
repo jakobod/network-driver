@@ -3,9 +3,9 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "net/error.hpp"
+#include "util/error.hpp"
 
-namespace net {
+namespace util {
 
 error::error(error_code err, std::string err_msg)
   : err_(err), err_msg_(std::move(err_msg)) {
@@ -40,4 +40,4 @@ std::string to_string(const error& err) {
   return ss.str();
 }
 
-} // namespace net
+} // namespace util

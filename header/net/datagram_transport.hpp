@@ -10,9 +10,9 @@
 #include <utility>
 
 #include "fwd.hpp"
-#include "net/datagram_socket.hpp"
 #include "net/error.hpp"
 #include "net/receive_policy.hpp"
+#include "net/udp_datagram_socket.hpp"
 
 namespace net {
 
@@ -25,9 +25,11 @@ class datagram_transport : public socket_manager {
   static constexpr const size_t max_consecutive_reads = 20;
   static constexpr const size_t max_consecutive_writes = 20;
 
+  using packet_buffer = util::byte_array<max_datagram_size>;
+
 public:
   template <class... Ts>
-  stream_transport(stream_socket handle, multiplexer* mpx, Ts&&... xs)
+  datagram_transport(udp_datagram_socket handle, multiplexer* mpx, Ts&&... xs)
     : socket_manager(handle, mpx), application_(std::forward<Ts>(xs)...) {
     // nop
   }
@@ -40,19 +42,16 @@ public:
 
   event_result handle_read_event() override {
     for (size_t i = 0; i < max_consecutive_reads; ++i) {
-      auto data = read_buffer_.data();
-      auto size = read_buffer_.size();
-      auto read_res = read(handle<datagram_socket>(), read_buffer_);
+      auto [source_ep, read_res] = read(handle<udp_datagram_socket>(),
+                                        read_buffer_);
       if (read_res > 0) {
         received_ += read_res;
         if (received_ >= min_read_size_) {
-          if (application_.consume(*this,
-                                   std::span(read_buffer_.data(), received_))
+          if (application_.consume(*this, source_ep,
+                                   std::span(read_buffer_.data(), read_res))
               == event_result::error)
             return event_result::error;
         }
-      } else if (read_res == 0) {
-        return event_result::error;
       } else if (read_res < 0) {
         if (!last_socket_error_is_temporary()) {
           handle_error(
@@ -61,22 +60,26 @@ public:
           return event_result::error;
         }
         return event_result::ok;
+      } else {
+        // Empty packets are valid, but can be ignored
       }
     }
     return event_result::ok;
   }
 
   event_result handle_write_event() override {
-    auto done_writing = [&]() {
+    // Checks if this transport is done writing
+    auto done_writing = [&write_buffer_, &application_]() -> bool {
       return (write_buffer_.empty() && !application_.has_more_data());
     };
-    auto fetch = [&]() {
+    auto fetch = [&application_, &max_consecutive_fetches]() -> bool {
       auto fetched = application_.has_more_data();
       for (size_t i = 0;
            application_.has_more_data() && (i < max_consecutive_fetches); ++i)
         application_.produce(*this);
       return fetched;
     };
+
     if (write_buffer_.empty())
       if (!fetch())
         return event_result::done;
@@ -94,10 +97,9 @@ public:
         if (last_socket_error_is_temporary()) {
           return event_result::ok;
         } else {
-          handle_error(
-            error(socket_operation_failed,
-                  "[stream::write()] " + last_socket_error_as_string()));
-
+          handle_error(error(socket_operation_failed,
+                             util::format("[datagram_transport::write()] {0}",
+                                          last_socket_error_as_string())));
           return event_result::error;
         }
       }
@@ -112,11 +114,8 @@ public:
   // -- public API -------------------------------------------------------------
 
   /// Configures the amount to be read next
-  void configure_next_read(receive_policy policy) {
-    received_ = 0;
-    min_read_size_ = policy.min_size;
-    if (read_buffer_.size() != policy.max_size)
-      read_buffer_.resize(policy.max_size);
+  void configure_next_read(receive_policy) {
+    // nop
   }
 
   /// Returns a reference to the send_buffer
@@ -125,13 +124,9 @@ public:
   }
 
 private:
-  Application application_;
+  std::unordered_map<ip::v4_endpoint, Application> applications_;
 
-  size_t received_ = 0;
-  size_t written_ = 0;
-  size_t min_read_size_ = 0;
-
-  util::byte_array<max_datagram_size> read_buffer_;
+  packet_buffer read_buffer_;
   util::byte_buffer write_buffer_;
 };
 

@@ -10,10 +10,10 @@
 
 #include "net/stream_socket.hpp"
 
+#include "util/error.hpp"
+
 #include <cstdint>
 #include <string>
-
-#include "net/error.hpp"
 
 namespace net {
 
@@ -25,7 +25,7 @@ struct tcp_stream_socket : stream_socket {
 };
 
 /// Create a `tcp_stream_socket` connected to `auth`.
-error_or<tcp_stream_socket>
+util::error_or<tcp_stream_socket>
 make_connected_tcp_stream_socket(const std::string hostname, uint16_t port);
 
 } // namespace net

@@ -60,6 +60,6 @@ bool operator!=(const v4_address& lhs, const v4_address& rhs);
 std::string to_string(const v4_address& addr);
 
 /// parses a v4_address from string.
-error_or<v4_address> parse_v4_address(const std::string& str);
+util::error_or<v4_address> parse_v4_address(const std::string& str);
 
 } // namespace net::ip

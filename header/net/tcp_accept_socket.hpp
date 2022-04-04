@@ -7,8 +7,9 @@
 
 #include "fwd.hpp"
 
-#include "net/error.hpp"
 #include "net/socket.hpp"
+
+#include "util/error.hpp"
 
 #include <cstdint>
 
@@ -23,10 +24,10 @@ struct tcp_accept_socket : socket {
 
 using acceptor_pair = std::pair<tcp_accept_socket, uint16_t>;
 
-error listen(tcp_accept_socket sock, int conn_backlog);
+util::error listen(tcp_accept_socket sock, int conn_backlog);
 
 tcp_stream_socket accept(tcp_accept_socket sock);
 
-error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port);
+util::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port);
 
 } // namespace net

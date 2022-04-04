@@ -5,16 +5,17 @@
 
 #include "net/epoll_multiplexer.hpp"
 
+#include "net/acceptor.hpp"
+#include "net/socket_manager.hpp"
+#include "net/socket_sys_includes.hpp"
+
+#include "util/error.hpp"
+
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <iostream>
 #include <utility>
-
-#include "net/acceptor.hpp"
-#include "net/error.hpp"
-#include "net/socket_manager.hpp"
-#include "net/socket_sys_includes.hpp"
 
 namespace net {
 
@@ -27,14 +28,15 @@ epoll_multiplexer::~epoll_multiplexer() {
   ::close(epoll_fd_);
 }
 
-error epoll_multiplexer::init(socket_manager_factory_ptr factory,
-                              uint16_t port) {
+util::error epoll_multiplexer::init(socket_manager_factory_ptr factory,
+                                    uint16_t port) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
-    return error(runtime_error, "creating epoll fd failed");
+    return util::error(util::error_code::runtime_error,
+                       "creating epoll fd failed");
   // Create pollset updater
   auto pipe_res = make_pipe();
-  if (auto err = get_error(pipe_res))
+  if (auto err = util::get_error(pipe_res))
     return *err;
   auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
   pipe_reader_ = pipe_fds.first;
@@ -49,7 +51,7 @@ error epoll_multiplexer::init(socket_manager_factory_ptr factory,
   port_ = accept_socket_pair.second;
   add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
-  return none;
+  return util::none;
 }
 
 void epoll_multiplexer::start() {
@@ -104,14 +106,14 @@ void epoll_multiplexer::set_thread_id() {
 
 // -- Error handling -----------------------------------------------------------
 
-void epoll_multiplexer::handle_error(error err) {
+void epoll_multiplexer::handle_error(util::error err) {
   std::cerr << "ERROR: " << err << std::endl;
   shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
 
-error epoll_multiplexer::poll_once(bool blocking) {
+util::error epoll_multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   auto timeout = [&]() -> int {
     if (!blocking)
@@ -126,7 +128,9 @@ error epoll_multiplexer::poll_once(bool blocking) {
   auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
                                static_cast<int>(pollset_.size()), to);
   if (num_events < 0) {
-    return (errno == EINTR) ? none : error{runtime_error, strerror(errno)};
+    return (errno == EINTR)
+             ? util::none
+             : util::error{util::error_code::runtime_error, strerror(errno)};
   } else {
     handle_timeouts();
     for (int i = 0; i < num_events; ++i) {
@@ -158,14 +162,15 @@ error epoll_multiplexer::poll_once(bool blocking) {
       }
     }
   }
-  return none;
+  return util::none;
 }
 
 void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
   if (!mgr->mask_add(initial))
     return;
   if (!nonblocking(mgr->handle(), true))
-    handle_error(error(socket_operation_failed, "Could not set nonblocking"));
+    handle_error(util::error(util::error_code::socket_operation_failed,
+                             "Could not set nonblocking"));
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
   managers_.emplace(mgr->handle().id, std::move(mgr));
 }
@@ -216,8 +221,8 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
   event.events = static_cast<uint32_t>(events);
   event.data.fd = fd;
   if (epoll_ctl(epoll_fd_, op, fd, &event) < 0)
-    handle_error(
-      error(runtime_error, "epoll_ctl: " + std::string(strerror(errno))));
+    handle_error(util::error(util::error_code::runtime_error,
+                             "epoll_ctl: " + std::string(strerror(errno))));
 }
 
 void epoll_multiplexer::handle_timeouts() {
@@ -246,7 +251,7 @@ void epoll_multiplexer::run() {
   }
 }
 
-error_or<multiplexer_ptr>
+util::error_or<multiplexer_ptr>
 make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
   auto mpx = std::make_shared<epoll_multiplexer>();
   if (auto err = mpx->init(std::move(factory), port))

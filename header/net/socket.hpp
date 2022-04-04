@@ -10,10 +10,10 @@
 
 #include "fwd.hpp"
 
-#include "net/error.hpp"
+#include "net/ip/v4_endpoint.hpp"
 #include "net/socket_id.hpp"
 
-#include "net/ip/v4_endpoint.hpp"
+#include "util/error.hpp"
 
 #include <net/if.h>
 #include <string>
@@ -60,7 +60,7 @@ void close(socket x);
 void shutdown(socket sock, int how);
 
 /// binds socket `x` to endpoint `ep`.
-error bind(socket sock, ip::v4_endpoint ep);
+util::error bind(socket sock, ip::v4_endpoint ep);
 
 /// Returns the last socket error in this thread as an integer.
 int last_socket_error();
@@ -76,7 +76,7 @@ std::string last_socket_error_as_string();
 bool nonblocking(socket x, bool new_value);
 
 /// Returns port of `x` or error if `x` is not bound.
-error_or<uint16_t> port_of(socket x);
+util::error_or<uint16_t> port_of(socket x);
 
 /// Enables or disables reuseaddr I/O on `x`.
 bool reuseaddr(socket x, bool new_value);

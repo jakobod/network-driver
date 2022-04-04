@@ -30,6 +30,9 @@ if (LIB_NET_ENABLE_TESTS)
   FetchContent_MakeAvailable(googletest)
 endif()
 
+# Threads
+find_package(OpenSSL REQUIRED)
+
 # -- project files -------------------------------------------------------------
 
 # Find the packet-routing headers
@@ -40,8 +43,6 @@ set(LIB_NET_SOURCES
   # net sources
   src/net/acceptor.cpp
   src/net/datagram_socket.cpp
-  src/net/error.cpp
-  src/net/error_code.cpp
   src/net/epoll_multiplexer.cpp
   src/net/event_result.cpp
   src/net/operation.cpp
@@ -60,6 +61,8 @@ set(LIB_NET_SOURCES
   # util sources
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
+  src/util/error.cpp
+  src/util/error_code.cpp
   src/util/format.cpp
 )
 
@@ -68,7 +71,7 @@ set(LIB_NET_SOURCES
 add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
-target_link_libraries(net Threads::Threads)
+target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
 
 # -- test setup ----------------------------------------------------------------
 

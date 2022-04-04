@@ -3,9 +3,9 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "net/error_code.hpp"
+#include "util/error_code.hpp"
 
-namespace net {
+namespace util {
 
 std::string to_string(error_code err) {
   switch (err) {
@@ -19,9 +19,11 @@ std::string to_string(error_code err) {
       return "invalid_argument";
     case parser_error:
       return "parser_error";
+    case openssl_error:
+      return "openssl_error";
     default:
       return "???";
   }
 }
 
-} // namespace net
+} // namespace util

@@ -9,11 +9,12 @@
 
 #include "net/socket_manager.hpp"
 
+#include "net/multiplexer.hpp"
+
+#include "util/error.hpp"
+
 #include <iostream>
 #include <memory>
-
-#include "net/error.hpp"
-#include "net/multiplexer.hpp"
 
 namespace net {
 
@@ -79,7 +80,7 @@ void socket_manager::set_timeout_at(std::chrono::system_clock::time_point point,
   mpx_->set_timeout(*this, timeout_id, point);
 }
 
-void socket_manager::handle_error(error err) {
+void socket_manager::handle_error(util::error err) {
   mpx_->handle_error(err);
 }
 

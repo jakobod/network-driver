@@ -5,11 +5,13 @@
 
 #pragma once
 
-#include <linux/if_packet.h>
-
-#include "error.hpp"
 #include "fwd.hpp"
+
 #include "net/socket.hpp"
+
+#include "util/error.hpp"
+
+#include <linux/if_packet.h>
 
 namespace net {
 
@@ -19,7 +21,7 @@ struct raw_socket : socket {
   using super::super;
 };
 
-error_or<raw_socket> make_raw_socket();
+util::error_or<raw_socket> make_raw_socket();
 
 ssize_t sendto(raw_socket sock, sockaddr_ll socket_address,
                util::byte_span data);

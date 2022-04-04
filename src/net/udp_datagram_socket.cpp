@@ -5,21 +5,23 @@
 
 #include "net/udp_datagram_socket.hpp"
 
-#include "net/error.hpp"
 #include "net/socket_guard.hpp"
 #include "net/socket_sys_includes.hpp"
+
+#include "util/error.hpp"
 
 namespace net {
 
 constexpr const int max_conn_backlog = 10;
 constexpr const int no_sigpipe_io_flag = MSG_NOSIGNAL;
 
-error_or<std::pair<udp_datagram_socket, std::uint16_t>>
+util::error_or<udp_datagram_socket_result>
 make_udp_datagram_socket(std::uint16_t port) {
   udp_datagram_socket sock{::socket(AF_INET, SOCK_DGRAM, 0)};
   auto guard = make_socket_guard(sock);
   if (sock == invalid_socket)
-    return error(socket_operation_failed, "Failed to create socket");
+    return util::error(util::error_code::socket_operation_failed,
+                       "Failed to create socket");
   if (auto err = bind(sock, ip::v4_endpoint{htonl(INADDR_ANY), htons(port)}))
     return err;
   auto res = net::port_of(*guard);

@@ -8,18 +8,18 @@
 
 #include "net/pipe_socket.hpp"
 
+#include "util/error.hpp"
+
 #include <iostream>
 #include <unistd.h>
 
-#include "net/error.hpp"
-
 namespace net {
 
-error_or<pipe_socket_pair> make_pipe() {
+util::error_or<pipe_socket_pair> make_pipe() {
   socket_id pipefds[2];
   if (pipe(pipefds) != 0)
-    return error(socket_operation_failed,
-                 "make_pipe: " + last_socket_error_as_string());
+    return util::error(util::error_code::socket_operation_failed,
+                       "make_pipe: " + last_socket_error_as_string());
   return std::make_pair(pipe_socket{pipefds[0]}, pipe_socket{pipefds[1]});
 }
 

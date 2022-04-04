@@ -5,13 +5,15 @@
 
 #include "net/acceptor.hpp"
 
-#include <iostream>
-#include <memory>
-
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
+
+#include "util/error.hpp"
+
+#include <iostream>
+#include <memory>
 
 namespace net {
 
@@ -21,8 +23,8 @@ acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx,
   // nop
 }
 
-error acceptor::init() {
-  return none;
+util::error acceptor::init() {
+  return util::none;
 }
 
 // -- properties -------------------------------------------------------------
@@ -32,14 +34,14 @@ event_result acceptor::handle_read_event() {
   auto accepted = accept(hdl);
   if (accepted == invalid_socket) {
     mpx()->handle_error(
-      error(socket_operation_failed,
-            "accepting failed: " + last_socket_error_as_string()));
+      util::error(util::error_code::socket_operation_failed,
+                  "accepting failed: " + last_socket_error_as_string()));
     return event_result::ok;
   }
   if (!nonblocking(accepted, true)) {
     mpx()->handle_error(
-      error(socket_operation_failed,
-            "nonblocking failed " + last_socket_error_as_string()));
+      util::error(util::error_code::socket_operation_failed,
+                  "nonblocking failed " + last_socket_error_as_string()));
     return event_result::ok;
   }
   auto mgr = factory_->make(accepted, mpx());
@@ -53,14 +55,16 @@ event_result acceptor::handle_read_event() {
 
 event_result acceptor::handle_write_event() {
   mpx()->handle_error(
-    error(runtime_error, "[acceptor::handle_write_event()] acceptor should not "
-                         "be registered for writing"));
+    util::error(util::error_code::runtime_error,
+                "[acceptor::handle_write_event()] acceptor should not "
+                "be registered for writing"));
   return event_result::error;
 }
 
 event_result acceptor::handle_timeout(uint64_t) {
   mpx()->handle_error(
-    error(runtime_error, "[acceptor::handle_timeout()] not implemented!"));
+    util::error(util::error_code::runtime_error,
+                "[acceptor::handle_timeout()] not implemented!"));
   return event_result::error;
 }
 

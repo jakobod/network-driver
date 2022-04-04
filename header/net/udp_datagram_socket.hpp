@@ -7,9 +7,9 @@
 
 #include "net/datagram_socket.hpp"
 
-#include <cstdint>
+#include "util/error.hpp"
 
-#include "net/error.hpp"
+#include <cstdint>
 
 namespace net {
 
@@ -25,7 +25,7 @@ using udp_datagram_socket_result
 using udp_read_result = std::pair<ip::v4_endpoint, ptrdiff_t>;
 
 /// Create a `udp_datagram_socket` bound to `port`.
-error_or<udp_datagram_socket_result>
+util::error_or<udp_datagram_socket_result>
 make_udp_datagram_socket(std::uint16_t port);
 
 /// Sends packet to `x`.

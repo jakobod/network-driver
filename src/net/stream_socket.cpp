@@ -8,19 +8,20 @@
 
 #include "net/stream_socket.hpp"
 
+#include "util/error.hpp"
+
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-
-#include "net/error.hpp"
 
 namespace net {
 
 constexpr int no_sigpipe_io_flag = MSG_NOSIGNAL;
 
-error_or<stream_socket_pair> make_stream_socket_pair() {
+util::error_or<stream_socket_pair> make_stream_socket_pair() {
   socket_id sockets[2];
   if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0)
-    return error(socket_operation_failed, last_socket_error_as_string());
+    return util::error(util::error_code::socket_operation_failed,
+                       last_socket_error_as_string());
   return std::make_pair(stream_socket{sockets[0]}, stream_socket{sockets[1]});
 }
 

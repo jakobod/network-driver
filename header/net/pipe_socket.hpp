@@ -8,12 +8,14 @@
 
 #pragma once
 
+#include "fwd.hpp"
+
+#include "net/socket.hpp"
+
+#include "util/error.hpp"
+
 #include <cstddef>
 #include <utility>
-
-#include "fwd.hpp"
-#include "net/error.hpp"
-#include "net/socket.hpp"
 
 namespace net {
 
@@ -29,7 +31,7 @@ using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
 
 /// Creates two connected sockets. The first socket is the read handle and the
 /// second socket is the write handle.
-error_or<pipe_socket_pair> make_pipe();
+util::error_or<pipe_socket_pair> make_pipe();
 
 /// Transmits data from `x` to its peer.
 ptrdiff_t write(pipe_socket x, util::byte_span buf);

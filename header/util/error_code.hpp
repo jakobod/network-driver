@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace net {
+namespace util {
 
 enum error_code {
   no_error = 0,
@@ -16,8 +16,9 @@ enum error_code {
   socket_operation_failed,
   invalid_argument,
   parser_error,
+  openssl_error,
 };
 
 std::string to_string(error_code err);
 
-} // namespace net
+} // namespace util

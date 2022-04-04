@@ -6,9 +6,11 @@
 #pragma once
 
 #include "fwd.hpp"
-#include "net/error.hpp"
+
 #include "net/operation.hpp"
 #include "net/tcp_stream_socket.hpp"
+
+#include "util/error.hpp"
 
 #include <chrono>
 #include <string>
@@ -18,7 +20,8 @@ namespace net {
 class multiplexer {
 public:
   /// Initializes the multiplexer.
-  virtual error init(socket_manager_factory_ptr factory, uint16_t port) = 0;
+  virtual util::error init(socket_manager_factory_ptr factory, uint16_t port)
+    = 0;
 
   /// Creates a thread that runs this multiplexer indefinately.
   virtual void start() = 0;
@@ -34,12 +37,12 @@ public:
   // -- Error Handling ---------------------------------------------------------
 
   /// Handles an error `err`.
-  virtual void handle_error(error err) = 0;
+  virtual void handle_error(util::error err) = 0;
 
   // -- Interface functions ----------------------------------------------------
 
   /// The main multiplexing loop.
-  virtual error poll_once(bool blocking) = 0;
+  virtual util::error poll_once(bool blocking) = 0;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
   /// @warning This function is *NOT* thread-safe.
@@ -63,8 +66,8 @@ public:
     = 0;
 
   template <class Manager, class... Ts>
-  error tcp_connect(std::string host, uint16_t port, net::operation initial_op,
-                    Ts&&... xs) {
+  util::error tcp_connect(std::string host, uint16_t port,
+                          net::operation initial_op, Ts&&... xs) {
     auto sock = net::make_connected_tcp_stream_socket(std::move(host), port);
     if (auto err = get_error(sock))
       return *err;
@@ -73,7 +76,7 @@ public:
     if (auto err = mgr->init())
       return err;
     add(std::move(mgr), initial_op);
-    return none;
+    return util::none;
   }
   // -- members ----------------------------------------------------------------
 

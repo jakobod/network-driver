@@ -5,19 +5,20 @@
 
 #pragma once
 
+#include "fwd.hpp"
+
+#include "net/multiplexer.hpp"
+#include "net/pipe_socket.hpp"
+#include "net/pollset_updater.hpp"
+#include "net/socket_manager.hpp"
+#include "net/timeout_entry.hpp"
+
 #include <array>
 #include <optional>
 #include <set>
 #include <sys/epoll.h>
 #include <thread>
 #include <unordered_map>
-
-#include "fwd.hpp"
-#include "net/multiplexer.hpp"
-#include "net/pipe_socket.hpp"
-#include "net/pollset_updater.hpp"
-#include "net/socket_manager.hpp"
-#include "net/timeout_entry.hpp"
 
 namespace net {
 
@@ -39,7 +40,7 @@ public:
   ~epoll_multiplexer();
 
   /// Initializes the multiplexer.
-  error init(socket_manager_factory_ptr factory, uint16_t port) override;
+  util::error init(socket_manager_factory_ptr factory, uint16_t port) override;
 
   // -- Thread functions -------------------------------------------------------
 
@@ -58,12 +59,12 @@ public:
 
   // -- Error Handling ---------------------------------------------------------
 
-  void handle_error(error err) override;
+  void handle_error(util::error err) override;
 
   // -- Interface functions ----------------------------------------------------
 
   /// Main multiplexing loop.
-  error poll_once(bool blocking) override;
+  util::error poll_once(bool blocking) override;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
   void add(socket_manager_ptr mgr, operation initial) override;
@@ -121,7 +122,7 @@ private:
   std::thread::id mpx_thread_id_;
 };
 
-error_or<multiplexer_ptr>
+util::error_or<multiplexer_ptr>
 make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port = 0);
 
 } // namespace net

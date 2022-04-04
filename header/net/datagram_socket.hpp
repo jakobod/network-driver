@@ -7,10 +7,10 @@
 
 #include "fwd.hpp"
 
-#include "net/error.hpp"
+#include "net/ip/v4_endpoint.hpp"
 #include "net/socket.hpp"
 
-#include "net/ip/v4_endpoint.hpp"
+#include "util/error.hpp"
 
 #include <cstddef>
 
@@ -24,7 +24,7 @@ struct datagram_socket : socket {
 };
 
 /// Creates a datagram_socket
-error_or<datagram_socket_pair> make_connected_datagram_socket_pair();
+util::error_or<datagram_socket_pair> make_connected_datagram_socket_pair();
 
 /// Receives packet from `x`.
 ptrdiff_t read(datagram_socket x, util::byte_span buf);

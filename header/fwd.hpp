@@ -24,7 +24,6 @@ class socket_manager;
 class socket_manager_factory;
 
 struct datagram_socket;
-struct error;
 struct pipe_socket;
 struct raw_socket;
 struct socket;
@@ -43,8 +42,6 @@ using multiplexer_ptr = std::shared_ptr<multiplexer>;
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
 using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
 
-template <class T>
-using error_or = std::variant<T, error>;
 template <class Socket>
 class socket_guard;
 
@@ -62,10 +59,14 @@ class v4_address;
 
 namespace util {
 
+struct error;
+
 class binary_deserializer;
 class binary_serializer;
 class serialized_size;
 
+template <class T>
+using error_or = std::variant<T, error>;
 template <class Func>
 class scope_guard;
 
