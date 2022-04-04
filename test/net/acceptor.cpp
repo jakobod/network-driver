@@ -3,23 +3,24 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
-
 #include "net/acceptor.hpp"
-#include "net/error.hpp"
 #include "net/event_result.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
+#include "util/error.hpp"
+
+#include <gtest/gtest.h>
+
 using namespace net;
 
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  error init(socket_manager_factory_ptr, uint16_t) override {
-    return none;
+  util::error init(socket_manager_factory_ptr, uint16_t) override {
+    return util::none;
   }
 
   void start() override {
@@ -38,12 +39,12 @@ struct dummy_multiplexer : public multiplexer {
     return false;
   }
 
-  void handle_error(error err) override {
+  void handle_error(util::error err) override {
     last_error = std::move(err);
   }
 
-  error poll_once(bool) override {
-    return none;
+  util::error poll_once(bool) override {
+    return util::none;
   }
 
   void add(socket_manager_ptr new_mgr, operation) override {
@@ -63,7 +64,7 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  error last_error;
+  util::error last_error;
   socket_manager_ptr mgr = nullptr;
 };
 
@@ -73,8 +74,8 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
-  error init() override {
-    return none;
+  util::error init() override {
+    return util::none;
   }
 
   event_result handle_read_event() override {
@@ -116,11 +117,11 @@ struct acceptor_test : public testing::Test {
 TEST_F(acceptor_test, handle_read_event) {
   auto sock = make_connected_tcp_stream_socket("127.0.0.1", port);
   EXPECT_EQ(acc.handle_read_event(), event_result::ok);
-  EXPECT_EQ(mpx.last_error, none);
+  EXPECT_EQ(mpx.last_error, util::none);
   EXPECT_NE(mpx.mgr, nullptr);
 }
 
 TEST_F(acceptor_test, handle_write_event) {
   EXPECT_EQ(acc.handle_write_event(), event_result::error);
-  EXPECT_EQ(mpx.last_error, error(runtime_error));
+  EXPECT_EQ(mpx.last_error, util::error(util::error_code::runtime_error));
 }

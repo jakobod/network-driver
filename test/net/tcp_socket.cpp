@@ -3,11 +3,12 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
-
-#include "net/error.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
+
+#include "util/error.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace net;
 

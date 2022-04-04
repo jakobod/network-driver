@@ -3,16 +3,17 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
+#include "fwd.hpp"
 
 #include "net/stream_transport.hpp"
 
-#include "fwd.hpp"
-
-#include "net/error.hpp"
 #include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"
 #include "net/stream_socket.hpp"
+
+#include "util/error.hpp"
+
+#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <cstring>
@@ -23,8 +24,8 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  error init(socket_manager_factory_ptr, uint16_t) override {
-    return none;
+  util::error init(socket_manager_factory_ptr, uint16_t) override {
+    return util::none;
   }
 
   void start() override {
@@ -43,12 +44,12 @@ struct dummy_multiplexer : public multiplexer {
     return false;
   }
 
-  void handle_error(error err) override {
+  void handle_error(util::error err) override {
     FAIL() << "There should be no errors! " << err << std::endl;
   }
 
-  error poll_once(bool) override {
-    return none;
+  util::error poll_once(bool) override {
+    return util::none;
   }
 
   void add(socket_manager_ptr, operation) override {
@@ -76,9 +77,9 @@ struct dummy_application {
   }
 
   template <class Parent>
-  error init(Parent& parent) {
+  util::error init(Parent& parent) {
     parent.configure_next_read(receive_policy::exactly(1024));
-    return none;
+    return util::none;
   }
 
   template <class Parent>
@@ -139,7 +140,7 @@ struct stream_manager_test : public testing::Test {
 
 TEST_F(stream_manager_test, handle_read_event) {
   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), none);
+  ASSERT_EQ(mgr.init(), util::none);
   ASSERT_EQ(write(sockets.second, data), data.size());
   while (received_data.size() < data.size())
     ASSERT_EQ(mgr.handle_read_event(), event_result::ok);
@@ -151,7 +152,7 @@ TEST_F(stream_manager_test, handle_write_event) {
   size_t received = 0;
   util::byte_array<32768> buf;
   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), none);
+  ASSERT_EQ(mgr.init(), util::none);
   auto read_some = [&]() {
     auto data = buf.data() + received;
     auto remaining = buf.size() - received;
@@ -171,7 +172,7 @@ TEST_F(stream_manager_test, handle_write_event) {
 
 TEST_F(stream_manager_test, disconnect) {
   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), none);
+  ASSERT_EQ(mgr.init(), util::none);
   close(sockets.second);
   EXPECT_EQ(mgr.handle_read_event(), event_result::error);
 }

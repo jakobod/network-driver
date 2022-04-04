@@ -7,7 +7,7 @@
 
 #include "net/ip/v4_endpoint.hpp"
 
-#include "net/error.hpp"
+#include "util/error.hpp"
 
 #include <gtest/gtest.h>
 

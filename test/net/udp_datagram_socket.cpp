@@ -3,23 +3,22 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
-
 #include "fwd.hpp"
 
-#include "net/error.hpp"
 #include "net/socket_guard.hpp"
 #include "net/udp_datagram_socket.hpp"
 
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 
+#include "util/error.hpp"
+
+#include <gtest/gtest.h>
+
 #include <algorithm>
 
 using namespace net;
 using namespace net::ip;
-
-#define MESSAGE(x) std::cerr << "[   INFO   ] "
 
 namespace {
 
@@ -46,7 +45,6 @@ TEST_F(udp_datagram_socket_test, write) {
   auto send_guard = net::make_socket_guard(send_sock);
   ASSERT_TRUE(nonblocking(send_sock, true));
   v4_endpoint src_ep{localhost, send_port};
-  MESSAGE() << "src_ep = " << to_string(src_ep) << std::endl;
   // Create send socket
   auto maybe_send_socket_res = make_udp_datagram_socket(0);
   ASSERT_EQ(nullptr, get_error(maybe_send_socket_res));
@@ -55,7 +53,6 @@ TEST_F(udp_datagram_socket_test, write) {
   auto recv_guard = net::make_socket_guard(recv_sock);
   ASSERT_TRUE(nonblocking(recv_sock, true));
   v4_endpoint dst_ep{localhost, recv_port};
-  MESSAGE() << "dst_ep = " << to_string(dst_ep) << std::endl;
   // Write the testdata
   ASSERT_EQ(data.size(), write(send_sock, dst_ep, data));
   // receive and check the testdata

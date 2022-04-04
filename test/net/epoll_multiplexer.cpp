@@ -3,16 +3,18 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
-
-#include <chrono>
-
 #include "fwd.hpp"
+
 #include "net/epoll_multiplexer.hpp"
-#include "net/error.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/stream_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
+
+#include "util/error.hpp"
+
+#include <gtest/gtest.h>
+
+#include <chrono>
 
 using namespace net;
 using namespace std::chrono_literals;
@@ -32,8 +34,8 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
-  error init() override {
-    return none;
+  util::error init() override {
+    return util::none;
   }
 
   event_result handle_read_event() override {
@@ -94,7 +96,7 @@ struct epoll_multiplexer_test : public testing::Test {
     : factory(std::make_shared<dummy_factory>(handled_read_event,
                                               handled_write_event)) {
     mpx.set_thread_id();
-    EXPECT_EQ(mpx.init(factory, 0), none);
+    EXPECT_EQ(mpx.init(factory, 0), util::none);
     default_num_socket_managers = mpx.num_socket_managers();
   }
 
@@ -117,7 +119,7 @@ TEST_F(epoll_multiplexer_test, mpx_accepts_connections) {
   std::array<tcp_stream_socket, 10> sockets;
   for (size_t i = 0; i < 10; ++i) {
     connect_to_mpx();
-    EXPECT_EQ(mpx.poll_once(false), none);
+    EXPECT_EQ(mpx.poll_once(false), util::none);
   }
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 10);
   mpx.shutdown();
@@ -126,10 +128,10 @@ TEST_F(epoll_multiplexer_test, mpx_accepts_connections) {
 
 TEST_F(epoll_multiplexer_test, manager_removed_after_disconnect) {
   auto sock = connect_to_mpx();
-  EXPECT_EQ(mpx.poll_once(false), none);
+  EXPECT_EQ(mpx.poll_once(false), util::none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);
   close(sock);
-  EXPECT_EQ(mpx.poll_once(false), none);
+  EXPECT_EQ(mpx.poll_once(false), util::none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers);
 }
 
@@ -137,14 +139,14 @@ TEST_F(epoll_multiplexer_test, event_handling) {
   auto sock = connect_to_mpx();
   std::static_pointer_cast<dummy_factory>(factory)->register_writing();
   EXPECT_TRUE(nonblocking(sock, true));
-  EXPECT_EQ(mpx.poll_once(false), none);
+  EXPECT_EQ(mpx.poll_once(false), util::none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);
   util::byte_array<1024> buf;
   write(sock, buf);
-  EXPECT_EQ(mpx.poll_once(false), none);
+  EXPECT_EQ(mpx.poll_once(false), util::none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);
   EXPECT_TRUE(handled_read_event);
-  EXPECT_EQ(mpx.poll_once(false), none);
+  EXPECT_EQ(mpx.poll_once(false), util::none);
   EXPECT_TRUE(handled_write_event);
   EXPECT_EQ(read(sock, buf), buf.size());
 }
@@ -162,7 +164,7 @@ TEST_F(epoll_multiplexer_test, resetting_timeout) {
   mpx.add(mgr, operation::read);
   mgr->set_timeout_in(10ms, 0);
   while (handled_timeouts.size() < expected_result.size())
-    EXPECT_EQ(mpx.poll_once(true), none);
+    EXPECT_EQ(mpx.poll_once(true), util::none);
   EXPECT_EQ(handled_timeouts.size(), expected_result.size());
   EXPECT_EQ(memcmp(handled_timeouts.data(), expected_result.data(),
                    handled_timeouts.size()),
@@ -187,7 +189,7 @@ TEST_F(epoll_multiplexer_test, multiple_timeouts) {
     duration += 10ms;
   }
   while (handled_timeouts.size() < expected_result.size())
-    EXPECT_EQ(mpx.poll_once(true), none);
+    EXPECT_EQ(mpx.poll_once(true), util::none);
   EXPECT_EQ(handled_timeouts.size(), expected_result.size());
   EXPECT_EQ(memcmp(handled_timeouts.data(), expected_result.data(),
                    handled_timeouts.size()),

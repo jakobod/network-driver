@@ -5,14 +5,15 @@
 
 #pragma once
 
+#include "fwd.hpp"
+
+#include "net/receive_policy.hpp"
 #include "net/socket_manager.hpp"
+#include "net/stream_socket.hpp"
+
+#include "util/error.hpp"
 
 #include <utility>
-
-#include "fwd.hpp"
-#include "net/error.hpp"
-#include "net/receive_policy.hpp"
-#include "net/stream_socket.hpp"
 
 namespace net {
 
@@ -30,7 +31,7 @@ public:
     // nop
   }
 
-  error init() override {
+  util::error init() override {
     return application_.init(*this);
   }
 
@@ -53,9 +54,9 @@ public:
         return event_result::error;
       } else if (read_res < 0) {
         if (!last_socket_error_is_temporary()) {
-          handle_error(
-            error(socket_operation_failed,
-                  "[socket_manager.read()] " + last_socket_error_as_string()));
+          handle_error(util::error(util::error_code::socket_operation_failed,
+                                   "[socket_manager.read()] "
+                                     + last_socket_error_as_string()));
           return event_result::error;
         }
         return event_result::ok;
@@ -93,8 +94,8 @@ public:
           return event_result::ok;
         } else {
           handle_error(
-            error(socket_operation_failed,
-                  "[stream::write()] " + last_socket_error_as_string()));
+            util::error(util::error_code::socket_operation_failed,
+                        "[stream::write()] " + last_socket_error_as_string()));
 
           return event_result::error;
         }

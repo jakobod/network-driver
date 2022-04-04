@@ -5,10 +5,11 @@
 
 #include "fwd.hpp"
 
-#include "net/error.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket_manager.hpp"
 #include "net/stream_socket.hpp"
+
+#include "util/error.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -21,8 +22,8 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  error init(socket_manager_factory_ptr, uint16_t) override {
-    return none;
+  util::error init(socket_manager_factory_ptr, uint16_t) override {
+    return util::none;
   }
 
   void start() override {
@@ -41,12 +42,12 @@ struct dummy_multiplexer : public multiplexer {
     return false;
   }
 
-  void handle_error(error err) override {
+  void handle_error(util::error err) override {
     last_handled_error_ = std::move(err);
   }
 
-  error poll_once(bool) override {
-    return none;
+  util::error poll_once(bool) override {
+    return util::none;
   }
 
   void add(socket_manager_ptr, operation) override {
@@ -73,7 +74,7 @@ struct dummy_multiplexer : public multiplexer {
     last_enabled_operation_ = operation::none;
   }
 
-  error last_handled_error_;
+  util::error last_handled_error_;
   net::socket last_enabled_socket_ = invalid_socket;
   operation last_enabled_operation_ = operation::none;
 };
@@ -86,8 +87,8 @@ public:
     // nop
   }
 
-  error init() override {
-    return none;
+  util::error init() override {
+    return util::none;
   }
 
   event_result handle_read_event() override {
@@ -187,7 +188,7 @@ TEST_F(socket_manager_test, register_operations) {
 
 TEST_F(socket_manager_test, handle_error) {
   dummy_manager mgr{sockets.first, &mpx};
-  error err{error_code::runtime_error, "hello"};
+  util::error err{util::error_code::runtime_error, "hello"};
   mgr.handle_error(err);
   ASSERT_EQ(mpx.last_handled_error_, err);
 }

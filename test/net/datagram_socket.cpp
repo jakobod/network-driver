@@ -3,12 +3,13 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
-
 #include "fwd.hpp"
 
 #include "net/datagram_socket.hpp"
-#include "net/error.hpp"
+
+#include "util/error.hpp"
+
+#include <gtest/gtest.h>
 
 #include <algorithm>
 
