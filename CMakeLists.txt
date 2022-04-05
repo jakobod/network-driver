@@ -98,8 +98,12 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/tcp_socket.cpp
     test/net/stream_transport.cpp
     test/net/udp_datagram_socket.cpp
+    
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
+
+    test/openssl/communication.cpp
+    
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/format.cpp

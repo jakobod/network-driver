@@ -90,4 +90,15 @@ constexpr std::span<T> make_span(T* ptr, std::size_t size) noexcept {
   return {ptr, size};
 }
 
+template <class T>
+constexpr byte_span make_byte_span(T& container) noexcept {
+  return {reinterpret_cast<std::byte*>(container.data()), container.size()};
+}
+
+template <class T>
+constexpr const_byte_span make_const_byte_span(const T& container) noexcept {
+  return {reinterpret_cast<const std::byte*>(container.data()),
+          container.size()};
+}
+
 } // namespace util
