@@ -8,6 +8,8 @@ include(GoogleTest)
 
 # -- set useful CMake options --------------------------------------------------
 
+set(CMAKE_BUILD_TYPE Debug)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -58,6 +60,10 @@ set(LIB_NET_SOURCES
   # net::ip sources
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
+  # openssl
+  src/openssl/ssl_status.cpp
+  src/openssl/tls_context.cpp
+  src/openssl/tls_session.cpp
   # util sources
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp

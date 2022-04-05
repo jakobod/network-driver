@@ -5,64 +5,32 @@
 
 #pragma once
 
-#include "openssl/server_session.hpp"
+#include "fwd.hpp"
 
-#include "util/error.hpp"
+#include "openssl/tls_session.hpp"
 
-#include <openssl/crypto.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
 #include <openssl/ssl.h>
+
+#include <string>
 
 namespace openssl {
 
 class tls_context {
 public:
-  tls_context() {
-    SSL_library_init();
-    OpenSSL_add_all_algorithms();
-    SSL_load_error_strings();
-    ERR_load_BIO_strings();
-    ERR_load_crypto_strings();
-  }
+  /// Constructs the tls_context object
+  tls_context();
 
-  ~tls_context() {
-    SSL_CTX_free(ctx_);
-  }
+  /// Destructs the tls_context object
+  ~tls_context();
 
-  util::error init(const std::string& cert_path, const std::string& key_path) {
-    /* create the SSL server context */
-    ctx_ = SSL_CTX_new(SSLv23_server_method());
-    if (!ctx_)
-      return util::error(util::error_code::openssl_error,
-                         "Failed to create SSL context");
+  /// Initializes the tls_context
+  util::error init(const std::string& cert_path, const std::string& key_path);
 
-    /* Load certificate and private key files, and check consistency  */
-    if (SSL_CTX_use_certificate_file(ctx_, cert_path.c_str(), SSL_FILETYPE_PEM)
-        != 1)
-      return util::error(util::error_code::openssl_error,
-                         "SSL_CTX_use_certificate_file failed");
+  /// Constructs and returns a new server-side session object
+  util::error_or<tls_session> new_client_session();
 
-    /* Indicate the key file to be used */
-    if (SSL_CTX_use_PrivateKey_file(ctx_, key_path.c_str(), SSL_FILETYPE_PEM)
-        != 1)
-      return util::error(util::error_code::openssl_error,
-                         "SSL_CTX_use_PrivateKey_file failed");
-
-    /* Make sure the key and certificate file match. */
-    if (SSL_CTX_check_private_key(ctx_) != 1)
-      return util::error(util::error_code::openssl_error,
-                         "SSL_CTX_check_private_key failed");
-
-    /* Recommended to avoid SSLv2 & SSLv3 */
-    SSL_CTX_set_options(ctx_, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3
-                                | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
-    return util::none;
-  }
-
-  server_session new_client() {
-    return {ctx_};
-  }
+  /// Constructs and returns a new server-side session object
+  util::error_or<tls_session> new_server_session();
 
 private:
   SSL_CTX* ctx_;
