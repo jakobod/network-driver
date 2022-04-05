@@ -27,11 +27,11 @@ void print_data_info(openssl::tls_session& client,
 void handle_handshake(openssl::tls_session& client,
                       openssl::tls_session& server) {
   for (size_t i = 0; i < 2; ++i) {
-    if (auto err = server.consume_encrypted(client.write_buffer()))
+    if (auto err = server.consume(client.write_buffer()))
       handle_error(err);
     client.write_buffer().clear();
 
-    if (auto err = client.consume_encrypted(server.write_buffer()))
+    if (auto err = client.consume(server.write_buffer()))
       handle_error(err);
     server.write_buffer().clear();
   }
@@ -52,13 +52,19 @@ int main(int, char**) {
 
   std::cout << "Context created and initialized" << std::endl;
 
+  auto on_data = [](util::const_byte_span bytes) {
+    std::cout << std::string{reinterpret_cast<const char*>(bytes.data()),
+                             bytes.size()}
+              << std::endl;
+  };
+
   // get sessions and check for errors
-  auto maybe_client_session = ctx.new_client_session();
+  auto maybe_client_session = ctx.new_client_session(on_data);
   if (auto err = util::get_error(maybe_client_session))
     handle_error(*err);
   auto client_session = std::get<openssl::tls_session>(maybe_client_session);
 
-  auto maybe_server_session = ctx.new_server_session();
+  auto maybe_server_session = ctx.new_server_session(on_data);
   if (auto err = util::get_error(maybe_server_session))
     handle_error(*err);
   auto server_session = std::get<openssl::tls_session>(maybe_server_session);
@@ -69,7 +75,7 @@ int main(int, char**) {
   std::string str{"Hello World"};
 
   std::cout << "enqueueing data" << std::endl;
-  if (auto err = client_session.produce(
+  if (auto err = client_session.encrypt(
         {reinterpret_cast<const std::byte*>(str.data()), str.size()}))
     handle_error(err);
 
@@ -81,8 +87,8 @@ int main(int, char**) {
                            client_session.write_buffer().size())
             << std::endl;
 
-  if (auto err
-      = server_session.consume_encrypted(client_session.write_buffer()))
+  util::byte_buffer buf;
+  if (auto err = server_session.consume(client_session.write_buffer()))
     handle_error(err);
   client_session.write_buffer().clear();
 

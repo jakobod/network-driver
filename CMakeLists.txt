@@ -61,7 +61,6 @@ set(LIB_NET_SOURCES
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
   # openssl
-  src/openssl/ssl_status.cpp
   src/openssl/tls_context.cpp
   src/openssl/tls_session.cpp
   # util sources

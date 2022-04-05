@@ -9,8 +9,6 @@
 
 #include "util/error.hpp"
 
-#include "openssl/ssl_status.hpp"
-
 #include <openssl/ssl.h>
 
 #include <functional>
@@ -18,74 +16,90 @@
 
 namespace openssl {
 
-struct server_mode {};
-struct client_mode {};
+enum class session_type {
+  server,
+  client,
+};
 
 /// TLS-session. Abstracts the en/decrypting of data
-struct tls_session {
+class tls_session {
 public:
-  tls_session(SSL_CTX* ctx, server_mode);
+  /// Callback type for on_data callback
+  using on_data_callback_type = std::function<void(util::const_byte_span)>;
 
-  tls_session(SSL_CTX* ctx, client_mode);
+  // -- Constructors/Destructors/initialization --------------------------------
 
+  /// Constructs a TLS server session
+  tls_session(SSL_CTX* ctx, on_data_callback_type on_data, session_type type);
+
+  /// Destructs a TLS session
   ~tls_session();
 
-  bool has_more_data();
+  /// Initializes a TLS session object
+  util::error init();
 
+  // -- member access ----------------------------------------------------------
+
+  /// Checks wether data is left for writing
+  bool has_more_data() {
+    return !write_buf_.empty();
+  }
+
+  /// Checks wether this session is initialized (Handshake is done)
   bool is_initialized() {
     return SSL_is_init_finished(ssl_);
   }
 
-  /* Queue encrypted bytes for socket write. Should only be used when the SSL
-   * object has requested a write operation. */
-  void queue_encrypted_bytes(util::const_byte_span bytes);
-
-  void queue_plain_bytes(util::const_byte_span bytes);
-
-  /// Takes in encrypted bytes, decrypts them, and passes it to a callback
-  util::error consume_encrypted(util::const_byte_span bytes);
-
-  util::error handle_handshake();
-
-  /* Process outbound unencrypted data that are waiting to be encrypted.  The
-   * waiting data resides in encrypt_buf.  It needs to be passed into the SSL
-   * object for encryption, which in turn generates the encrypted bytes that
-   * then will be queued for later socket write. */
-  util::error produce(util::const_byte_span bytes);
-
+  /// Returns a references to the write_buffer, containing data that should be
+  /// be transmitted to the peer.
   util::byte_buffer& write_buffer() {
     return write_buf_;
   }
 
+  /// Returns a reference to the encrypt buffer, containing data that should be
+  /// encrypted.
   util::byte_buffer& encrypt_buffer() {
     return encrypt_buf_;
   }
 
+  // -- interface functions ----------------------------------------------------
+
+  /// Takes encrypted bytes from `bytes` and passes them to SSL. Possibly
+  /// decrypted data is passed to the on_data callback.
+  util::error consume(util::const_byte_span bytes);
+
+  /// Takes plain bytes from `bytes` and passes them to SSL to be encrypted.
+  /// Resulting encrypted bytes are copied to `encrypted_data_`.
+  util::error encrypt(util::const_byte_span bytes);
+
 private:
-  void on_data(util::const_byte_span bytes) {
-    std::cout << "[" << me << "] received: "
-              << std::string(reinterpret_cast<const char*>(bytes.data()),
-                             bytes.size())
-              << std::endl;
-  }
+  util::error read_from_ssl();
 
-  ssl_status get_ssl_status(int n);
+  /// Handles the ssl-handshake.
+  util::error handle_handshake();
 
-  const std::string me;
+  /// Queues plain bytes from `bytes` to be encrypted.
+  void queue_encrypted_bytes(util::const_byte_span bytes);
 
+  /// Queues encrypted bytes from `bytes` to be decrypted.
+  void queue_plain_bytes(util::const_byte_span bytes);
+
+  /// Denotes session to be either server, or client
+  const session_type type_;
   /// SSL state
   SSL* ssl_;
   /// Write access to the SSL
   BIO* rbio_;
   /// Read access from the SSL
   BIO* wbio_;
-
-  /* Bytes waiting to be written to socket. This is data that has been generated
-   * by the SSL object, either due to encryption of user input, or, writes
-   * requires due to peer-requested SSL renegotiation. */
+  /// Bytes waiting to be written to socket
   util::byte_buffer write_buf_;
-  /* Bytes waiting to be fed into the SSL object for encryption. */
+  /// Bytes waiting to be encrypted
   util::byte_buffer encrypt_buf_;
+  /// Callback handling decrypted data
+  on_data_callback_type on_data_;
+  /// Buffer used for reading from SSL
+  util::byte_array<2048> ssl_read_buf_;
 };
 
 } // namespace openssl

@@ -23,44 +23,50 @@ tls_context::tls_context() {
 
 tls_context::~tls_context() {
   SSL_CTX_free(ctx_);
+  ERR_free_strings();
 }
 
 util::error tls_context::init(const std::string& cert_path,
                               const std::string& key_path) {
-  /* create the SSL server context */
+  // create the SSL context
   ctx_ = SSL_CTX_new(SSLv23_method());
   if (!ctx_)
     return {openssl_error, "Failed to create SSL context"};
 
-  /* Load certificate and private key files, and check consistency  */
+  // Load certificate file
   if (SSL_CTX_use_certificate_file(ctx_, cert_path.c_str(), SSL_FILETYPE_PEM)
       != 1)
     return {openssl_error, "SSL_CTX_use_certificate_file failed"};
 
-  /* Indicate the key file to be used */
+  // Load key file
   if (SSL_CTX_use_PrivateKey_file(ctx_, key_path.c_str(), SSL_FILETYPE_PEM)
       != 1)
     return {openssl_error, "SSL_CTX_use_PrivateKey_file failed"};
 
-  /* Make sure the key and certificate file match. */
+  // Check certificate and key files
   if (SSL_CTX_check_private_key(ctx_) != 1)
     return {openssl_error, "SSL_CTX_check_private_key failed"};
 
-  /* Recommended to avoid SSLv2 & SSLv3 */
-  SSL_CTX_set_options(ctx_, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+  // Only allow TLSv1.2 and disable compression
+  SSL_CTX_set_min_proto_version(ctx_, TLS1_3_VERSION);
 
   return util::none;
 }
 
-util::error_or<tls_session> tls_context::new_client_session() {
-  tls_session session{ctx_, client_mode{}};
-  if (auto err = session.handle_handshake())
+util::error_or<tls_session>
+tls_context::new_client_session(tls_session::on_data_callback_type on_data) {
+  tls_session session{ctx_, std::move(on_data), session_type::client};
+  if (auto err = session.init())
     return err;
   return session;
 }
 
-util::error_or<tls_session> tls_context::new_server_session() {
-  return tls_session{ctx_, server_mode{}};
+util::error_or<tls_session>
+tls_context::new_server_session(tls_session::on_data_callback_type on_data) {
+  tls_session session{ctx_, std::move(on_data), session_type::server};
+  if (auto err = session.init())
+    return err;
+  return session;
 }
 
 } // namespace openssl
