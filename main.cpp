@@ -3,16 +3,20 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "openssl/client_session.hpp"
+#include "openssl/server_session.hpp"
+#include "openssl/tls_context.hpp"
 
-#include <openssl/ssl.h>
+#include <iostream>
 
 int main(int, char**) {
-  // /* Global SSL context */
-  // SSL_CTX* ctx;
+  openssl::tls_context ctx;
+  if (auto err = ctx.init(CERT_DIRECTORY "/server.crt",
+                          CERT_DIRECTORY "/server.key"))
+    std::cerr << "[Failed to init session] " << err << std::endl;
+  else
+    std::cerr << "Created tls_context" << std::endl;
 
-  // ssl_init();
+  auto session = ctx.new_client();
 
-  // openssl::client_session session;
   return 0;
 }

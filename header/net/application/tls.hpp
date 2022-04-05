@@ -7,7 +7,7 @@
 
 #include "fwd.hpp"
 
-#include "net/error.hpp"
+#include "util/error.hpp"
 
 #include <openssl/err.h>
 #include <openssl/ssl.h>

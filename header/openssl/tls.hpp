@@ -405,6 +405,40 @@ void ssl_init() {
 }
 
 int main(int argc, char** argv) {
+  char str[INET_ADDRSTRLEN];
+  int port = (argc > 1) ? atoi(argv[1]) : 55555;
+
+  int servfd = socket(AF_INET, SOCK_STREAM, 0);
+  if (servfd < 0)
+    die("socket()");
+
+  int enable = 1;
+  if (setsockopt(servfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0)
+    die("setsockopt(SO_REUSEADDR)");
+
+  /* Specify socket address */
+  struct sockaddr_in servaddr;
+  memset(&servaddr, 0, sizeof(servaddr));
+  servaddr.sin_family = AF_INET;
+  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  servaddr.sin_port = htons(port);
+
+  if (bind(servfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0)
+    die("bind()");
+
+  if (listen(servfd, 128) < 0)
+    die("listen()");
+
+  int clientfd;
+  struct sockaddr_in peeraddr;
+  socklen_t peeraddr_len = sizeof(peeraddr);
+
+  struct pollfd fdset[2];
+  memset(&fdset, 0, sizeof(fdset));
+
+  fdset[0].fd = STDIN_FILENO;
+  fdset[0].events = POLLIN;
+
   ssl_init();
 
   while (1) {
@@ -416,6 +450,9 @@ int main(int argc, char** argv) {
 
     ssl_client_init(&client);
     client.fd = clientfd;
+
+    inet_ntop(peeraddr.sin_family, &peeraddr.sin_addr, str, INET_ADDRSTRLEN);
+    printf("new connection from %s:%d\n", str, ntohs(peeraddr.sin_port));
 
     fdset[1].fd = clientfd;
 

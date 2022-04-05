@@ -1,6 +1,6 @@
 # -- project setup -------------------------------------------------------------
 
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 project(lib_net CXX)
 
 include(FetchContent)
@@ -72,6 +72,11 @@ add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
 target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
+
+# Copy Dummy certs to build folder and set preprocessor definition to the folder
+file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
+
 
 # -- test setup ----------------------------------------------------------------
 
