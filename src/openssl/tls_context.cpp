@@ -53,20 +53,4 @@ util::error tls_context::init(const std::string& cert_path,
   return util::none;
 }
 
-util::error_or<tls_session>
-tls_context::new_client_session(tls_session::on_data_callback_type on_data) {
-  tls_session session{ctx_, std::move(on_data), session_type::client};
-  if (auto err = session.init())
-    return err;
-  return session;
-}
-
-util::error_or<tls_session>
-tls_context::new_server_session(tls_session::on_data_callback_type on_data) {
-  tls_session session{ctx_, std::move(on_data), session_type::server};
-  if (auto err = session.init())
-    return err;
-  return session;
-}
-
 } // namespace openssl

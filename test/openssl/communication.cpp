@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "openssl/tls_context.hpp"
+#include "openssl/tls_session.hpp"
 
 #include <string>
 
@@ -50,26 +51,25 @@ TEST(openssl_test, roundtrip) {
   };
 
   // get sessions and check for errors
-  auto maybe_client_session = ctx.new_client_session(on_data);
-  if (auto err = util::get_error(maybe_client_session))
-    FAIL() << "Creating client session failed: " << *err;
-  auto client_session = std::get<tls_session>(maybe_client_session);
+  util::byte_buffer client_write_buffer;
+  auto client = make_client_session(ctx, client_write_buffer, on_data);
+  if (auto err = client.init())
+    FAIL() << "Initializing client session failed: " << err;
 
-  auto maybe_server_session = ctx.new_server_session(on_data);
-  if (auto err = util::get_error(maybe_server_session))
-    FAIL() << "Creating server session failed: " << *err;
-  auto server_session = std::get<tls_session>(maybe_server_session);
+  util::byte_buffer server_write_buffer;
+  auto server = make_server_session(ctx, server_write_buffer, on_data);
+  if (auto err = server.init())
+    FAIL() << "Initializing server session failed: " << err;
 
   // Handle the TLS handshake
-  handle_handshake(client_session, server_session);
+  handle_handshake(client, server);
   // Both sides should be initialized with completed handshake
-  ASSERT_TRUE(client_session.is_initialized());
-  ASSERT_TRUE(server_session.is_initialized());
+  ASSERT_TRUE(client.is_initialized());
+  ASSERT_TRUE(server.is_initialized());
 
   // Transmit data from the client to the server
-  ASSERT_NO_ERROR(
-    client_session.encrypt(util::make_const_byte_span(testString)));
-  ASSERT_NO_ERROR(server_session.consume(client_session.write_buffer()));
-  client_session.write_buffer().clear();
+  ASSERT_NO_ERROR(client.encrypt(util::make_const_byte_span(testString)));
+  ASSERT_NO_ERROR(server.consume(client_write_buffer));
+  client_write_buffer.clear();
   ASSERT_EQ(received_string, testString);
 }

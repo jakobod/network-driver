@@ -3,7 +3,7 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "openssl/tls_context.hpp"
+#include "openssl/tls_session.hpp"
 
 #include "util/error.hpp"
 #include "util/format.hpp"
@@ -43,12 +43,13 @@ using util::error_code::openssl_error;
 /// Default buffer size for local buffers
 static constexpr const std::size_t default_buf_size = 1024;
 
-tls_session::tls_session(SSL_CTX* ctx, on_data_callback_type on_data,
-                         session_type type)
+tls_session::tls_session(tls_context& ctx, util::byte_buffer& write_buffer,
+                         on_data_callback_type on_data, session_type type)
   : type_{type},
-    ssl_{SSL_new(ctx)},
+    ssl_{SSL_new(ctx.context())},
     rbio_{BIO_new(BIO_s_mem())},
     wbio_{BIO_new(BIO_s_mem())},
+    write_buf_{write_buffer},
     on_data_{std::move(on_data)} {
   // Set SSL to either client or server mode
   if (type_ == session_type::server)
@@ -179,6 +180,18 @@ void tls_session::queue_encrypted_bytes(util::const_byte_span bytes) {
 
 void tls_session::queue_plain_bytes(util::const_byte_span bytes) {
   encrypt_buf_.insert(encrypt_buf_.end(), bytes.begin(), bytes.end());
+}
+
+tls_session make_client_session(tls_context& ctx,
+                                util::byte_buffer& write_buffer,
+                                tls_session::on_data_callback_type on_data) {
+  return {ctx, write_buffer, std::move(on_data), session_type::client};
+}
+
+tls_session make_server_session(tls_context& ctx,
+                                util::byte_buffer& write_buffer,
+                                tls_session::on_data_callback_type on_data) {
+  return {ctx, write_buffer, std::move(on_data), session_type::server};
 }
 
 } // namespace openssl

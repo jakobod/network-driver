@@ -8,8 +8,8 @@
 #include "fwd.hpp"
 
 #include "net/receive_policy.hpp"
-#include "net/socket_manager.hpp"
 #include "net/stream_socket.hpp"
+#include "net/transport.hpp"
 
 #include "util/error.hpp"
 
@@ -19,20 +19,16 @@ namespace net {
 
 /// Implements a stream oriented transport.
 template <class Application>
-class stream_transport : public socket_manager {
-  static constexpr const size_t max_consecutive_fetches = 20;
-  static constexpr const size_t max_consecutive_reads = 20;
-  static constexpr const size_t max_consecutive_writes = 20;
-
+class stream_transport : public transport {
 public:
   template <class... Ts>
   stream_transport(stream_socket handle, multiplexer* mpx, Ts&&... xs)
-    : socket_manager(handle, mpx), application_(std::forward<Ts>(xs)...) {
+    : transport(handle, mpx), application_(*this, std::forward<Ts>(xs)...) {
     // nop
   }
 
   util::error init() override {
-    return application_.init(*this);
+    return application_.init();
   }
 
   // -- socket_manager API -----------------------------------------------------
@@ -45,8 +41,8 @@ public:
       if (read_res > 0) {
         received_ += read_res;
         if (received_ >= min_read_size_) {
-          if (application_.consume(*this,
-                                   std::span(read_buffer_.data(), received_))
+          if (application_.consume(
+                util::const_byte_span{read_buffer_.data(), received_})
               == event_result::error)
             return event_result::error;
         }
@@ -73,7 +69,7 @@ public:
       auto fetched = application_.has_more_data();
       for (size_t i = 0;
            application_.has_more_data() && (i < max_consecutive_fetches); ++i)
-        application_.produce(*this);
+        application_.produce();
       return fetched;
     };
     if (write_buffer_.empty())
@@ -104,34 +100,22 @@ public:
     return done_writing() ? event_result::done : event_result::ok;
   }
 
-  event_result handle_timeout(uint64_t id) {
-    return application_.handle_timeout(*this, id);
+  event_result handle_timeout(uint64_t id) override {
+    return application_.handle_timeout(id);
   }
 
   // -- public API -------------------------------------------------------------
 
   /// Configures the amount to be read next
-  void configure_next_read(receive_policy policy) {
+  void configure_next_read(receive_policy policy) override {
     received_ = 0;
     min_read_size_ = policy.min_size;
     if (read_buffer_.size() != policy.max_size)
       read_buffer_.resize(policy.max_size);
   }
 
-  /// Returns a reference to the send_buffer
-  util::byte_buffer& write_buffer() {
-    return write_buffer_;
-  }
-
 private:
   Application application_;
-
-  size_t received_ = 0;
-  size_t written_ = 0;
-  size_t min_read_size_ = 0;
-
-  util::byte_buffer read_buffer_;
-  util::byte_buffer write_buffer_;
 };
 
 } // namespace net

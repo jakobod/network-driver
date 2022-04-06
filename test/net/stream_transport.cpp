@@ -6,6 +6,7 @@
 #include "fwd.hpp"
 
 #include "net/stream_transport.hpp"
+#include "net/transport.hpp"
 
 #include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"
@@ -71,22 +72,20 @@ struct dummy_multiplexer : public multiplexer {
 };
 
 struct dummy_application {
-  dummy_application(util::const_byte_span data, util::byte_buffer& received)
-    : received_(received), data_(data) {
+  dummy_application(transport& parent, util::const_byte_span data,
+                    util::byte_buffer& received)
+    : received_(received), data_(data), parent_(parent) {
     // nop
   }
 
-  template <class Parent>
-  util::error init(Parent& parent) {
-    parent.configure_next_read(receive_policy::exactly(1024));
+  util::error init() {
+    parent_.configure_next_read(receive_policy::exactly(1024));
     return util::none;
   }
 
-  template <class Parent>
-  event_result produce(Parent& parent) {
-    auto& buf = parent.write_buffer();
+  event_result produce() {
     auto size = std::min(size_t{1024}, data_.size());
-    buf.insert(buf.end(), data_.begin(), data_.begin() + size);
+    parent_.enqueue({data_.begin(), size});
     data_ = data_.subspan(size);
     return event_result::ok;
   }
@@ -95,21 +94,21 @@ struct dummy_application {
     return !data_.empty();
   }
 
-  template <class Parent>
-  event_result consume(Parent& parent, util::const_byte_span data) {
+  event_result consume(util::const_byte_span data) {
     received_.insert(received_.end(), data.begin(), data.end());
-    parent.configure_next_read(receive_policy::exactly(1024));
+    parent_.configure_next_read(receive_policy::exactly(1024));
     return event_result::ok;
   }
 
-  template <class Parent>
-  event_result handle_timeout(Parent&, uint64_t) {
+  event_result handle_timeout(uint64_t) {
     return event_result::ok;
   }
 
 private:
   util::byte_buffer& received_;
   util::const_byte_span data_;
+
+  transport& parent_;
 };
 
 using manager_type = stream_transport<dummy_application>;
