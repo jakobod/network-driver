@@ -37,7 +37,7 @@ public:
   }
 
 protected:
-  static constexpr const size_t max_consecutive_fetches = 20;
+  static constexpr const size_t max_consecutive_fetches = 10;
   static constexpr const size_t max_consecutive_reads = 20;
   static constexpr const size_t max_consecutive_writes = 20;
 

@@ -12,23 +12,28 @@
 #include "net/transport.hpp"
 
 #include "util/error.hpp"
+#include "util/format.hpp"
 
 #include <utility>
 
 namespace net {
 
 /// Implements a stream oriented transport.
-template <class Application>
+template <class NextLayer>
 class stream_transport : public transport {
 public:
   template <class... Ts>
   stream_transport(stream_socket handle, multiplexer* mpx, Ts&&... xs)
-    : transport(handle, mpx), application_(*this, std::forward<Ts>(xs)...) {
+    : transport(handle, mpx), next_layer_(*this, std::forward<Ts>(xs)...) {
     // nop
   }
 
   util::error init() override {
-    return application_.init();
+    if (!nonblocking(handle(), true))
+      return {util::error_code::runtime_error,
+              util::format("Failed to set nonblocking on sock={0}",
+                           handle().id)};
+    return next_layer_.init();
   }
 
   // -- socket_manager API -----------------------------------------------------
@@ -41,10 +46,12 @@ public:
       if (read_res > 0) {
         received_ += read_res;
         if (received_ >= min_read_size_) {
-          if (application_.consume(
+          if (next_layer_.consume(
                 util::const_byte_span{read_buffer_.data(), received_})
               == event_result::error)
             return event_result::error;
+          else
+            received_ = 0; // Data should be consumed completely
         }
       } else if (read_res == 0) {
         return event_result::error;
@@ -63,22 +70,20 @@ public:
 
   event_result handle_write_event() override {
     auto done_writing = [&]() {
-      return (write_buffer_.empty() && !application_.has_more_data());
+      return (write_buffer_.empty() && !next_layer_.has_more_data());
     };
     auto fetch = [&]() {
-      auto fetched = application_.has_more_data();
+      auto fetched = next_layer_.has_more_data();
       for (size_t i = 0;
-           application_.has_more_data() && (i < max_consecutive_fetches); ++i)
-        application_.produce();
+           next_layer_.has_more_data() && (i < max_consecutive_fetches); ++i)
+        next_layer_.produce();
       return fetched;
     };
     if (write_buffer_.empty())
       if (!fetch())
         return event_result::done;
     for (size_t i = 0; i < max_consecutive_writes; ++i) {
-      auto num_bytes = write_buffer_.size() - written_;
-      auto write_res = write(handle<stream_socket>(),
-                             std::span(write_buffer_.data(), num_bytes));
+      auto write_res = write(handle<stream_socket>(), write_buffer_);
       if (write_res > 0) {
         write_buffer_.erase(write_buffer_.begin(),
                             write_buffer_.begin() + write_res);
@@ -101,7 +106,7 @@ public:
   }
 
   event_result handle_timeout(uint64_t id) override {
-    return application_.handle_timeout(id);
+    return next_layer_.handle_timeout(id);
   }
 
   // -- public API -------------------------------------------------------------
@@ -115,7 +120,7 @@ public:
   }
 
 private:
-  Application application_;
+  NextLayer next_layer_;
 };
 
 } // namespace net

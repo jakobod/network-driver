@@ -9,6 +9,7 @@
 
 #include "net/event_result.hpp"
 #include "net/transport.hpp"
+#include "net/transport_extension.hpp"
 
 #include "openssl/tls_context.hpp"
 
@@ -38,10 +39,10 @@ ssl_status get_status(SSL* ssl, int ret) {
 
 } // namespace
 
-namespace transport_extension {
+namespace net {
 
 template <class Application>
-class tls {
+class tls : transport_extension {
   using error = util::error;
   using event_result = net::event_result;
   using util::error_code::openssl_error;
@@ -50,10 +51,10 @@ class tls {
 
 public:
   template <class... Ts>
-  tls(net::transport& parent, openssl::tls_context& ctx, bool is_client,
+  tls(transport_extension& parent, openssl::tls_context& ctx, bool is_client,
       Ts&&... xs)
     : parent_{parent},
-      application_{std::forward<Ts>(xs)...},
+      application_{*this, std::forward<Ts>(xs)...},
       is_client_{is_client},
       ssl_{SSL_new(ctx.context())},
       rbio_{BIO_new(BIO_s_mem())},
@@ -83,14 +84,35 @@ public:
     return application_.init();
   }
 
+  // -- transport_extension interface ------------------------------------------
+
+  /// Configures the amount to be read next
+  void configure_next_read(receive_policy) override {
+    // todo
+  }
+
+  /// Returns a reference to the send_buffer
+  util::byte_buffer& write_buffer() override {
+    return encrypt_buf_;
+  }
+
+  /// Enqueues data to the transport extension
+  void enqueue(util::const_byte_span bytes) override {
+    encrypt_buf_.insert(encrypt_buf_.end(), bytes.begin(), bytes.end());
+  }
+
+  void handle_error(error err) override {
+    parent_.handle_error(err);
+  }
+
   net::event_result produce() {
     if (application_.produce() == event_result::error)
       return event_result::error;
-    encrypt();
-  }
-
-  util::byte_buffer write_buffer() {
-    return encrypt_buf_;
+    if (auto err = encrypt()) {
+      parent_.handle_error(err);
+      return event_result::error;
+    }
+    return event_result::ok;
   }
 
   bool has_more_data() {
@@ -211,7 +233,7 @@ private:
   }
 
   // Reference to the parent transport
-  net::transport& parent_;
+  net::transport_extension& parent_;
   // Application
   Application application_;
 
@@ -232,4 +254,4 @@ private:
   util::byte_array<buffer_size> ssl_read_buf_;
 };
 
-} // namespace transport_extension
+} // namespace net

@@ -5,12 +5,9 @@
 
 #include "fwd.hpp"
 
-#include "net/stream_transport.hpp"
 #include "net/transport.hpp"
 
 #include "net/multiplexer.hpp"
-#include "net/receive_policy.hpp"
-#include "net/stream_socket.hpp"
 
 #include "util/error.hpp"
 
@@ -72,7 +69,7 @@ struct dummy_multiplexer : public multiplexer {
 };
 
 struct dummy_application {
-  dummy_application(transport& parent, util::const_byte_span data,
+  dummy_application(Parent& parent, util::const_byte_span data,
                     util::byte_buffer& received)
     : received_(received), data_(data), parent_(parent) {
     // nop
@@ -108,7 +105,7 @@ private:
   util::byte_buffer& received_;
   util::const_byte_span data_;
 
-  transport& parent_;
+  Parent& parent_;
 };
 
 using manager_type = stream_transport<dummy_application>;
@@ -124,6 +121,8 @@ struct stream_manager_test : public testing::Test {
     for (auto& val :
          std::span{reinterpret_cast<uint8_t*>(data.data()), data.size()})
       val = b++;
+    EXPECT_TRUE(nonblocking(sockets.first, true));
+    EXPECT_TRUE(nonblocking(sockets.second, true));
   }
 
   stream_socket_pair sockets;

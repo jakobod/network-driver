@@ -77,7 +77,7 @@ private:
   template <class T, std::enable_if_t<!meta::has_trivial_size_v<T>>* = nullptr>
   std::size_t calculate_size(const T* ptr, std::size_t size) {
     auto num_bytes = sizeof(std::size_t);
-    for (const auto& val : make_span(ptr, size))
+    for (const auto& val : std::span(ptr, size))
       num_bytes += calculate_size(val);
     return num_bytes;
   }

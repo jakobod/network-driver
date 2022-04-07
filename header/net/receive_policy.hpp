@@ -20,6 +20,10 @@ struct receive_policy {
   uint32_t min_size;
   uint32_t max_size;
 
+  friend bool operator==(const receive_policy& lhs, const receive_policy& rhs) {
+    return (lhs.min_size == rhs.min_size) && (lhs.max_size == rhs.max_size);
+  }
+
   /// @pre `min_size > 0`
   /// @pre `min_size <= max_size`
   static constexpr receive_policy between(uint32_t min_size,

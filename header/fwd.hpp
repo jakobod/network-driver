@@ -86,11 +86,6 @@ make_byte_array(Ts&&... args) noexcept {
 }
 
 template <class T>
-constexpr std::span<T> make_span(T* ptr, std::size_t size) noexcept {
-  return {ptr, size};
-}
-
-template <class T>
 constexpr byte_span make_byte_span(T& container) noexcept {
   return {reinterpret_cast<std::byte*>(container.data()), container.size()};
 }
