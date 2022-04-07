@@ -81,6 +81,7 @@ public:
         return err;
       }
     }
+    parent_.configure_next_read(receive_policy::up_to(buffer_size));
     return application_.init();
   }
 
@@ -88,7 +89,7 @@ public:
 
   /// Configures the amount to be read next
   void configure_next_read(receive_policy) override {
-    // todo
+    // Currently ignored for following applications.
   }
 
   /// Returns a reference to the send_buffer
@@ -103,6 +104,10 @@ public:
 
   void handle_error(error err) override {
     parent_.handle_error(err);
+  }
+
+  void register_writing() override {
+    parent_.register_writing();
   }
 
   net::event_result produce() {
@@ -173,12 +178,12 @@ public:
     return application_.handle_timeout(id);
   }
 
-private:
   /// Checks wether this session is initialized (Handshake is done)
   bool is_initialized() {
     return SSL_is_init_finished(ssl_);
   }
 
+private:
   util::error encrypt() {
     // Wait for initialization to be done
     if (!SSL_is_init_finished(ssl_))

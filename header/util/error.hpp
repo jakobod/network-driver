@@ -26,6 +26,8 @@ struct [[nodiscard]] error {
 
   // -- boolean operators ------------------------------------------------------
 
+  bool is_error() const;
+
   operator bool() const;
 
   bool operator==(const error& other);

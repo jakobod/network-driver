@@ -96,6 +96,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/socket_guard.cpp
     test/net/socket_manager.cpp
     test/net/tcp_socket.cpp
+    test/net/tls.cpp
     test/net/transport_adaptor.cpp
     test/net/stream_transport.cpp
     test/net/udp_datagram_socket.cpp

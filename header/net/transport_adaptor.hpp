@@ -71,6 +71,10 @@ public:
     parent_.handle_error(err);
   }
 
+  NextLayer& next_layer() {
+    return next_layer_;
+  }
+
 private:
   transport& parent_;
   NextLayer next_layer_;

@@ -22,8 +22,12 @@ error::error() : err_(no_error), err_msg_("") {
 
 // -- boolean operators ------------------------------------------------------
 
-error::operator bool() const {
+bool error::is_error() const {
   return err_ != no_error;
+}
+
+error::operator bool() const {
+  return is_error();
 }
 
 bool error::operator==(const error& other) {

@@ -5,13 +5,16 @@
 
 #include "fwd.hpp"
 
-#include "net/transport.hpp"
-
 #include "net/multiplexer.hpp"
+#include "net/stream_transport.hpp"
+#include "net/tls.hpp"
+#include "net/transport.hpp"
+#include "net/transport_adaptor.hpp"
 
 #include "util/error.hpp"
+#include "util/format.hpp"
 
-#include <gtest/gtest.h>
+#include "net_test.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -21,154 +24,201 @@ using namespace net;
 
 namespace {
 
-struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t) override {
-    return util::none;
-  }
-
-  void start() override {
-    // nop
-  }
-
-  void shutdown() override {
-    // nop
-  }
-
-  void join() override {
-    // nop
-  }
-
-  bool running() override {
-    return false;
-  }
-
-  void handle_error(util::error err) override {
-    FAIL() << "There should be no errors! " << err << std::endl;
-  }
-
-  util::error poll_once(bool) override {
-    return util::none;
-  }
-
-  void add(socket_manager_ptr, operation) override {
-    // nop
-  }
-
-  void enable(socket_manager&, operation) override {
-    // nop
-  }
-
-  void disable(socket_manager&, operation, bool) override {
-    // nop
-  }
-
-  void set_timeout(socket_manager&, uint64_t,
-                   std::chrono::system_clock::time_point) override {
-    // nop
-  }
+// Contains variables needed for transport related checks
+struct transport_vars {
+  bool registered_writing = false;
+  receive_policy configured_policy;
 };
 
+// Contains variables needed for transport related checks
+struct application_vars {
+  bool initialized;
+  util::byte_buffer received;
+  util::const_byte_span data;
+  uint64_t handled_timeout;
+};
+
+template <class NextLayer>
+struct dummy_transport : transport {
+  template <class... Ts>
+  dummy_transport(net::socket handle, multiplexer* mpx, transport_vars& vars,
+                  Ts&&... xs)
+    : transport(handle, mpx),
+      next_layer_(*this, std::forward<Ts>(xs)...),
+      vars_{vars} {
+    // nop
+  }
+
+  /// Configures the amount to be read next
+  void configure_next_read(receive_policy policy) override {
+    vars_.configured_policy = policy;
+    read_buffer_.resize(policy.max_size);
+    min_read_size_ = policy.min_size;
+  }
+
+  util::error init() override {
+    if (!nonblocking(handle(), true))
+      return {util::error_code::runtime_error,
+              util::format("Failed to set nonblocking on sock={0}",
+                           handle().id)};
+    return next_layer_.init();
+  }
+
+  event_result handle_read_event() override {
+    for (size_t i = 0; i < max_consecutive_reads; ++i) {
+      auto read_res = read(handle<stream_socket>(), read_buffer_);
+      if (read_res > 0) {
+        next_layer_.consume(
+          {read_buffer_.data(), static_cast<size_t>(read_res)});
+      } else if ((read_res == 0) || !last_socket_error_is_temporary()) {
+        return event_result::error;
+      }
+    }
+    return event_result::ok;
+  }
+
+  event_result handle_write_event() override {
+    auto done_writing = [&]() {
+      return !next_layer_.has_more_data() && write_buffer_.empty();
+    };
+    size_t i = 0;
+    while (next_layer_.has_more_data() && (++i <= max_consecutive_fetches))
+      next_layer_.produce();
+    while (!write_buffer_.empty()) {
+      auto res = write(handle<stream_socket>(), write_buffer_);
+      EXPECT_GT(res, 0);
+      write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() + res);
+    }
+    return done_writing() ? event_result::done : event_result::ok;
+  }
+
+  event_result handle_timeout(uint64_t id) override {
+    return next_layer_.handle_timeout(id);
+  }
+
+  NextLayer& next_layer() {
+    return next_layer_;
+  }
+
+private:
+  NextLayer next_layer_;
+
+  transport_vars& vars_;
+};
+
+// -- Dummy application layer --------------------------------------------------
+
 struct dummy_application {
-  dummy_application(Parent& parent, util::const_byte_span data,
-                    util::byte_buffer& received)
-    : received_(received), data_(data), parent_(parent) {
+  dummy_application(transport_extension& parent, application_vars& vars)
+    : parent_(parent), vars_{vars} {
     // nop
   }
 
   util::error init() {
-    parent_.configure_next_read(receive_policy::exactly(1024));
+    vars_.initialized = true;
     return util::none;
   }
 
   event_result produce() {
-    auto size = std::min(size_t{1024}, data_.size());
-    parent_.enqueue({data_.begin(), size});
-    data_ = data_.subspan(size);
+    if (vars_.data.empty())
+      return event_result::done;
+    parent_.enqueue(vars_.data);
+    vars_.data = vars_.data.subspan(vars_.data.size());
     return event_result::ok;
   }
 
-  bool has_more_data() {
-    return !data_.empty();
+  bool has_more_data() const {
+    return !vars_.data.empty();
   }
 
-  event_result consume(util::const_byte_span data) {
-    received_.insert(received_.end(), data.begin(), data.end());
-    parent_.configure_next_read(receive_policy::exactly(1024));
+  event_result consume(util::const_byte_span bytes) {
+    vars_.received.insert(vars_.received.begin(), bytes.begin(), bytes.end());
     return event_result::ok;
   }
 
-  event_result handle_timeout(uint64_t) {
+  event_result handle_timeout(uint64_t id) {
+    vars_.handled_timeout = id;
     return event_result::ok;
   }
 
 private:
-  util::byte_buffer& received_;
-  util::const_byte_span data_;
-
-  Parent& parent_;
+  transport_extension& parent_;
+  application_vars& vars_;
 };
 
-using manager_type = stream_transport<dummy_application>;
+struct tls_test : public testing::Test {
+  using stack_type = dummy_transport<transport_adaptor<tls<dummy_application>>>;
 
-struct stream_manager_test : public testing::Test {
-  stream_manager_test()
-    : sockets{stream_socket{invalid_socket_id},
-              stream_socket{invalid_socket_id}} {
-    auto socket_res = make_stream_socket_pair();
-    EXPECT_EQ(get_error(socket_res), nullptr);
-    sockets = std::get<stream_socket_pair>(socket_res);
+  tls_test() {
+    auto maybe_sockets = make_stream_socket_pair();
+    EXPECT_EQ(nullptr, util::get_error(maybe_sockets));
+    sockets = std::get<stream_socket_pair>(maybe_sockets);
+    EXPECT_NO_ERROR(
+      ctx.init(CERT_DIRECTORY "/server.crt", CERT_DIRECTORY "/server.key"));
+
     uint8_t b = 0;
-    for (auto& val :
-         std::span{reinterpret_cast<uint8_t*>(data.data()), data.size()})
-      val = b++;
-    EXPECT_TRUE(nonblocking(sockets.first, true));
-    EXPECT_TRUE(nonblocking(sockets.second, true));
+    for (auto& val : data)
+      val = std::byte{b++};
+
+    client_application_vars_.data = util::const_byte_span{data};
+    server_application_vars_.data = util::const_byte_span{data};
   }
 
   stream_socket_pair sockets;
-  dummy_multiplexer mpx;
-  util::byte_array<32768> data;
+  util::byte_array<64> data;
+  openssl::tls_context ctx;
 
-  util::byte_buffer received_data;
+  transport_vars transport_vars_;
+  application_vars client_application_vars_;
+  application_vars server_application_vars_;
 };
+
+template <class Stack>
+void transmit_between(Stack& lhs, Stack& rhs) {
+  EXPECT_NE(lhs.handle_write_event(), event_result::error);
+  EXPECT_NE(rhs.handle_read_event(), event_result::error);
+};
+
+template <class Stack>
+void handle_handshake(Stack& client, Stack& server) {
+  // It should take exactly two roundtrips for the handshake to complete
+  for (size_t i = 0; i < 2; ++i) {
+    // "Send" client data
+    transmit_between(client, server);
+    transmit_between(server, client);
+  }
+}
 
 } // namespace
 
-TEST_F(stream_manager_test, handle_read_event) {
-  manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), util::none);
-  ASSERT_EQ(write(sockets.second, data), data.size());
-  while (received_data.size() < data.size())
-    ASSERT_EQ(mgr.handle_read_event(), event_result::ok);
-  EXPECT_TRUE(
-    std::equal(received_data.begin(), received_data.end(), data.begin()));
+TEST_F(tls_test, init) {
+  const bool is_client = true;
+  stack_type stack{sockets.first, nullptr,   transport_vars_,
+                   ctx,           is_client, client_application_vars_};
+  EXPECT_NO_ERROR(stack.init());
+  EXPECT_TRUE(client_application_vars_.initialized);
+  EXPECT_EQ(transport_vars_.configured_policy, receive_policy::up_to(2048));
 }
 
-TEST_F(stream_manager_test, handle_write_event) {
-  size_t received = 0;
-  util::byte_array<32768> buf;
-  manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), util::none);
-  auto read_some = [&]() {
-    auto data = buf.data() + received;
-    auto remaining = buf.size() - received;
-    auto res = read(sockets.second, std::span{data, remaining});
-    if (res < 0)
-      ASSERT_TRUE(last_socket_error_is_temporary());
-    else if (res == 0)
-      FAIL() << "socket diconnected prematurely!" << std::endl;
-    received += res;
-  };
-  while (mgr.handle_write_event() == event_result::ok)
-    read_some();
-  read_some();
-  ASSERT_EQ(received, data.size());
-  EXPECT_EQ(memcmp(data.data(), received_data.data(), received_data.size()), 0);
-}
+TEST_F(tls_test, roundtrip) {
+  stack_type client{sockets.first, nullptr, transport_vars_,
+                    ctx,           true,    client_application_vars_};
+  stack_type server{sockets.second,  nullptr,
+                    transport_vars_, ctx,
+                    false,           server_application_vars_};
+  // Initialize them
+  EXPECT_NO_ERROR(client.init());
+  EXPECT_NO_ERROR(server.init());
+  // Handle the handshake between them
+  handle_handshake(client, server);
 
-TEST_F(stream_manager_test, disconnect) {
-  manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), util::none);
-  close(sockets.second);
-  EXPECT_EQ(mgr.handle_read_event(), event_result::error);
+  EXPECT_TRUE(client.next_layer().next_layer().is_initialized());
+  EXPECT_TRUE(server.next_layer().next_layer().is_initialized());
+
+  // TODO
+  // Transmit data from client to server and check result
+  // transmit_between(client, server);
+  // ASSERT_EQ(data.size(), server_application_vars_.received.size());
+  // EXPECT_TRUE(std::equal(data.begin(), data.end(),
+  //                        server_application_vars_.received.begin()));
 }

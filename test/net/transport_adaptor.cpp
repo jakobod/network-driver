@@ -36,7 +36,7 @@ struct transport_vars {
   receive_policy configured_policy;
 };
 
-// Contains variables needed for transport related checks
+// Contains variables needed for application related checks
 struct application_vars {
   bool initialized;
   util::byte_buffer received;
