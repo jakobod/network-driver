@@ -32,7 +32,8 @@ struct transport_vars {
 
 // Contains variables needed for transport related checks
 struct application_vars {
-  bool initialized;
+  bool initialized = false;
+  bool produce_called = false;
   util::byte_buffer received;
   util::const_byte_span data;
   uint64_t handled_timeout;
@@ -70,7 +71,8 @@ struct dummy_transport : transport {
       if (read_res > 0) {
         next_layer_.consume(
           {read_buffer_.data(), static_cast<size_t>(read_res)});
-      } else if ((read_res == 0) || !last_socket_error_is_temporary()) {
+      } else if ((read_res == 0)
+                 || ((read_res < 0) && !last_socket_error_is_temporary())) {
         return event_result::error;
       }
     }
@@ -78,18 +80,20 @@ struct dummy_transport : transport {
   }
 
   event_result handle_write_event() override {
-    auto done_writing = [&]() {
-      return !next_layer_.has_more_data() && write_buffer_.empty();
-    };
-    size_t i = 0;
-    while (next_layer_.has_more_data() && (++i <= max_consecutive_fetches))
-      next_layer_.produce();
+    event_result res;
+    do {
+      res = next_layer_.produce();
+      EXPECT_NE(res, event_result::error);
+    } while (res != event_result::done);
+
     while (!write_buffer_.empty()) {
       auto res = write(handle<stream_socket>(), write_buffer_);
       EXPECT_GT(res, 0);
       write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() + res);
     }
-    return done_writing() ? event_result::done : event_result::ok;
+
+    auto done_writing = (!next_layer_.has_more_data() && write_buffer_.empty());
+    return done_writing ? event_result::done : event_result::ok;
   }
 
   event_result handle_timeout(uint64_t id) override {
@@ -120,6 +124,7 @@ struct dummy_application {
   }
 
   event_result produce() {
+    vars_.produce_called = true;
     if (vars_.data.empty())
       return event_result::done;
     parent_.enqueue(vars_.data);
@@ -183,7 +188,6 @@ template <class Stack>
 void handle_handshake(Stack& client, Stack& server) {
   // It should take exactly two roundtrips for the handshake to complete
   for (size_t i = 0; i < 2; ++i) {
-    // "Send" client data
     transmit_between(client, server);
     transmit_between(server, client);
   }
@@ -209,16 +213,19 @@ TEST_F(tls_test, roundtrip) {
   // Initialize them
   EXPECT_NO_ERROR(client.init());
   EXPECT_NO_ERROR(server.init());
-  // Handle the handshake between them
-  handle_handshake(client, server);
 
-  EXPECT_TRUE(client.next_layer().next_layer().is_initialized());
-  EXPECT_TRUE(server.next_layer().next_layer().is_initialized());
+  // Handle the handshake between both peers
+  EXPECT_FALSE(client.next_layer().next_layer().handshake_done());
+  EXPECT_FALSE(server.next_layer().next_layer().handshake_done());
+  handle_handshake(client, server);
+  ASSERT_TRUE(client.next_layer().next_layer().handshake_done());
+  ASSERT_TRUE(server.next_layer().next_layer().handshake_done());
 
   // TODO
   // Transmit data from client to server and check result
-  // transmit_between(client, server);
-  // ASSERT_EQ(data.size(), server_application_vars_.received.size());
-  // EXPECT_TRUE(std::equal(data.begin(), data.end(),
-  //                        server_application_vars_.received.begin()));
+  transmit_between(client, server);
+  EXPECT_TRUE(client_application_vars_.produce_called);
+  ASSERT_EQ(data.size(), server_application_vars_.received.size());
+  EXPECT_TRUE(std::equal(data.begin(), data.end(),
+                         server_application_vars_.received.begin()));
 }

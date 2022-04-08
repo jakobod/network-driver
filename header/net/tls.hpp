@@ -41,7 +41,7 @@ ssl_status get_status(SSL* ssl, int ret) {
 
 namespace net {
 
-template <class Application>
+template <class NextLayer>
 class tls : transport_extension {
   using error = util::error;
   using event_result = net::event_result;
@@ -54,7 +54,7 @@ public:
   tls(transport_extension& parent, openssl::tls_context& ctx, bool is_client,
       Ts&&... xs)
     : parent_{parent},
-      application_{*this, std::forward<Ts>(xs)...},
+      next_layer_{*this, std::forward<Ts>(xs)...},
       is_client_{is_client},
       ssl_{SSL_new(ctx.context())},
       rbio_{BIO_new(BIO_s_mem())},
@@ -82,7 +82,7 @@ public:
       }
     }
     parent_.configure_next_read(receive_policy::up_to(buffer_size));
-    return application_.init();
+    return next_layer_.init();
   }
 
   // -- transport_extension interface ------------------------------------------
@@ -111,17 +111,17 @@ public:
   }
 
   net::event_result produce() {
-    if (application_.produce() == event_result::error)
+    if (next_layer_.produce() == event_result::error)
       return event_result::error;
     if (auto err = encrypt()) {
       parent_.handle_error(err);
       return event_result::error;
     }
-    return event_result::ok;
+    return !next_layer_.has_more_data() ? event_result::done : event_result::ok;
   }
 
   bool has_more_data() {
-    return !encrypt_buf_.empty();
+    return (!encrypt_buf_.empty() || next_layer_.has_more_data());
   }
 
   /// Takes received data from the transport and consumes it
@@ -136,12 +136,12 @@ public:
       }
       bytes = bytes.subspan(write_res);
 
-      if (!is_initialized()) {
+      if (!handshake_done()) {
         if (auto err = handle_handshake()) {
           parent_.handle_error(err);
           return event_result::error;
         }
-        if (!is_initialized())
+        if (!handshake_done())
           return event_result::ok;
       }
 
@@ -149,7 +149,7 @@ public:
       while (true) {
         read_res = SSL_read(ssl_, ssl_read_buf_.data(), ssl_read_buf_.size());
         if (read_res > 0)
-          application_.consume(util::const_byte_span{
+          next_layer_.consume(util::const_byte_span{
             ssl_read_buf_.data(), static_cast<size_t>(read_res)});
         else
           break;
@@ -175,11 +175,11 @@ public:
   }
 
   net::event_result handle_timeout(uint64_t id) {
-    return application_.handle_timeout(id);
+    return next_layer_.handle_timeout(id);
   }
 
   /// Checks wether this session is initialized (Handshake is done)
-  bool is_initialized() {
+  bool handshake_done() {
     return SSL_is_init_finished(ssl_);
   }
 
@@ -239,8 +239,8 @@ private:
 
   // Reference to the parent transport
   net::transport_extension& parent_;
-  // Application
-  Application application_;
+  // NextLayer
+  NextLayer next_layer_;
 
   /// Denotes session to be either server, or client
   const bool is_client_;
@@ -250,8 +250,6 @@ private:
   BIO* rbio_;
   /// Read access from the SSL
   BIO* wbio_;
-  /// Bytes waiting to be written to socket
-  util::byte_buffer* write_buf_;
   /// Bytes waiting to be encrypted
   util::byte_buffer encrypt_buf_;
 
