@@ -3,9 +3,9 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
-
 #include "util/scope_guard.hpp"
+
+#include "net_test.hpp"
 
 TEST(scope_guard, func_executed) {
   bool executed = false;

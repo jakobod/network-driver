@@ -9,7 +9,7 @@
 
 #include "util/error.hpp"
 
-#include <gtest/gtest.h>
+#include "net_test.hpp"
 
 #include <algorithm>
 

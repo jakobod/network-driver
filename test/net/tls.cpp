@@ -221,7 +221,6 @@ TEST_F(tls_test, roundtrip) {
   ASSERT_TRUE(client.next_layer().next_layer().handshake_done());
   ASSERT_TRUE(server.next_layer().next_layer().handshake_done());
 
-  // TODO
   // Transmit data from client to server and check result
   transmit_between(client, server);
   EXPECT_TRUE(client_application_vars_.produce_called);

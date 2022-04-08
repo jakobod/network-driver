@@ -3,11 +3,11 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
+#include "fwd.hpp"
 
 #include "util/binary_deserializer.hpp"
 
-#include "fwd.hpp"
+#include "net_test.hpp"
 
 #include <algorithm>
 

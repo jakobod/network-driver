@@ -3,9 +3,9 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include <gtest/gtest.h>
-
 #include "util/format.hpp"
+
+#include "net_test.hpp"
 
 #include <algorithm>
 

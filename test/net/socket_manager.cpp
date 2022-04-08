@@ -11,11 +11,11 @@
 
 #include "util/error.hpp"
 
+#include "net_test.hpp"
+
 #include <algorithm>
 #include <cstring>
 #include <numeric>
-
-#include <gtest/gtest.h>
 
 using namespace net;
 
