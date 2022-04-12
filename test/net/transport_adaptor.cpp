@@ -7,11 +7,11 @@
 
 #include "fwd.hpp"
 
+#include "net/layer.hpp"
 #include "net/receive_policy.hpp"
 #include "net/stream_transport.hpp"
 #include "net/transport.hpp"
 #include "net/transport_adaptor.hpp"
-#include "net/transport_extension.hpp"
 
 #include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"
@@ -101,7 +101,7 @@ private:
 // -- Dummy application layer --------------------------------------------------
 
 struct dummy_application {
-  dummy_application(transport_extension& parent, application_vars& vars)
+  dummy_application(layer& parent, application_vars& vars)
     : parent_(parent), vars_{vars} {
     // nop
   }
@@ -135,7 +135,7 @@ struct dummy_application {
   }
 
 private:
-  transport_extension& parent_;
+  layer& parent_;
   application_vars& vars_;
 };
 

@@ -7,9 +7,9 @@
 
 #include "fwd.hpp"
 
+#include "net/layer.hpp"
 #include "net/receive_policy.hpp"
 #include "net/transport.hpp"
-#include "net/transport_extension.hpp"
 
 #include "util/error.hpp"
 
@@ -19,7 +19,7 @@ namespace net {
 
 /// Adapts the transport to the transport_extension layer
 template <class NextLayer>
-class transport_adaptor : public transport_extension {
+class transport_adaptor : public layer {
 public:
   template <class... Ts>
   transport_adaptor(transport& parent, Ts&&... xs)

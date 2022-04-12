@@ -8,8 +8,8 @@
 #include "fwd.hpp"
 
 #include "net/event_result.hpp"
+#include "net/layer.hpp"
 #include "net/transport.hpp"
-#include "net/transport_extension.hpp"
 
 #include "openssl/tls_context.hpp"
 
@@ -42,17 +42,15 @@ ssl_status get_status(SSL* ssl, int ret) {
 namespace net {
 
 template <class NextLayer>
-class tls : transport_extension {
+class tls : layer {
   using error = util::error;
-  using event_result = net::event_result;
   using util::error_code::openssl_error;
 
   static constexpr const std::size_t buffer_size = 2048;
 
 public:
   template <class... Ts>
-  tls(transport_extension& parent, openssl::tls_context& ctx, bool is_client,
-      Ts&&... xs)
+  tls(layer& parent, openssl::tls_context& ctx, bool is_client, Ts&&... xs)
     : parent_{parent},
       next_layer_{*this, std::forward<Ts>(xs)...},
       is_client_{is_client},
@@ -110,7 +108,7 @@ public:
     parent_.register_writing();
   }
 
-  net::event_result produce() {
+  event_result produce() {
     if (next_layer_.produce() == event_result::error)
       return event_result::error;
     if (auto err = encrypt()) {
@@ -125,7 +123,7 @@ public:
   }
 
   /// Takes received data from the transport and consumes it
-  net::event_result consume(util::const_byte_span bytes) {
+  event_result consume(util::const_byte_span bytes) {
     while (!bytes.empty()) {
       auto write_res = BIO_write(rbio_,
                                  reinterpret_cast<const void*>(bytes.data()),
@@ -174,7 +172,7 @@ public:
     return event_result::ok;
   }
 
-  net::event_result handle_timeout(uint64_t id) {
+  event_result handle_timeout(uint64_t id) {
     return next_layer_.handle_timeout(id);
   }
 
@@ -238,7 +236,7 @@ private:
   }
 
   // Reference to the parent transport
-  net::transport_extension& parent_;
+  layer& parent_;
   // NextLayer
   NextLayer next_layer_;
 

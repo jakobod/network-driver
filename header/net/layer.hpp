@@ -11,7 +11,7 @@
 
 namespace net {
 
-struct transport_extension {
+struct layer {
   /// Configures the amount to be read next
   virtual void configure_next_read(receive_policy policy) = 0;
 
