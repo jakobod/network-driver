@@ -14,20 +14,26 @@
 namespace net {
 
 struct timeout_entry {
-  socket_id hdl;
-  std::chrono::system_clock::time_point when;
-  uint64_t id;
+  timeout_entry(socket_id handle, std::chrono::system_clock::time_point when,
+                uint64_t id)
+    : handle_{handle}, when_{when}, id_{id} {
+  }
+
+  socket_id handle_;
+  std::chrono::system_clock::time_point when_;
+  uint64_t id_;
 
   bool operator<(const timeout_entry& other) const {
-    return when < other.when;
+    return when_ < other.when_;
   }
 
   bool operator>(const timeout_entry& other) const {
-    return when > other.when;
+    return when_ > other.when_;
   }
 
   bool operator==(const timeout_entry& other) const {
-    return (hdl == other.hdl) && (when == other.when) && (id == other.id);
+    return (handle_ == other.handle_) && (when_ == other.when_)
+           && (id_ == other.id_);
   }
 };
 
