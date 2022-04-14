@@ -8,10 +8,18 @@ void setBuildStatus(String message, String state) {
   ]);
 }
 
+
 pipeline {
   agent { dockerfile true }
 
   stages {
+    stage('Init') {
+      steps{
+        setBuildStatus("Building...", "PENDING");
+        sh 'rm -rf build'
+      }
+    }
+
     stage('Configure') {
       steps {
         sh './configure --enable-testing'
@@ -25,9 +33,10 @@ pipeline {
         }
       }
     }
-      
+
     stage('Test') {
       steps {
+        setBuildStatus("Testing...", "PENDING");
         dir('build') {
           sh 'ctest -T test --no-compress-output'
         }
@@ -37,10 +46,10 @@ pipeline {
 
   post {
     success {
-      setBuildStatus("Build succeeded", "SUCCESS");
+      setBuildStatus("Build succeeded!", "SUCCESS");
     }
     failure {
-      setBuildStatus("Build failed", "FAILURE");
+      setBuildStatus("Build failed!", "FAILURE");
     }
   }
 }
