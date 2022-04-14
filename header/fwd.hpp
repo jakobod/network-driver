@@ -23,9 +23,12 @@ class pollset_updater;
 class socket_manager;
 class socket_manager_factory;
 
+struct application;
 struct datagram_socket;
+struct layer;
 struct pipe_socket;
 struct raw_socket;
+struct receive_policy;
 struct socket;
 struct stream_socket;
 struct tcp_stream_socket;
@@ -44,6 +47,8 @@ using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
 
 template <class Socket>
 class socket_guard;
+template <class NextLayer>
+class transport_adaptor;
 
 } // namespace net
 

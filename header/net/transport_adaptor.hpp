@@ -7,6 +7,7 @@
 
 #include "fwd.hpp"
 
+#include "net/event_result.hpp"
 #include "net/layer.hpp"
 #include "net/receive_policy.hpp"
 #include "net/transport.hpp"
@@ -18,20 +19,31 @@
 namespace net {
 
 /// Adapts the transport to the transport_extension layer
-template <class NextLayer>
-class transport_adaptor : public layer {
+template <class NextLayer> class transport_adaptor : public layer {
 public:
   template <class... Ts>
-  transport_adaptor(transport& parent, Ts&&... xs)
+  explicit transport_adaptor(transport& parent, Ts&&... xs)
     : parent_{parent}, next_layer_{*this, std::forward<Ts>(xs)...} {
   }
 
-  util::error init() {
+  util::error init() override {
     return next_layer_.init();
   }
 
-  bool has_more_data() {
+  bool has_more_data() override {
     return next_layer_.has_more_data();
+  }
+
+  event_result produce() override {
+    return next_layer_.produce();
+  }
+
+  event_result consume(util::const_byte_span bytes) override {
+    return next_layer_.consume(bytes);
+  }
+
+  event_result handle_timeout(uint64_t id) override {
+    return next_layer_.handle_timeout(id);
   }
 
   /// Configures the amount to be read next
@@ -49,26 +61,14 @@ public:
     parent_.enqueue(bytes);
   }
 
-  /// Registers the stack for write events
-  void register_writing() {
-    parent_.register_writing();
-  }
-
-  event_result consume(util::const_byte_span bytes) {
-    return next_layer_.consume(bytes);
-  }
-
-  event_result produce() {
-    return next_layer_.produce();
-  }
-
-  event_result handle_timeout(uint64_t id) {
-    return next_layer_.handle_timeout(id);
-  }
-
   /// Called when an error occurs
   void handle_error(util::error err) override {
     parent_.handle_error(err);
+  }
+
+  /// Registers the stack for write events
+  void register_writing() override {
+    parent_.register_writing();
   }
 
   NextLayer& next_layer() {
