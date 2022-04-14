@@ -25,6 +25,9 @@ make -C build test
 
 
 # TODO
+- [ ] datagram_transport
+- [ ] event_result approach within stack might be overkill.. Isn't a simple bool enough?
+
 - [x] epoll implementation
 - [x] multithreaded epoll implementation
   - [ ] Check for race-conditions?!

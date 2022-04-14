@@ -11,8 +11,6 @@
 #include "net/socket.hpp"
 #include "net/socket_manager.hpp"
 
-#include "util/error.hpp"
-
 namespace net {
 
 /// Implements a generic transport for use as pointer in the stack.

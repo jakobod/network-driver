@@ -36,7 +36,6 @@ pipeline {
 
     stage('Test') {
       steps {
-        setBuildStatus("Testing...", "PENDING");
         dir('build') {
           sh 'ctest -T test --no-compress-output'
         }

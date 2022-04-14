@@ -27,7 +27,7 @@ std::string to_string(const v4_address& addr) {
 }
 
 util::error_or<v4_address> parse_v4_address(const std::string& str) {
-  v4_address::byte_array bytes;
+  v4_address::octet_array bytes;
   const auto parts = util::split(std::move(str), '.');
   if (parts.size() != bytes.size())
     return util::error{util::error_code::parser_error,

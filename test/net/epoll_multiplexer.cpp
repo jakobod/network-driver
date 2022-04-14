@@ -6,6 +6,8 @@
 #include "fwd.hpp"
 
 #include "net/epoll_multiplexer.hpp"
+#include "net/ip/v4_address.hpp"
+#include "net/ip/v4_endpoint.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/stream_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
@@ -17,6 +19,7 @@
 #include <chrono>
 
 using namespace net;
+using namespace net::ip;
 using namespace std::chrono_literals;
 
 namespace {
@@ -101,7 +104,8 @@ struct epoll_multiplexer_test : public testing::Test {
   }
 
   tcp_stream_socket connect_to_mpx() {
-    auto sock_res = make_connected_tcp_stream_socket("127.0.0.1", mpx.port());
+    auto sock_res = make_connected_tcp_stream_socket(
+      v4_endpoint{v4_address::localhost, mpx.port()});
     EXPECT_EQ(get_error(sock_res), nullptr);
     return std::get<tcp_stream_socket>(sock_res);
   }

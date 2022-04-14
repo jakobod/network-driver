@@ -124,14 +124,3 @@ if (LIB_NET_ENABLE_TESTS)
 
   gtest_discover_tests(lib_net_test)
 endif()
-
-
-add_executable(
-  main
-  main.cpp
-)
-target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
-target_link_libraries(
-  main
-  net
-)

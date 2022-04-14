@@ -5,14 +5,15 @@
 
 #pragma once
 
+#include "fwd.hpp"
+
+#include "net/receive_policy.hpp"
 #include "net/socket_manager.hpp"
+#include "net/udp_datagram_socket.hpp"
+
+#include "util/error.hpp"
 
 #include <utility>
-
-#include "fwd.hpp"
-#include "net/error.hpp"
-#include "net/receive_policy.hpp"
-#include "net/udp_datagram_socket.hpp"
 
 namespace net {
 
@@ -34,7 +35,7 @@ public:
     // nop
   }
 
-  error init() override {
+  util::error init() override {
     return application_.init(*this);
   }
 

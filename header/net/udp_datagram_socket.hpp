@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "fwd.hpp"
+
 #include "net/datagram_socket.hpp"
 
 #include "util/error.hpp"

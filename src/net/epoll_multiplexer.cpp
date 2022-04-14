@@ -144,7 +144,7 @@ util::error epoll_multiplexer::poll_once(bool blocking) {
         auto& mgr = managers_[event.data.fd];
         auto handle_result = [&](event_result res, operation op) -> bool {
           if (res == event_result::done) {
-            disable(*mgr, op);
+            disable(*mgr, op, true);
           } else if (res == event_result::error) {
             del(mgr->handle());
             return false;

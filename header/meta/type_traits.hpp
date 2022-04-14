@@ -9,20 +9,6 @@
 #include <string>
 #include <type_traits>
 
-namespace {
-
-// clang-format off
-#define member_trait(trait_name, member)                                       \
-  template <class T, class = void>                                             \
-  struct trait_name : std::false_type {};                                      \
-  template <class T>                                                           \
-  struct trait_name<T, decltype(std::declval<T>().member)> : std::true_type {};\
-  template <class T>                                                           \
-  constexpr bool trait_name##_v = trait_name<T>::value
-// clang-format on
-
-} // namespace
-
 namespace meta {
 
 // -- Visitable trait ----------------------------------------------------------
@@ -38,7 +24,8 @@ template <class T, class = void>
 struct is_visitable : std::false_type {};
 
 template <class T>
-struct is_visitable<T, decltype(std::declval<T>().visit(std::declval<visitor&>()))>
+struct is_visitable<T,
+                    decltype(std::declval<T>().visit(std::declval<visitor&>()))>
   : std::true_type {};
 
 template <class T>

@@ -1,19 +1,15 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *
- *  This file is based on `tcp_stream_socket.hpp` from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #pragma once
 
+#include "fwd.hpp"
+
 #include "net/stream_socket.hpp"
 
 #include "util/error.hpp"
-
-#include <cstdint>
-#include <string>
 
 namespace net {
 
@@ -24,8 +20,8 @@ struct tcp_stream_socket : stream_socket {
   using super::super;
 };
 
-/// Create a `tcp_stream_socket` connected to `auth`.
+/// Create a `tcp_stream_socket` connected to `ep`.
 util::error_or<tcp_stream_socket>
-make_connected_tcp_stream_socket(const std::string hostname, uint16_t port);
+make_connected_tcp_stream_socket(ip::v4_endpoint ep);
 
 } // namespace net

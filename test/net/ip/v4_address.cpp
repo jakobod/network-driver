@@ -31,8 +31,8 @@ constexpr const v4_address multicast_address{multicast_bytes};
 
 namespace net::ip {
 
-bool operator==(const v4_address::byte_array& lhs,
-                const v4_address::byte_array& rhs) {
+bool operator==(const v4_address::octet_array& lhs,
+                const v4_address::octet_array& rhs) {
   return (lhs.size() == rhs.size())
          && std::equal(lhs.begin(), lhs.end(), rhs.begin());
 }

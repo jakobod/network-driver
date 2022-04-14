@@ -1,16 +1,11 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 18.02.2021
  */
 
 #pragma once
 
-#include <iostream>
-
 #include "net/socket.hpp"
-
-static constexpr int invalid_fd = -1;
 
 namespace net {
 
@@ -20,23 +15,22 @@ public:
   static_assert(std::is_base_of_v<socket, Socket>,
                 "Template argument is NOT a socket!");
 
-  explicit socket_guard(Socket sock) : sock_(sock) {
+  explicit socket_guard(Socket sock) : sock_{sock} {
     // nop
   }
 
-  socket_guard() : socket_guard(-1) {
+  socket_guard() : socket_guard{invalid_socket} {
     // nop
   }
 
   ~socket_guard() {
-    if (sock_ != invalid_socket) {
+    if (sock_ != invalid_socket)
       close(sock_);
-    }
   }
 
   Socket release() {
     auto ret = sock_;
-    sock_.id = invalid_fd;
+    sock_.id = invalid_socket_id;
     return ret;
   }
 
@@ -48,9 +42,8 @@ public:
     return sock_;
   }
 
-  template <class Other>
-  bool operator==(const Other& other) {
-    return sock_ == other;
+  bool operator==(const socket_guard<Socket>& other) {
+    return sock_ == other.sock_;
   }
 
 private:

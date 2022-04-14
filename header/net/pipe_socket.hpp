@@ -1,9 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *
- *  This file is based on `pipe_socket.cpp` from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #pragma once

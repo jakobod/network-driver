@@ -1,28 +1,19 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *
- *  This file is based on `socket.hpp` from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #pragma once
 
 #include "fwd.hpp"
 
-#include "net/ip/v4_endpoint.hpp"
 #include "net/socket_id.hpp"
 
-#include "util/error.hpp"
-
-#include <net/if.h>
-#include <string>
+#include <sys/socket.h>
 
 namespace net {
 
 struct socket {
-  socket_id id = invalid_socket_id;
-
   constexpr socket() noexcept : id(invalid_socket_id) {
     // nop
   }
@@ -42,6 +33,8 @@ struct socket {
   bool operator!=(const socket other) const {
     return id != other.id;
   }
+
+  socket_id id = invalid_socket_id;
 };
 
 /// Denotes the invalid socket.
@@ -80,11 +73,5 @@ util::error_or<uint16_t> port_of(socket x);
 
 /// Enables or disables reuseaddr I/O on `x`.
 bool reuseaddr(socket x, bool new_value);
-
-/// Returns the mac address of the specified interface.
-ifreq get_if_mac(socket sock, const std::string& if_name);
-
-/// Returns the index of the specified interface.
-ifreq get_if_index(socket sock, const std::string& if_name);
 
 } // namespace net

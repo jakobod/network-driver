@@ -7,6 +7,8 @@
 
 #include "fwd.hpp"
 
+#include "net/ip/v4_endpoint.hpp"
+
 #include "net/operation.hpp"
 #include "net/tcp_stream_socket.hpp"
 
@@ -68,9 +70,9 @@ public:
     = 0;
 
   template <class Manager, class... Ts>
-  util::error tcp_connect(std::string host, uint16_t port,
-                          net::operation initial_op, Ts&&... xs) {
-    auto sock = net::make_connected_tcp_stream_socket(std::move(host), port);
+  util::error
+  tcp_connect(ip::v4_endpoint ep, operation initial_op, Ts&&... xs) {
+    auto sock = make_connected_tcp_stream_socket(std::move(ep));
     if (auto err = get_error(sock))
       return *err;
     auto mgr = std::make_shared<Manager>(std::get<tcp_stream_socket>(sock),

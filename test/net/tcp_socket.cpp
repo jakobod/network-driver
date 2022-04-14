@@ -3,6 +3,7 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
+#include "net/ip/v4_endpoint.hpp"
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
@@ -17,8 +18,8 @@ TEST(tcp_socket_test, accept) {
   ASSERT_EQ(get_error(acc_res), nullptr);
   auto acc_pair = std::get<acceptor_pair>(acc_res);
   // Connect to the accept socket
-  auto conn_res = make_connected_tcp_stream_socket("127.0.0.1",
-                                                   acc_pair.second);
+  net::ip::v4_endpoint ep{net::ip::v4_address::localhost, acc_pair.second};
+  auto conn_res = make_connected_tcp_stream_socket(ep);
   ASSERT_EQ(get_error(conn_res), nullptr);
   auto sock = std::get<tcp_stream_socket>(conn_res);
   ASSERT_NE(sock, invalid_socket);

@@ -5,6 +5,8 @@
 
 #include "net/tcp_accept_socket.hpp"
 
+#include "net/ip/v4_endpoint.hpp"
+
 #include "net/socket_guard.hpp"
 #include "net/socket_sys_includes.hpp"
 #include "net/tcp_stream_socket.hpp"

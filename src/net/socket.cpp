@@ -2,16 +2,17 @@
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
  *  @date 04.03.2021
- *
- *  This file is based on `socket.cpp` from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #include "net/socket.hpp"
+#include "net/ip/v4_endpoint.hpp"
+#include "net/socket_sys_includes.hpp"
+
+#include "util/error.hpp"
+#include "util/format.hpp"
 
 #include <cstring>
 #include <iostream>
-#include <net/socket_sys_includes.hpp>
 #include <sys/ioctl.h>
 
 namespace net {
@@ -30,9 +31,9 @@ util::error bind(socket sock, ip::v4_endpoint ep) {
   auto addr = ip::to_sockaddr_in(ep);
   if ((::bind(sock.id, reinterpret_cast<sockaddr*>(&addr), sizeof(sockaddr_in)))
       != 0)
-    return util::error(util::error_code::socket_operation_failed,
-                       "Failed to bind socket: "
-                         + last_socket_error_as_string());
+    return {util::error_code::socket_operation_failed,
+            util::format("Failed to bind socket: {0}",
+                         last_socket_error_as_string())};
   return util::none;
 }
 
@@ -77,24 +78,6 @@ bool reuseaddr(socket x, bool new_value) {
                         reinterpret_cast<const void*>(&on),
                         static_cast<unsigned>(sizeof(on)));
   return res == 0;
-}
-
-/// Returns the mac address of the specified interface.
-ifreq get_if_mac(socket hdl, const std::string& if_name) {
-  ifreq if_mac = {};
-  strncpy(if_mac.ifr_name, if_name.c_str(), IFNAMSIZ - 1);
-  if (ioctl(hdl.id, SIOCGIFHWADDR, &if_mac) < 0)
-    perror("SIOCGIFHWADDR");
-  return if_mac;
-}
-
-/// Returns the index of the specified interface.
-ifreq get_if_index(socket hdl, const std::string& if_name) {
-  ifreq if_index = {};
-  strncpy(if_index.ifr_name, if_name.c_str(), IFNAMSIZ - 1);
-  if (ioctl(hdl.id, SIOCGIFINDEX, &if_index) < 0)
-    perror("SIOCGIFINDEX");
-  return if_index;
 }
 
 } // namespace net

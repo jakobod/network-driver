@@ -20,9 +20,21 @@ public:
   v4_endpoint(sockaddr_in saddr);
 
   constexpr v4_endpoint(v4_address address, std::uint16_t port)
-    : address_{std::move(address)}, port_{port} {
+    : address_{address}, port_{port} {
     // nop
   }
+
+  constexpr v4_endpoint() : address_{v4_address::any_addr}, port_{0} {
+    // nop
+  }
+
+  /// Move constructor
+  v4_endpoint(v4_endpoint&& ep) noexcept = default;
+
+  /// Default copy constructor
+  v4_endpoint(const v4_endpoint& ep) = default;
+
+  // -- Members ----------------------------------------------------------------
 
   constexpr const v4_address& address() const noexcept {
     return address_;

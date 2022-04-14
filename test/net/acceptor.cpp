@@ -104,7 +104,8 @@ struct acceptor_test : public testing::Test {
     auto res = make_tcp_accept_socket(0);
     EXPECT_EQ(get_error(res), nullptr);
     auto sock_pair = std::get<acceptor_pair>(res);
-    acc = std::make_unique<acceptor>(sock_pair.first, &mpx, std::make_shared<dummy_factory>());
+    acc = std::make_unique<acceptor>(sock_pair.first, &mpx,
+                                     std::make_shared<dummy_factory>());
     port = sock_pair.second;
   }
 
@@ -116,7 +117,8 @@ struct acceptor_test : public testing::Test {
 } // namespace
 
 TEST_F(acceptor_test, handle_read_event) {
-  auto sock = make_connected_tcp_stream_socket("127.0.0.1", port);
+  net::ip::v4_endpoint ep{net::ip::v4_address::localhost, port};
+  auto sock = make_connected_tcp_stream_socket(ep);
   EXPECT_EQ(acc->handle_read_event(), event_result::ok);
   EXPECT_EQ(mpx.last_error, util::none);
   EXPECT_NE(mpx.mgr, nullptr);

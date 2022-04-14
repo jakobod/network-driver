@@ -19,7 +19,8 @@
 namespace net {
 
 /// Adapts the transport to the transport_extension layer
-template <class NextLayer> class transport_adaptor : public layer {
+template <class NextLayer>
+class transport_adaptor : public layer {
 public:
   template <class... Ts>
   explicit transport_adaptor(transport& parent, Ts&&... xs)
@@ -71,6 +72,7 @@ public:
     parent_.register_writing();
   }
 
+  /// Returns a reference to the following layer
   NextLayer& next_layer() {
     return next_layer_;
   }

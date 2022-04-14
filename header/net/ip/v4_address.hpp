@@ -19,10 +19,22 @@ class v4_address {
 
 public:
   /// Array type for representing a ipv4 address as bytes.
-  using byte_array = util::byte_array<num_octets>;
+  using octet_array = util::byte_array<num_octets>;
+
+  /// Predefined localhost address
+  static constexpr const octet_array localhost = util::make_byte_array(127, 0,
+                                                                       0, 1);
+  /// Predefined any address
+  static constexpr const octet_array any_addr = util::make_byte_array(0, 0, 0,
+                                                                      0);
+
+  /// Default initialization of an address
+  constexpr v4_address() : bytes_{any_addr} {
+    // nop
+  }
 
   /// Constructs an ipv4 address from bytes.
-  constexpr v4_address(byte_array bytes) : bytes_{std::move(bytes)} {
+  constexpr v4_address(octet_array bytes) : bytes_{bytes} {
     // nop
   }
 
@@ -31,13 +43,21 @@ public:
     // nop
   }
 
+  /// Move constructor
+  v4_address(v4_address&& ep) noexcept = default;
+
+  /// Default copy constructor
+  v4_address(const v4_address& ep) = default;
+
+  // -- Members ----------------------------------------------------------------
+
   /// returns the address in bitwise representation in network-byte-order.
   constexpr std::uint32_t bits() const noexcept {
     return bits_;
   }
 
   /// returns the address in bytewise representation in network-byte-order.
-  constexpr const byte_array& bytes() const noexcept {
+  constexpr const octet_array& bytes() const noexcept {
     return bytes_;
   }
 
@@ -46,7 +66,7 @@ private:
   /// representation.
   union {
     const uint32_t bits_;
-    const byte_array bytes_;
+    const octet_array bytes_;
   };
 };
 

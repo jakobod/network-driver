@@ -1,16 +1,16 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 07.04.2021
  */
 
 #pragma once
 
+#include "fwd.hpp"
+
+#include "net/socket_manager.hpp"
+
 #include <array>
 #include <cstdint>
-
-#include "fwd.hpp"
-#include "net/socket_manager.hpp"
 
 namespace net {
 

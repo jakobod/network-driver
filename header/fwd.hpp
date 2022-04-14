@@ -39,7 +39,6 @@ enum class event_result : uint8_t;
 enum class operation : uint32_t;
 
 using datagram_socket_pair = std::pair<datagram_socket, datagram_socket>;
-using stream_socket_pair = std::pair<stream_socket, stream_socket>;
 
 using multiplexer_ptr = std::shared_ptr<multiplexer>;
 using socket_manager_ptr = std::shared_ptr<socket_manager>;
@@ -57,8 +56,9 @@ class transport_adaptor;
 namespace net::ip {
 
 class v4_address;
+class v4_endpoint;
 
-}
+} // namespace net::ip
 
 // -- util namespace forward declarations --------------------------------------
 

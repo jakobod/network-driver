@@ -19,7 +19,7 @@
 namespace net {
 
 socket_manager::socket_manager(socket handle, multiplexer* mpx)
-  : handle_(handle), mask_(operation::none), mpx_(mpx) {
+  : handle_(handle), mpx_(mpx), mask_(operation::none) {
   // nop
 }
 
@@ -28,12 +28,12 @@ socket_manager::~socket_manager() {
   close(handle_);
 }
 
-socket_manager::socket_manager(socket_manager&& other)
-  : handle_(other.handle_), mask_(other.mask_), mpx_(other.mpx_) {
+socket_manager::socket_manager(socket_manager&& other) noexcept
+  : handle_(other.handle_), mpx_(other.mpx_), mask_(other.mask_) {
   other.handle_ = invalid_socket;
 }
 
-socket_manager& socket_manager::operator=(socket_manager&& other) {
+socket_manager& socket_manager::operator=(socket_manager&& other) noexcept {
   handle_ = other.handle_;
   other.handle_ = invalid_socket;
   mask_ = other.mask_;

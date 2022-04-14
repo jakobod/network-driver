@@ -1,9 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *
- *  This file is based on `stream_socket.hpp` from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #pragma once
@@ -18,15 +15,17 @@
 
 namespace net {
 
-/// A connection-oriented network communication endpoint for bidirectional byte
-/// streams.
+/// Stream oriented socket.
 struct stream_socket : socket {
   using super = socket;
 
   using super::super;
 };
 
-/// Creates a connected stream_socket_pair
+/// A pair of stream sockets
+using stream_socket_pair = std::pair<stream_socket, stream_socket>;
+
+/// Creates a connected stream_socket_pair (unix domain sockets)
 util::error_or<stream_socket_pair> make_stream_socket_pair();
 
 /// Enables or disables keepalive on `x`.
@@ -34,9 +33,6 @@ bool keepalive(stream_socket x, bool new_value);
 
 /// Enables or disables Nagle's algorithm on `x`.
 bool nodelay(stream_socket x, bool new_value);
-
-/// Enables or disables reuseaddr on `x`.
-bool reuseaddr(socket x, bool new_value);
 
 /// Receives data from `x`.
 ptrdiff_t read(stream_socket x, util::byte_span buf);

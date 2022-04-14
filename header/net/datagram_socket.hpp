@@ -7,7 +7,6 @@
 
 #include "fwd.hpp"
 
-#include "net/ip/v4_endpoint.hpp"
 #include "net/socket.hpp"
 
 #include "util/error.hpp"

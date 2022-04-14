@@ -1,9 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *
- *  This file is from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #pragma once
@@ -20,14 +17,11 @@ struct receive_policy {
     return (lhs.min_size == rhs.min_size) && (lhs.max_size == rhs.max_size);
   }
 
-  /// @pre `min_size > 0`
-  /// @pre `min_size <= max_size`
   static constexpr receive_policy between(uint32_t min_size,
                                           uint32_t max_size) {
     return {min_size, max_size};
   }
 
-  /// @pre `size > 0`
   static constexpr receive_policy exactly(uint32_t size) {
     return {size, size};
   }
