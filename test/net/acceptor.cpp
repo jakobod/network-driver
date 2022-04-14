@@ -92,23 +92,24 @@ struct dummy_socket_manager : public socket_manager {
 };
 
 struct dummy_factory : socket_manager_factory {
-  socket_manager_ptr make(net::socket hdl, multiplexer* mpx) {
+  ~dummy_factory() override = default;
+
+  socket_manager_ptr make(net::socket hdl, multiplexer* mpx) override {
     return std::make_shared<dummy_socket_manager>(hdl, mpx);
   };
 };
 
 struct acceptor_test : public testing::Test {
-  acceptor_test() : acc{tcp_accept_socket{0}, nullptr, nullptr} {
+  acceptor_test() {
     auto res = make_tcp_accept_socket(0);
     EXPECT_EQ(get_error(res), nullptr);
     auto sock_pair = std::get<acceptor_pair>(res);
-    acc = std::move(
-      acceptor(sock_pair.first, &mpx, std::make_shared<dummy_factory>()));
+    acc = std::make_unique<acceptor>(sock_pair.first, &mpx, std::make_shared<dummy_factory>());
     port = sock_pair.second;
   }
 
   dummy_multiplexer mpx;
-  acceptor acc;
+  std::unique_ptr<acceptor> acc;
   uint16_t port;
 };
 
@@ -116,12 +117,12 @@ struct acceptor_test : public testing::Test {
 
 TEST_F(acceptor_test, handle_read_event) {
   auto sock = make_connected_tcp_stream_socket("127.0.0.1", port);
-  EXPECT_EQ(acc.handle_read_event(), event_result::ok);
+  EXPECT_EQ(acc->handle_read_event(), event_result::ok);
   EXPECT_EQ(mpx.last_error, util::none);
   EXPECT_NE(mpx.mgr, nullptr);
 }
 
 TEST_F(acceptor_test, handle_write_event) {
-  EXPECT_EQ(acc.handle_write_event(), event_result::error);
+  EXPECT_EQ(acc->handle_write_event(), event_result::error);
   EXPECT_EQ(mpx.last_error, util::error(util::error_code::runtime_error));
 }

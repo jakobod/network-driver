@@ -11,6 +11,7 @@
 
 #include <cstring>
 #include <numeric>
+#include <variant>
 
 namespace util {
 
@@ -50,7 +51,7 @@ private:
 
   template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
   void deserialize(T& t) {
-    visit(t, *this);
+    t.visit(*this);
   }
 
   template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>

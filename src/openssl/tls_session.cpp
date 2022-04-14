@@ -40,9 +40,6 @@ namespace openssl {
 
 using util::error_code::openssl_error;
 
-/// Default buffer size for local buffers
-static constexpr const std::size_t default_buf_size = 1024;
-
 tls_session::tls_session(tls_context& ctx, util::byte_buffer& write_buffer,
                          on_data_callback_type on_data, session_type type)
   : type_{type},

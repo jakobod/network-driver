@@ -19,6 +19,8 @@ public:
   acceptor(tcp_accept_socket handle, multiplexer* mpx,
            socket_manager_factory_ptr factory);
 
+  ~acceptor() override = default;
+
   util::error init() override;
 
   // -- properties -------------------------------------------------------------

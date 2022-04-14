@@ -52,7 +52,7 @@ private:
 
   template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
   void serialize(const T& what) {
-    visit(const_cast<T&>(what), *this);
+    const_cast<T&>(what).visit(*this);
   }
 
   template <class T, size_t Size>
@@ -82,7 +82,6 @@ private:
             std::enable_if_t<!meta::is_trivially_serializable_v<T>>* = nullptr>
   void serialize(const T* ptr, std::size_t size) {
     serialize(size);
-    const auto num_bytes = size * sizeof(T);
     for (const auto& val : make_span(ptr, size))
       serialize(val);
   }

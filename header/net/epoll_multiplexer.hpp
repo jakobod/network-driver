@@ -37,7 +37,7 @@ public:
 
   epoll_multiplexer();
 
-  ~epoll_multiplexer();
+  ~epoll_multiplexer() override;
 
   /// Initializes the multiplexer.
   util::error init(socket_manager_factory_ptr factory, uint16_t port) override;

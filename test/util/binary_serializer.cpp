@@ -29,13 +29,12 @@ struct dummy_class {
   std::int64_t i64_;
   float f_;
   double d_;
-};
 
-template <class Visitor>
-auto visit(dummy_class& d, Visitor& f) {
-  return f(d.s_, d.u8_, d.u16_, d.u32_, d.u64_, d.i8_, d.i16_, d.i32_, d.i64_,
-           d.f_, d.d_);
-}
+  /// Visit function in util namespace 
+  auto visit(auto& f) {
+    return f(s_, u8_, u16_, u32_, u64_, i8_, i16_, i32_, i64_, f_, d_);
+  }
+};
 
 #define check_serializing(expected, ...)                                       \
   do {                                                                         \

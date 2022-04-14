@@ -12,7 +12,6 @@
 
 namespace net {
 
-constexpr const int max_conn_backlog = 10;
 constexpr const int no_sigpipe_io_flag = MSG_NOSIGNAL;
 
 util::error_or<udp_datagram_socket_result>

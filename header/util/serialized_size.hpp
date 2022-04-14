@@ -9,8 +9,10 @@
 
 #include "meta/type_traits.hpp"
 
+#include <cstddef>
 #include <cstring>
 #include <string>
+#include <variant>
 
 namespace util {
 
@@ -25,7 +27,7 @@ public:
 
   template <class... Ts>
   std::size_t operator()(const Ts&... ts) {
-    if constexpr (sizeof...(Ts))
+    if constexpr (sizeof...(Ts) > 0)
       return (calculate_size(ts) + ...);
     else
       return 0;
@@ -33,7 +35,7 @@ public:
 
 private:
   template <class T, std::enable_if_t<meta::has_trivial_size_v<T>>* = nullptr>
-  constexpr std::size_t calculate_size(const T&) noexcept {
+  static constexpr std::size_t calculate_size(const T&) noexcept {
     return sizeof(T);
   }
 
@@ -58,7 +60,7 @@ private:
 
   template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
   std::size_t calculate_size(const T& t) {
-    return visit(const_cast<T&>(t), *this);
+    return const_cast<T&>(t).visit(*this);
   }
 
   // -- Container functions ----------------------------------------------------

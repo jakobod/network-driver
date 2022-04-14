@@ -19,6 +19,8 @@ namespace net {
 
 class multiplexer {
 public:
+  virtual ~multiplexer() = default;
+
   /// Initializes the multiplexer.
   virtual util::error init(socket_manager_factory_ptr factory, uint16_t port)
     = 0;

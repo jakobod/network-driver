@@ -230,15 +230,15 @@ void epoll_multiplexer::handle_timeouts() {
   auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
   for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
     auto& entry = *it;
-    auto when = time_point_cast<milliseconds>(entry.when);
+    auto when = time_point_cast<milliseconds>(entry.when_);
     if (when <= now) {
-      managers_.at(entry.hdl)->handle_timeout(entry.id);
+      managers_.at(entry.handle_)->handle_timeout(entry.id_);
     } else {
       timeouts_.erase(timeouts_.begin(), it);
       if (timeouts_.empty())
         current_timeout_ = std::nullopt;
       else
-        current_timeout_ = entry.when;
+        current_timeout_ = entry.when_;
       break;
     }
   }

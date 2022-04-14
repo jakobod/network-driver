@@ -38,8 +38,7 @@ template <class T, class = void>
 struct is_visitable : std::false_type {};
 
 template <class T>
-struct is_visitable<T, decltype(visit(std::declval<T&>(),
-                                      std::declval<visitor&>()))>
+struct is_visitable<T, decltype(std::declval<T>().visit(std::declval<visitor&>()))>
   : std::true_type {};
 
 template <class T>
@@ -122,8 +121,7 @@ constexpr bool has_trivial_size_v
 
 // -- Trivially serializable trait ---------------------------------------------
 
-// Type Trait for types that  to determine their
-// size
+// Type Trait for types that  to determine their size
 template <class T>
 constexpr bool is_trivially_serializable_v
   = std::is_integral_v<T> || std::is_enum_v<T>;

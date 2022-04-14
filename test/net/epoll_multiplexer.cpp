@@ -117,8 +117,8 @@ struct epoll_multiplexer_test : public testing::Test {
 
 TEST_F(epoll_multiplexer_test, mpx_accepts_connections) {
   std::array<tcp_stream_socket, 10> sockets;
-  for (size_t i = 0; i < 10; ++i) {
-    connect_to_mpx();
+  for (auto& sock : sockets) {
+    sock = connect_to_mpx();
     EXPECT_EQ(mpx.poll_once(false), util::none);
   }
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 10);
