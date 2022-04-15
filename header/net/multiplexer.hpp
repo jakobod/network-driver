@@ -36,7 +36,7 @@ public:
   /// Joins with the multiplexer.
   virtual void join() = 0;
 
-  virtual bool running() = 0;
+  virtual bool running() const = 0;
 
   // -- Error Handling ---------------------------------------------------------
 

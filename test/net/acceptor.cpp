@@ -35,7 +35,7 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  bool running() override {
+  bool running() const override {
     return false;
   }
 

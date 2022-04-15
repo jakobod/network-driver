@@ -37,12 +37,12 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  bool running() override {
+  bool running() const override {
     return false;
   }
 
   void handle_error(const util::error& err) override {
-    last_handled_error_ = std::move(err);
+    last_handled_error_ = err;
   }
 
   util::error poll_once(bool) override {

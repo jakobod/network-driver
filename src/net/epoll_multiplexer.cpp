@@ -98,7 +98,7 @@ void epoll_multiplexer::join() {
     mpx_thread_.join();
 }
 
-bool epoll_multiplexer::running() {
+bool epoll_multiplexer::running() const {
   return mpx_thread_.joinable();
 }
 

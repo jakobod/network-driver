@@ -53,7 +53,7 @@ public:
   /// Joins with the multiplexer.
   void join() override;
 
-  bool running() override;
+  bool running() const override;
 
   void set_thread_id();
 
