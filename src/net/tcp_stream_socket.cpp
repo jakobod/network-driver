@@ -15,7 +15,7 @@
 namespace net {
 
 util::error_or<tcp_stream_socket>
-make_connected_tcp_stream_socket(ip::v4_endpoint ep) {
+make_connected_tcp_stream_socket(const ip::v4_endpoint& ep) {
   if (ep.port() == 0)
     return util::error(util::error_code::invalid_argument,
                        "port should not be zero");

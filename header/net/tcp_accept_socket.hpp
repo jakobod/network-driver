@@ -5,11 +5,10 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
+#include "util/fwd.hpp"
 
 #include "net/socket.hpp"
-
-#include "util/error.hpp"
 
 #include <cstdint>
 

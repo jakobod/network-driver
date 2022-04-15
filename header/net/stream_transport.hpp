@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "net/receive_policy.hpp"
 #include "net/stream_socket.hpp"

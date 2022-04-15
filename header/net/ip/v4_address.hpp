@@ -5,7 +5,8 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "util/byte_array.hpp"
+#include "util/error_or.hpp"
 
 #include <cstddef>
 #include <string_view>

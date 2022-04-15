@@ -5,14 +5,16 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "meta/type_traits.hpp"
 
 #include <cstddef>
 #include <cstring>
+#include <span>
 #include <string>
-#include <variant>
+#include <tuple>
+#include <utility>
 
 namespace util {
 

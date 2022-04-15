@@ -3,13 +3,18 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
 #include "util/binary_deserializer.hpp"
+#include "util/byte_array.hpp"
+#include "util/byte_buffer.hpp"
+#include "util/byte_span.hpp"
 
 #include "net_test.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <string>
+#include <tuple>
+#include <utility>
 
 using namespace util;
 
@@ -30,7 +35,7 @@ struct dummy_class {
   float f_;
   double d_;
 
-  auto visit(auto & f) {
+  auto visit(auto& f) {
     return f(s_, u8_, u16_, u32_, u64_, i8_, i16_, i32_, i64_, f_, d_);
   }
 };
@@ -79,16 +84,15 @@ TEST(binary_deserializer, integer) {
   ASSERT_EQ(i64, std::int64_t{8});
 }
 
-// TODO: This test fails under ubuntu because of template stuff. NO IDEA WHY!
-// TEST(binary_deserializer, byte) {
-//   static constexpr const auto input = make_byte_array(0x2A, 0x45);
-//   std::byte b1;
-//   std::byte b2;
-//   binary_deserializer deserializer{input};
-//   ASSERT_NO_THROW(deserializer(b1, b2));
-//   ASSERT_EQ(b1, std::byte{42});
-//   ASSERT_EQ(b2, std::byte{69});
-// }
+TEST(binary_deserializer, byte) {
+  static constexpr const auto input = make_byte_array(0x2A, 0x45);
+  std::byte b1;
+  std::byte b2;
+  binary_deserializer deserializer{input};
+  ASSERT_NO_THROW(deserializer(b1, b2));
+  ASSERT_EQ(b1, std::byte{42});
+  ASSERT_EQ(b2, std::byte{69});
+}
 
 TEST(binary_deserializer, floats) {
   static constexpr const auto input = make_byte_array(0xd7, 0xa3, 0x70, 0x3d,

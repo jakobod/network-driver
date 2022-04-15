@@ -5,11 +5,14 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "net/receive_policy.hpp"
 #include "net/socket.hpp"
 #include "net/socket_manager.hpp"
+
+#include "util/byte_buffer.hpp"
+#include "util/byte_span.hpp"
 
 namespace net {
 

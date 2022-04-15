@@ -5,10 +5,11 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "net/socket.hpp"
 
+#include "util/byte_span.hpp"
 #include "util/error.hpp"
 
 #include <linux/if_packet.h>

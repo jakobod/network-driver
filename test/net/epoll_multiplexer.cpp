@@ -3,8 +3,6 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
 #include "net/epoll_multiplexer.hpp"
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"

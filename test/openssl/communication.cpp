@@ -3,10 +3,10 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
 #include "openssl/tls_context.hpp"
 #include "openssl/tls_session.hpp"
+
+#include "util/byte_span.hpp"
 
 #include "net_test.hpp"
 
@@ -62,7 +62,7 @@ TEST(openssl_test, roundtrip) {
   ASSERT_TRUE(server.is_initialized());
 
   // Transmit data from the client to the server
-  EXPECT_NO_ERROR(client.encrypt(util::make_const_byte_span(testString)));
+  EXPECT_NO_ERROR(client.encrypt(util::as_const_bytes(testString)));
   EXPECT_NO_ERROR(server.consume(client_write_buffer));
   client_write_buffer.clear();
   ASSERT_EQ(received_string, testString);

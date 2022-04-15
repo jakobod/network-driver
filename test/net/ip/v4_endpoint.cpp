@@ -3,8 +3,6 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
 #include "net/ip/v4_endpoint.hpp"
 
 #include "util/error.hpp"

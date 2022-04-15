@@ -3,12 +3,11 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
-#include "net/multiplexer.hpp"
 #include "net/socket_manager.hpp"
+#include "net/multiplexer.hpp"
 #include "net/stream_socket.hpp"
 
+#include "util/byte_buffer.hpp"
 #include "util/error.hpp"
 
 #include "net_test.hpp"

@@ -3,13 +3,16 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
 #include "util/binary_serializer.hpp"
+#include "util/byte_array.hpp"
+#include "util/byte_buffer.hpp"
 
 #include "net_test.hpp"
 
 #include <algorithm>
+#include <string>
+#include <tuple>
+#include <utility>
 
 using namespace util;
 
@@ -30,7 +33,7 @@ struct dummy_class {
   float f_;
   double d_;
 
-  /// Visit function in util namespace 
+  /// Visit function in util namespace
   auto visit(auto& f) {
     return f(s_, u8_, u16_, u32_, u64_, i8_, i16_, i32_, i64_, f_, d_);
   }

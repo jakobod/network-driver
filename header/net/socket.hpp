@@ -5,7 +5,9 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
+#include "net/ip/fwd.hpp"
+#include "util/fwd.hpp"
 
 #include "net/socket_id.hpp"
 

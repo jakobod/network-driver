@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "net/event_result.hpp"
 #include "net/layer.hpp"
@@ -13,6 +13,7 @@
 
 #include "openssl/tls_context.hpp"
 
+#include "util/byte_array.hpp"
 #include "util/error.hpp"
 
 namespace net {

@@ -5,13 +5,11 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
+#include "net/transport_adaptor.hpp"
 #include "net/layer.hpp"
 #include "net/receive_policy.hpp"
 #include "net/stream_transport.hpp"
 #include "net/transport.hpp"
-#include "net/transport_adaptor.hpp"
 
 #include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"

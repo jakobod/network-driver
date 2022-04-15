@@ -5,13 +5,18 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "util/serialized_size.hpp"
 
 #include "meta/type_traits.hpp"
 
+#include "util/byte_buffer.hpp"
+#include "util/byte_span.hpp"
+
 #include <cstring>
+#include <tuple>
+#include <utility>
 
 namespace util {
 

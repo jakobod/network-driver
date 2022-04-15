@@ -5,7 +5,10 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
+#include "util/fwd.hpp"
+
+#include "util/byte_span.hpp"
 
 namespace net {
 

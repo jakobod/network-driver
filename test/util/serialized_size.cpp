@@ -3,13 +3,13 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
 #include "util/serialized_size.hpp"
 
 #include "net_test.hpp"
 
 #include <algorithm>
+#include <tuple>
+#include <utility>
 
 using namespace util;
 

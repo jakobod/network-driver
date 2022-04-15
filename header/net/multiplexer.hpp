@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "net/ip/v4_endpoint.hpp"
 
@@ -71,8 +71,8 @@ public:
 
   template <class Manager, class... Ts>
   util::error
-  tcp_connect(ip::v4_endpoint ep, operation initial_op, Ts&&... xs) {
-    auto sock = make_connected_tcp_stream_socket(std::move(ep));
+  tcp_connect(const ip::v4_endpoint& ep, operation initial_op, Ts&&... xs) {
+    auto sock = make_connected_tcp_stream_socket(ep);
     if (auto err = get_error(sock))
       return *err;
     auto mgr = std::make_shared<Manager>(std::get<tcp_stream_socket>(sock),

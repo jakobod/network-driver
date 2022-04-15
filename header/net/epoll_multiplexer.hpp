@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"

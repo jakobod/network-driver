@@ -3,8 +3,6 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
 #include "net/stream_transport.hpp"
 #include "net/transport.hpp"
 

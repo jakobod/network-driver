@@ -12,6 +12,7 @@
 #include "net/tcp_stream_socket.hpp"
 
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 #include "util/format.hpp"
 
 namespace net {

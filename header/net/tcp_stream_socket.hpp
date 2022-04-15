@@ -5,7 +5,8 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
+#include "net/ip/fwd.hpp"
 
 #include "net/stream_socket.hpp"
 
@@ -22,6 +23,6 @@ struct tcp_stream_socket : stream_socket {
 
 /// Create a `tcp_stream_socket` connected to `ep`.
 util::error_or<tcp_stream_socket>
-make_connected_tcp_stream_socket(ip::v4_endpoint ep);
+make_connected_tcp_stream_socket(const ip::v4_endpoint& ep);
 
 } // namespace net

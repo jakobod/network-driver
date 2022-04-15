@@ -3,10 +3,8 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "fwd.hpp"
-
-#include "net/socket_guard.hpp"
 #include "net/udp_datagram_socket.hpp"
+#include "net/socket_guard.hpp"
 
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"

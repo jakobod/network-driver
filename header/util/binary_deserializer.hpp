@@ -5,13 +5,17 @@
 
 #pragma once
 
-#include "fwd.hpp"
+#include "net/fwd.hpp"
 
 #include "meta/type_traits.hpp"
 
+#include "util/byte_span.hpp"
+
 #include <cstring>
 #include <numeric>
-#include <variant>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace util {
 
