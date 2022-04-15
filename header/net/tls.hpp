@@ -153,12 +153,25 @@ public:
     encrypt_buf_.insert(encrypt_buf_.end(), bytes.begin(), bytes.end());
   }
 
-  void handle_error(util::error err) override {
+  /// Called when an error occurs
+  void handle_error(const util::error& err) override {
     parent_.handle_error(err);
   }
 
+  /// Registers the stack for write events
   void register_writing() override {
     parent_.register_writing();
+  }
+
+  /// Sets a timeout in `duration` milliseconds with the id `timeout_id`
+  uint64_t set_timeout_in(std::chrono::milliseconds duration) override {
+    return parent_.set_timeout_in(duration);
+  }
+
+  /// Sets a timeout at timepoint `point` with the id `timeout_id`
+  uint64_t
+  set_timeout_at(std::chrono::system_clock::time_point point) override {
+    return parent_.set_timeout_at(point);
   }
 
   /// Checks wether this session is initialized (Handshake is done)

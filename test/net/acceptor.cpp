@@ -59,9 +59,9 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  void set_timeout(socket_manager&, uint64_t,
-                   std::chrono::system_clock::time_point) override {
-    // nop
+  uint64_t set_timeout(socket_manager&,
+                       std::chrono::system_clock::time_point) override {
+    return 0;
   }
 
   util::error last_error;

@@ -11,6 +11,8 @@
 #include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
 
+#include <chrono>
+
 namespace net {
 
 struct layer {
@@ -43,10 +45,17 @@ struct layer {
   virtual void enqueue(util::const_byte_span bytes) = 0;
 
   /// Called when an error occurs
-  virtual void handle_error(util::error err) = 0;
+  virtual void handle_error(const util::error& err) = 0;
 
   /// Registers the stack for write events
   virtual void register_writing() = 0;
+
+  /// Sets a timeout in `duration` milliseconds with the id `timeout_id`
+  virtual uint64_t set_timeout_in(std::chrono::milliseconds duration) = 0;
+
+  /// Sets a timeout at timepoint `point` with the id `timeout_id`
+  virtual uint64_t set_timeout_at(std::chrono::system_clock::time_point point)
+    = 0;
 };
 
 } // namespace net

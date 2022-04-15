@@ -140,13 +140,15 @@ void epoll_multiplexer::disable(socket_manager& mgr, operation op,
     del(mgr.handle());
 }
 
-void epoll_multiplexer::set_timeout(
-  socket_manager& mgr, uint64_t timeout_id,
-  std::chrono::system_clock::time_point when) {
-  timeouts_.emplace(mgr.handle().id, when, timeout_id);
+uint64_t
+epoll_multiplexer::set_timeout(socket_manager& mgr,
+                               std::chrono::system_clock::time_point when) {
+  auto current_tid = current_timeout_id_++;
+  timeouts_.emplace(mgr.handle().id, when, current_tid);
   current_timeout_ = (current_timeout_ != std::nullopt)
                        ? std::min(when, *current_timeout_)
                        : when;
+  return current_tid;
 }
 
 void epoll_multiplexer::del(socket handle) {

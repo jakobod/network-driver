@@ -65,15 +65,14 @@ void socket_manager::register_writing() {
   mpx_->enable(*this, operation::write);
 }
 
-void socket_manager::set_timeout_in(std::chrono::milliseconds duration,
-                                    uint64_t timeout_id) {
+uint64_t socket_manager::set_timeout_in(std::chrono::milliseconds duration) {
   auto tp = std::chrono::system_clock::now() + duration;
-  mpx_->set_timeout(*this, timeout_id, tp);
+  return mpx_->set_timeout(*this, tp);
 }
 
-void socket_manager::set_timeout_at(std::chrono::system_clock::time_point point,
-                                    uint64_t timeout_id) {
-  mpx_->set_timeout(*this, timeout_id, point);
+uint64_t
+socket_manager::set_timeout_at(std::chrono::system_clock::time_point point) {
+  return mpx_->set_timeout(*this, point);
 }
 
 void socket_manager::handle_error(const util::error& err) {

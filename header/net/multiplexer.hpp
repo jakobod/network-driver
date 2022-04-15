@@ -62,11 +62,11 @@ public:
   /// @warning This function is *NOT* thread-safe.
   virtual void disable(socket_manager& mgr, operation op, bool remove) = 0;
 
-  /// Sets a timeout for socket_manager `mgr`, with id `timeout_id`, at
-  /// timepoint `when`.
+  /// Sets a timeout for socket_manager `mgr` at timepoint `when` and returns
+  /// the id.
   /// @warning This function is *NOT* thread-safe.
-  virtual void set_timeout(socket_manager& mgr, uint64_t timeout_id,
-                           std::chrono::system_clock::time_point when)
+  virtual uint64_t
+  set_timeout(socket_manager& mgr, std::chrono::system_clock::time_point when)
     = 0;
 
   template <class Manager, class... Ts>

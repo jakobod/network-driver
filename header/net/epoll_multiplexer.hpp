@@ -80,8 +80,8 @@ public:
   /// removed if `remove` is set.
   void disable(socket_manager& mgr, operation op, bool remove) override;
 
-  void set_timeout(socket_manager& mgr, uint64_t timeout_id,
-                   std::chrono::system_clock::time_point when) override;
+  uint64_t set_timeout(socket_manager& mgr,
+                       std::chrono::system_clock::time_point when) override;
 
   /// Main multiplexing loop.
   util::error poll_once(bool blocking) override;
@@ -118,6 +118,7 @@ private:
   // timeout handling
   timeout_entry_set timeouts_;
   optional_timepoint current_timeout_ = std::nullopt;
+  uint64_t current_timeout_id_ = 0;
 
   // thread variables
   bool shutting_down_ = false;
