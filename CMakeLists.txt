@@ -8,8 +8,6 @@ include(GoogleTest)
 
 # -- set useful CMake options --------------------------------------------------
 
-set(CMAKE_BUILD_TYPE Debug)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,6 +15,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_compile_options(-Wall -Wextra -pedantic)
+
+message (STATUS "Build type ${CMAKE_BUILD_TYPE}")
 
 # -- find or fetch dependencies ------------------------------------------------
 
