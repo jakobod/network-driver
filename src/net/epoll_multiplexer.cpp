@@ -88,7 +88,7 @@ void epoll_multiplexer::shutdown() {
     if (res != 1) {
       std::cerr << "ERROR could not write to pipe: "
                 << last_socket_error_as_string() << std::endl;
-      abort(); // Can't be handled by shutting down, if shutdown fails.
+      exit(-1); // Can't be handled by shutting down, if shutdown fails.
     }
   }
 }
@@ -114,58 +114,6 @@ void epoll_multiplexer::handle_error(const util::error& err) {
 }
 
 // -- Interface functions ------------------------------------------------------
-
-// TODO: This has to be simpler...
-util::error epoll_multiplexer::poll_once(bool blocking) {
-  auto timeout = [&]() -> int {
-    if (!blocking)
-      return 0; // nonblocking
-    if (current_timeout_ == std::nullopt)
-      return -1;
-    auto now = time_point_cast<milliseconds>(system_clock::now());
-    auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
-    return static_cast<int>((timeout_tp - now).count());
-  };
-  auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                               static_cast<int>(pollset_.size()), timeout());
-  if (num_events < 0) {
-    return (errno == EINTR) ? util::none
-                            : util::error{util::error_code::runtime_error,
-                                          util::last_error_as_string()};
-  } else {
-    handle_timeouts();
-    for (int i = 0; i < num_events; ++i) {
-      auto& event = pollset_[i];
-      if (event.events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
-        std::cerr << util::format("epoll_wait failed: socket = {0}: {1}", i,
-                                  util::last_error_as_string())
-                  << std::endl;
-        del(socket{event.data.fd});
-        continue;
-      } else {
-        auto& mgr = managers_[event.data.fd];
-        auto handle_result = [&](event_result res, operation op) -> bool {
-          if (res == event_result::done) {
-            disable(*mgr, op, true);
-          } else if (res == event_result::error) {
-            del(mgr->handle());
-            return false;
-          }
-          return true;
-        };
-        if ((event.events & operation::read) == operation::read) {
-          if (!handle_result(mgr->handle_read_event(), operation::read))
-            continue;
-        }
-        if ((event.events & operation::write) == operation::write) {
-          if (!handle_result(mgr->handle_write_event(), operation::write))
-            continue;
-        }
-      }
-    }
-  }
-  return util::none;
-}
 
 void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
   if (!mgr->mask_add(initial))
@@ -229,20 +177,85 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
   }
 }
 
+util::error epoll_multiplexer::poll_once(bool blocking) {
+  // Calculates the timeout value for the epoll_wait call
+  auto timeout = [&]() -> int {
+    if (!blocking)
+      return 0; // nonblocking
+    if (current_timeout_ == std::nullopt)
+      return -1; // No timeout
+    auto now = time_point_cast<milliseconds>(system_clock::now());
+    auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
+    return static_cast<int>((timeout_tp - now).count());
+  };
+
+  // Poll for events on the reqistered sockets
+  auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
+                               static_cast<int>(pollset_.size()), timeout());
+  // Check for errors
+  if (num_events < 0) {
+    return (errno == EINTR) ? util::none
+                            : util::error{util::error_code::runtime_error,
+                                          util::last_error_as_string()};
+  }
+  // Handle all timeouts and io-events that have been registered
+  handle_timeouts();
+  handle_events(num_events);
+  return util::none;
+}
+
 void epoll_multiplexer::handle_timeouts() {
   auto now = time_point_cast<milliseconds>(system_clock::now());
   for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
     auto& entry = *it;
     auto when = time_point_cast<milliseconds>(entry.when_);
     if (when <= now) {
+      // Registered timeout has expired
       managers_.at(entry.handle_)->handle_timeout(entry.id_);
     } else {
+      // Timeout not expired, delete handled entries and set the current timeout
       timeouts_.erase(timeouts_.begin(), it);
       if (timeouts_.empty())
-        current_timeout_ = std::nullopt;
+        current_timeout_ = std::nullopt; // No timeout
       else
         current_timeout_ = entry.when_;
       break;
+    }
+  }
+}
+
+void epoll_multiplexer::handle_events(int num_events) {
+  auto handle_result = [&](socket_manager_ptr& mgr, event_result res,
+                           operation op) -> bool {
+    if (res == event_result::done) {
+      disable(*mgr, op, true);
+    } else if (res == event_result::error) {
+      del(mgr->handle());
+      return false;
+    }
+    return true;
+  };
+
+  for (int i = 0; i < num_events; ++i) {
+    auto& event = pollset_[i];
+    if (event.events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
+      std::cerr << util::format("epoll_wait failed: socket = {0}: {1}", i,
+                                util::last_error_as_string())
+                << std::endl;
+      del(socket{event.data.fd});
+      continue;
+    } else {
+      auto& mgr = managers_[event.data.fd];
+      // Handle possible read event
+      if ((event.events & operation::read) == operation::read) {
+        if (!handle_result(mgr, mgr->handle_read_event(), operation::read))
+          continue;
+      }
+      // Handle possible write event
+      if ((event.events & operation::write) == operation::write) {
+        if (!handle_result(mgr, mgr->handle_write_event(), operation::write))
+          continue;
+      }
     }
   }
 }

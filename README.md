@@ -1,7 +1,6 @@
 # network-driver
 A network abstraction framework aimed at implementing different (multithreaded) multiplexing solutions, encapsulated by a common API.
-I use this library to write benchmarks aiming to find a good approach to multithreaded networking.
-The repo can be found [here](https://github.com/jakobod/network-driver-benchmark).
+This is a project I work on in my free time. It may be useful to some, but I just have fun designing this framework :)
 
 # Requirements
 
@@ -26,15 +25,11 @@ make -C build test
 
 # TODO
 - [ ] datagram_transport
-- [ ] event_result approach within stack might be overkill.. Isn't a simple bool enough?
 
-- [x] epoll implementation
 - [x] multithreaded epoll implementation
   - [ ] Check for race-conditions?!
 - [ ] io_uring implementation
 - [ ] EBPF?! - https://www.nginx.com/blog/our-roadmap-quic-http-3-support-nginx/
-
-- [x] Implement receive-semantics at_most, at_least, exactly
 
 # Interesting Links
 - https://idea.popcount.org/2017-02-20-epoll-is-fundamentally-broken-12/

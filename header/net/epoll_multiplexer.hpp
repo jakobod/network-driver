@@ -57,14 +57,17 @@ public:
 
   void set_thread_id();
 
+  // -- members ----------------------------------------------------------------
+
+  [[nodiscard]] uint16_t num_socket_managers() const {
+    return managers_.size();
+  }
+
   // -- Error Handling ---------------------------------------------------------
 
   void handle_error(const util::error& err) override;
 
   // -- Interface functions ----------------------------------------------------
-
-  /// Main multiplexing loop.
-  util::error poll_once(bool blocking) override;
 
   /// Adds a new fd to the multiplexer for operation `initial`.
   void add(socket_manager_ptr mgr, operation initial) override;
@@ -80,13 +83,16 @@ public:
   void set_timeout(socket_manager& mgr, uint64_t timeout_id,
                    std::chrono::system_clock::time_point when) override;
 
-  // -- members ----------------------------------------------------------------
-
-  [[nodiscard]] uint16_t num_socket_managers() const {
-    return managers_.size();
-  }
+  /// Main multiplexing loop.
+  util::error poll_once(bool blocking) override;
 
 private:
+  /// Notifies all socket managers about timeouts that have expired.
+  void handle_timeouts();
+
+  /// Handles all IO-events that occurred.
+  void handle_events(int num_events);
+
   /// The main multiplexer loop.
   void run();
 
@@ -99,8 +105,6 @@ private:
 
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
-
-  void handle_timeouts();
 
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_;
