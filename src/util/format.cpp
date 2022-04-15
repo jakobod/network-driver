@@ -7,7 +7,7 @@
 
 namespace util {
 
-std::vector<std::string> split(std::string str, const std::string delim) {
+std::vector<std::string> split(std::string str, const std::string& delim) {
   std::vector<std::string> tokens;
   size_t pos = 0;
   while ((pos = str.find(delim)) != std::string::npos) {
@@ -18,7 +18,7 @@ std::vector<std::string> split(std::string str, const std::string delim) {
   return tokens;
 }
 
-std::vector<std::string> split(std::string str, const char delim) {
+std::vector<std::string> split(const std::string& str, const char delim) {
   std::vector<std::string> tokens;
   std::stringstream stream(str);
   std::string token;

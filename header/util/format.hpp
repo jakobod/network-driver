@@ -47,8 +47,8 @@ std::string format(std::string form, Ts... args) {
   return unpack<0>(std::move(form), std::move(args)...);
 }
 
-std::vector<std::string> split(std::string str, const std::string delim);
+std::vector<std::string> split(std::string str, const std::string& delim);
 
-std::vector<std::string> split(std::string str, const char delim);
+std::vector<std::string> split(const std::string& str, const char delim);
 
 } // namespace util

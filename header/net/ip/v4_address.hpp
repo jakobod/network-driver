@@ -22,15 +22,17 @@ public:
   /// Array type for representing a ipv4 address as bytes.
   using octet_array = util::byte_array<num_octets>;
 
+  /// Predefined any address
+  static constexpr const octet_array any = util::make_byte_array(0, 0, 0, 0);
   /// Predefined localhost address
   static constexpr const octet_array localhost = util::make_byte_array(127, 0,
                                                                        0, 1);
-  /// Predefined any address
-  static constexpr const octet_array any_addr = util::make_byte_array(0, 0, 0,
-                                                                      0);
+  /// Predefined localhost address
+  static constexpr const octet_array local_broadcast
+    = util::make_byte_array(255, 255, 255, 255);
 
   /// Default initialization of an address
-  constexpr v4_address() : bytes_{any_addr} {
+  constexpr v4_address() : bytes_{any} {
     // nop
   }
 

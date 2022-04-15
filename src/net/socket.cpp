@@ -51,7 +51,7 @@ bool last_socket_error_is_temporary() {
 }
 
 std::string last_socket_error_as_string() {
-  return strerror(errno);
+  return util::last_error_as_string();
 }
 
 bool nonblocking(socket hdl, bool new_value) {
@@ -66,7 +66,7 @@ bool nonblocking(socket hdl, bool new_value) {
 util::error_or<uint16_t> port_of(socket x) {
   struct sockaddr_in sin;
   socklen_t len = sizeof(sin);
-  if (getsockname(x.id, (struct sockaddr*) &sin, &len) == -1)
+  if (getsockname(x.id, reinterpret_cast<sockaddr*>(&sin), &len) == -1)
     return util::error(util::error_code::socket_operation_failed,
                        last_socket_error_as_string());
   return ntohs(sin.sin_port);

@@ -59,7 +59,7 @@ public:
 
   // -- Error Handling ---------------------------------------------------------
 
-  void handle_error(util::error err) override;
+  void handle_error(const util::error& err) override;
 
   // -- Interface functions ----------------------------------------------------
 

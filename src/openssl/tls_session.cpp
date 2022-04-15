@@ -79,7 +79,8 @@ util::error tls_session::init() {
 
 util::error tls_session::consume(util::const_byte_span bytes) {
   while (!bytes.empty()) {
-    auto write_res = BIO_write(rbio_, bytes.data(), bytes.size());
+    auto write_res = BIO_write(rbio_, bytes.data(),
+                               static_cast<int>(bytes.size()));
     if (write_res <= 0)
       return {openssl_error, "BIO_read failed"};
     bytes = bytes.subspan(write_res);
@@ -93,7 +94,8 @@ util::error tls_session::consume(util::const_byte_span bytes) {
 
     int read_res = 0;
     while (true) {
-      read_res = SSL_read(ssl_, ssl_read_buf_.data(), ssl_read_buf_.size());
+      read_res = SSL_read(ssl_, ssl_read_buf_.data(),
+                          static_cast<int>(ssl_read_buf_.size()));
       if (read_res > 0)
         on_data_({ssl_read_buf_.data(), static_cast<size_t>(read_res)});
       else

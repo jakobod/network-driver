@@ -1,17 +1,15 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *
- *  This file is based on `stream_socket.cpp` from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #include "net/stream_socket.hpp"
 
-#include "util/error.hpp"
+#include "util/error_or.hpp"
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <utility>
 
 namespace net {
 
@@ -41,12 +39,12 @@ bool nodelay(stream_socket x, bool new_value) {
 }
 
 ptrdiff_t read(stream_socket x, util::byte_span buf) {
-  return ::recv(x.id, reinterpret_cast<char*>(buf.data()), buf.size(),
+  return ::recv(x.id, reinterpret_cast<void*>(buf.data()), buf.size(),
                 no_sigpipe_io_flag);
 }
 
 ptrdiff_t write(stream_socket x, util::const_byte_span buf) {
-  return ::send(x.id, reinterpret_cast<const char*>(buf.data()), buf.size(),
+  return ::send(x.id, reinterpret_cast<const void*>(buf.data()), buf.size(),
                 no_sigpipe_io_flag);
 }
 

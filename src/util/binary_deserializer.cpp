@@ -15,7 +15,7 @@ binary_deserializer::binary_deserializer(const_byte_span bytes)
 void binary_deserializer::deserialize(float& val) {
   union {
     float f;
-    std::uint32_t i;
+    std::uint32_t i = 0;
   };
   deserialize(i);
   val = f;
@@ -24,7 +24,7 @@ void binary_deserializer::deserialize(float& val) {
 void binary_deserializer::deserialize(double& val) {
   union {
     double f;
-    std::uint64_t i;
+    std::uint64_t i = 0;
   };
   deserialize(i);
   val = f;

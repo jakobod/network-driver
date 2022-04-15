@@ -7,7 +7,11 @@
 
 #include <gtest/gtest.h>
 
+#include "util/byte_span.hpp"
+
 #include <iostream>
+
+// -- Helper macros for tests --------------------------------------------------
 
 #define MESSAGE()                                                              \
   std::cerr << "\033[0;33m"                                                    \

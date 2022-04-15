@@ -92,7 +92,7 @@ public:
   virtual event_result handle_timeout(uint64_t timeout_id) = 0;
 
   /// Handles an error
-  void handle_error(util::error err);
+  void handle_error(const util::error& err);
 
 private:
   /// The managed socket

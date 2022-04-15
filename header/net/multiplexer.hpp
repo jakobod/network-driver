@@ -41,7 +41,7 @@ public:
   // -- Error Handling ---------------------------------------------------------
 
   /// Handles an error `err`.
-  virtual void handle_error(util::error err) = 0;
+  virtual void handle_error(const util::error& err) = 0;
 
   // -- Interface functions ----------------------------------------------------
 

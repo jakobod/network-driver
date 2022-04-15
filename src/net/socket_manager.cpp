@@ -1,10 +1,6 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 29.03.2021
- *
- *  This file is based on `socket_manager.cpp` from the C++ Actor Framework.
- *  https://github.com/actor-framework/incubator
  */
 
 #include "net/socket_manager.hpp"
@@ -80,7 +76,7 @@ void socket_manager::set_timeout_at(std::chrono::system_clock::time_point point,
   mpx_->set_timeout(*this, timeout_id, point);
 }
 
-void socket_manager::handle_error(util::error err) {
+void socket_manager::handle_error(const util::error& err) {
   mpx_->handle_error(err);
 }
 

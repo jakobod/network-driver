@@ -10,17 +10,20 @@
 #include "net/socket_sys_includes.hpp"
 
 #include "util/error.hpp"
+#include "util/format.hpp"
 
 #include <algorithm>
 #include <chrono>
-#include <cstring>
 #include <iostream>
 #include <utility>
 
+using std::chrono::milliseconds;
+using std::chrono::system_clock;
+using std::chrono::time_point_cast;
+
 namespace net {
 
-epoll_multiplexer::epoll_multiplexer()
-  : epoll_fd_(invalid_socket_id), shutting_down_(false), running_(false) {
+epoll_multiplexer::epoll_multiplexer() : epoll_fd_(invalid_socket_id) {
   // nop
 }
 
@@ -32,8 +35,7 @@ util::error epoll_multiplexer::init(socket_manager_factory_ptr factory,
                                     uint16_t port) {
   epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epoll_fd_ < 0)
-    return util::error(util::error_code::runtime_error,
-                       "creating epoll fd failed");
+    return {util::error_code::runtime_error, "creating epoll fd failed"};
   // Create pollset updater
   auto pipe_res = make_pipe();
   if (auto err = util::get_error(pipe_res))
@@ -106,37 +108,37 @@ void epoll_multiplexer::set_thread_id() {
 
 // -- Error handling -----------------------------------------------------------
 
-void epoll_multiplexer::handle_error(util::error err) {
+void epoll_multiplexer::handle_error(const util::error& err) {
   std::cerr << "ERROR: " << err << std::endl;
   shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
 
+// TODO: This has to be simpler...
 util::error epoll_multiplexer::poll_once(bool blocking) {
-  using namespace std::chrono;
   auto timeout = [&]() -> int {
     if (!blocking)
       return 0; // nonblocking
     if (current_timeout_ == std::nullopt)
       return -1;
-    auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
+    auto now = time_point_cast<milliseconds>(system_clock::now());
     auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
-    return (timeout_tp - now).count();
+    return static_cast<int>((timeout_tp - now).count());
   };
-  auto to = timeout();
   auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
-                               static_cast<int>(pollset_.size()), to);
+                               static_cast<int>(pollset_.size()), timeout());
   if (num_events < 0) {
-    return (errno == EINTR)
-             ? util::none
-             : util::error{util::error_code::runtime_error, strerror(errno)};
+    return (errno == EINTR) ? util::none
+                            : util::error{util::error_code::runtime_error,
+                                          util::last_error_as_string()};
   } else {
     handle_timeouts();
     for (int i = 0; i < num_events; ++i) {
       auto& event = pollset_[i];
       if (event.events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
-        std::cerr << "epoll_wait failed: socket = " << i << strerror(errno)
+        std::cerr << util::format("epoll_wait failed: socket = {0}: {1}", i,
+                                  util::last_error_as_string())
                   << std::endl;
         del(socket{event.data.fd});
         continue;
@@ -220,14 +222,15 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
   epoll_event event = {};
   event.events = static_cast<uint32_t>(events);
   event.data.fd = fd;
-  if (epoll_ctl(epoll_fd_, op, fd, &event) < 0)
-    handle_error(util::error(util::error_code::runtime_error,
-                             "epoll_ctl: " + std::string(strerror(errno))));
+  if (epoll_ctl(epoll_fd_, op, fd, &event) < 0) {
+    handle_error(
+      {util::error_code::runtime_error,
+       util::format("epoll_ctl: {0}", util::last_error_as_string())});
+  }
 }
 
 void epoll_multiplexer::handle_timeouts() {
-  using namespace std::chrono;
-  auto now = time_point_cast<milliseconds>(std::chrono::system_clock::now());
+  auto now = time_point_cast<milliseconds>(system_clock::now());
   for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
     auto& entry = *it;
     auto when = time_point_cast<milliseconds>(entry.when_);

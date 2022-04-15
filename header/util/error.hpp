@@ -9,9 +9,8 @@
 
 #include "util/error_code.hpp"
 
-#include <sstream>
+#include <ostream>
 #include <string>
-#include <variant>
 
 namespace util {
 
@@ -21,7 +20,7 @@ public:
 
   error(error_code err);
 
-  error();
+  error() = default;
 
   ~error() = default;
 
@@ -40,12 +39,17 @@ public:
   }
 
 private:
-  error_code err_;
+  error_code err_ = no_error;
   std::string err_msg_;
 };
 
+/// Error-constant for returning no-error.
 const error none{};
 
+/// Stringifies an error
 std::string to_string(const error& err);
+
+/// Reads errno and returns the according error string for it
+std::string last_error_as_string();
 
 } // namespace util

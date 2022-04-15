@@ -39,8 +39,8 @@ struct dummy_multiplexer : public multiplexer {
     return false;
   }
 
-  void handle_error(util::error err) override {
-    last_error = std::move(err);
+  void handle_error(const util::error& err) override {
+    last_error = err;
   }
 
   util::error poll_once(bool) override {

@@ -5,14 +5,14 @@
 
 #include "net/pollset_updater.hpp"
 
+#include "net/event_result.hpp"
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"
 
+#include "util/byte_span.hpp"
 #include "util/error.hpp"
 
 #include <cstddef>
-#include <iostream>
-#include <span>
 
 namespace net {
 
@@ -29,15 +29,13 @@ util::error pollset_updater::init() {
 
 event_result pollset_updater::handle_read_event() {
   opcode code;
-  auto res = read(handle<pipe_socket>(),
-                  std::span{reinterpret_cast<std::byte*>(&code), 1});
+  auto res = read(handle<pipe_socket>(), util::as_bytes(&code, 1));
   if (res > 0) {
     switch (code) {
       case add_code:
-        break;
       case enable_code:
-        break;
       case disable_code:
+        /// Currently not implemented
         break;
       case shutdown_code:
         mpx()->shutdown();

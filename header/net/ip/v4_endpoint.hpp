@@ -24,7 +24,7 @@ public:
     // nop
   }
 
-  constexpr v4_endpoint() : address_{v4_address::any_addr}, port_{0} {
+  constexpr v4_endpoint() : address_{v4_address::any} {
     // nop
   }
 
@@ -46,7 +46,7 @@ public:
 
 private:
   const v4_address address_;
-  const std::uint16_t port_;
+  const std::uint16_t port_ = 0;
 };
 
 bool operator==(const v4_endpoint& lhs, const v4_endpoint& rhs);

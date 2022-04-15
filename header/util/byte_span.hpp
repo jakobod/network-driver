@@ -19,9 +19,19 @@ constexpr byte_span as_bytes(T& container) noexcept {
 }
 
 template <class T>
+constexpr byte_span as_bytes(T* ptr, std::size_t size) noexcept {
+  return {reinterpret_cast<std::byte*>(ptr), size};
+}
+
+template <class T>
 constexpr const_byte_span as_const_bytes(const T& container) noexcept {
   return {reinterpret_cast<const std::byte*>(container.data()),
           container.size()};
+}
+
+template <class T>
+constexpr const_byte_span as_const_bytes(T* ptr, std::size_t size) noexcept {
+  return {reinterpret_cast<const std::byte*>(ptr), size};
 }
 
 } // namespace util

@@ -43,7 +43,7 @@ struct dummy_multiplexer : public multiplexer {
     return false;
   }
 
-  void handle_error(util::error err) override {
+  void handle_error(const util::error& err) override {
     FAIL() << "There should be no errors! " << err << std::endl;
   }
 

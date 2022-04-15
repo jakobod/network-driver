@@ -23,7 +23,7 @@ void binary_serializer::realloc(std::size_t required_free_space) {
 void binary_serializer::serialize(const float& val) {
   union {
     float f;
-    std::uint32_t i;
+    std::uint32_t i = 0;
   };
   f = val;
   serialize(i);
@@ -32,7 +32,7 @@ void binary_serializer::serialize(const float& val) {
 void binary_serializer::serialize(const double& val) {
   union {
     double f;
-    std::uint64_t i;
+    std::uint64_t i = 0;
   };
   f = val;
   serialize(i);
