@@ -77,11 +77,10 @@ public:
       return *err;
     auto mgr = std::make_shared<Manager>(std::get<tcp_stream_socket>(sock),
                                          this, std::forward<Ts>(xs)...);
-    if (auto err = mgr->init())
-      return err;
-    add(std::move(mgr), initial_op);
+    add(mgr, initial_op);
     return util::none;
   }
+
   // -- members ----------------------------------------------------------------
 
   /// Returns the port the multiplexer is listening on.

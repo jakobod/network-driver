@@ -45,10 +45,6 @@ event_result acceptor::handle_read_event() {
     return event_result::ok;
   }
   auto mgr = factory_->make(accepted, mpx());
-  if (auto err = mgr->init()) {
-    mpx()->handle_error(err);
-    return event_result::ok;
-  }
   mpx()->add(std::move(mgr), operation::read);
   return event_result::ok;
 }

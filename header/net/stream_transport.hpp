@@ -73,11 +73,10 @@ public:
       return (write_buffer_.empty() && !next_layer_.has_more_data());
     };
     auto fetch = [&]() {
-      auto fetched = next_layer_.has_more_data();
       for (size_t i = 0;
            next_layer_.has_more_data() && (i < max_consecutive_fetches); ++i)
         next_layer_.produce();
-      return fetched;
+      return !write_buffer_.empty();
     };
     if (write_buffer_.empty())
       if (!fetch())
@@ -94,10 +93,9 @@ public:
         if (last_socket_error_is_temporary()) {
           return event_result::ok;
         } else {
-          handle_error(
-            util::error(util::error_code::socket_operation_failed,
-                        "[stream::write()] " + last_socket_error_as_string()));
-
+          handle_error({util::error_code::socket_operation_failed,
+                        util::format("[stream::write()] errno = {0}: {1}",
+                                     errno, last_socket_error_as_string())});
           return event_result::error;
         }
       }

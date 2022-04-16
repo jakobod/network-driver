@@ -38,6 +38,53 @@ struct application_vars {
   uint64_t handled_timeout;
 };
 
+struct dummy_multiplexer : public multiplexer {
+  util::error init(socket_manager_factory_ptr, uint16_t) override {
+    return util::none;
+  }
+
+  void start() override {
+    // nop
+  }
+
+  void shutdown() override {
+    // nop
+  }
+
+  void join() override {
+    // nop
+  }
+
+  bool running() const override {
+    return false;
+  }
+
+  void handle_error(const util::error& err) override {
+    FAIL() << "There should be no errors! " << err << std::endl;
+  }
+
+  util::error poll_once(bool) override {
+    return util::none;
+  }
+
+  void add(socket_manager_ptr, operation) override {
+    // nop
+  }
+
+  void enable(socket_manager&, operation) override {
+    // nop
+  }
+
+  void disable(socket_manager&, operation, bool) override {
+    // nop
+  }
+
+  uint64_t set_timeout(socket_manager&,
+                       std::chrono::system_clock::time_point) override {
+    return 0;
+  }
+};
+
 template <class NextLayer>
 struct dummy_transport : transport {
   template <class... Ts>
@@ -172,6 +219,7 @@ struct tls_test : public testing::Test {
   util::byte_array<64> data;
   openssl::tls_context ctx;
 
+  dummy_multiplexer mpx;
   transport_vars transport_vars_;
   application_vars client_application_vars_;
   application_vars server_application_vars_;
@@ -196,7 +244,8 @@ void handle_handshake(Stack& client, Stack& server) {
 
 TEST_F(tls_test, init) {
   const bool is_client = true;
-  stack_type stack{sockets.first, nullptr,   transport_vars_,
+
+  stack_type stack{sockets.first, &mpx,      transport_vars_,
                    ctx,           is_client, client_application_vars_};
   EXPECT_NO_ERROR(stack.init());
   EXPECT_TRUE(client_application_vars_.initialized);
@@ -204,11 +253,10 @@ TEST_F(tls_test, init) {
 }
 
 TEST_F(tls_test, roundtrip) {
-  stack_type client{sockets.first, nullptr, transport_vars_,
-                    ctx,           true,    client_application_vars_};
-  stack_type server{sockets.second,  nullptr,
-                    transport_vars_, ctx,
-                    false,           server_application_vars_};
+  stack_type client{sockets.first, &mpx, transport_vars_,
+                    ctx,           true, client_application_vars_};
+  stack_type server{sockets.second,          &mpx, transport_vars_, ctx, false,
+                    server_application_vars_};
   // Initialize them
   EXPECT_NO_ERROR(client.init());
   EXPECT_NO_ERROR(server.init());

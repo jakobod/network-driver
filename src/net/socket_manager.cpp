@@ -37,6 +37,10 @@ socket_manager& socket_manager::operator=(socket_manager&& other) noexcept {
   return *this;
 }
 
+void socket_manager::mask_set(operation flag) noexcept {
+  mask_ = flag;
+}
+
 bool socket_manager::mask_add(operation flag) noexcept {
   auto x = mask();
   if ((x & flag) == flag)

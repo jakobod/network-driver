@@ -207,13 +207,15 @@ private:
       auto read_res = BIO_read(wbio_,
                                reinterpret_cast<void*>(ssl_read_buf_.data()),
                                static_cast<int>(ssl_read_buf_.size()));
-      if (read_res > 0)
+      if (read_res > 0) {
         parent_.enqueue(
           {ssl_read_buf_.data(), static_cast<std::size_t>(read_res)});
-      else if (BIO_should_retry(wbio_))
+        parent_.register_writing();
+      } else if (BIO_should_retry(wbio_)) {
         return util::none;
-      else
+      } else {
         return {util::error_code::openssl_error, "BIO_read failed"};
+      }
     }
   }
 

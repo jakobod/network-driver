@@ -116,13 +116,15 @@ void epoll_multiplexer::handle_error(const util::error& err) {
 // -- Interface functions ------------------------------------------------------
 
 void epoll_multiplexer::add(socket_manager_ptr mgr, operation initial) {
-  if (!mgr->mask_add(initial))
-    return;
+  mgr->mask_set(initial);
   if (!nonblocking(mgr->handle(), true))
     handle_error(util::error(util::error_code::socket_operation_failed,
                              "Could not set nonblocking"));
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
-  managers_.emplace(mgr->handle().id, std::move(mgr));
+  managers_.emplace(mgr->handle().id, mgr);
+  // TODO: This should probably return an error instead of calling handle_error
+  if (auto err = mgr->init())
+    handle_error(err);
 }
 
 void epoll_multiplexer::enable(socket_manager& mgr, operation op) {
@@ -143,12 +145,11 @@ void epoll_multiplexer::disable(socket_manager& mgr, operation op,
 uint64_t
 epoll_multiplexer::set_timeout(socket_manager& mgr,
                                std::chrono::system_clock::time_point when) {
-  auto current_tid = current_timeout_id_++;
-  timeouts_.emplace(mgr.handle().id, when, current_tid);
+  timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
   current_timeout_ = (current_timeout_ != std::nullopt)
                        ? std::min(when, *current_timeout_)
                        : when;
-  return current_tid;
+  return current_timeout_id_++;
 }
 
 void epoll_multiplexer::del(socket handle) {

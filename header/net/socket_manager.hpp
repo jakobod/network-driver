@@ -59,13 +59,17 @@ public:
     return mask_;
   }
 
+  /// Sets the event mask to the given flag(s).
+  void mask_set(operation flag) noexcept;
+
   /// Adds given flag(s) to the event mask.
   bool mask_add(operation flag) noexcept;
 
   /// Tries to clear given flag(s) from the event mask.
   bool mask_del(operation flag) noexcept;
 
-  // -- event loop management --------------------------------------------------
+  // -- event loop management
+  // --------------------------------------------------
 
   /// Registers this socket_manager for read-events at the multiplexer
   void register_reading();
@@ -79,7 +83,8 @@ public:
   /// Sets a timeout at timepoint `point` with the id `timeout_id`
   uint64_t set_timeout_at(std::chrono::system_clock::time_point point);
 
-  // -- event handling ---------------------------------------------------------
+  // -- event handling
+  // ---------------------------------------------------------
 
   /// Handles a read-event
   virtual event_result handle_read_event() = 0;
