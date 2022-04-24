@@ -57,6 +57,7 @@ set(LIB_NET_SOURCES
   src/net/tcp_accept_socket.cpp
   src/net/tcp_stream_socket.cpp
   src/net/udp_datagram_socket.cpp
+  src/net/uri.cpp
   # net::ip sources
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
@@ -82,6 +83,18 @@ target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
 file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
 
+# -- main for playing with things ----------------------------------------------
+
+macro(add_target name)
+  add_executable(${name} "src/${name}.cpp")
+  target_include_directories(${name} PRIVATE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/header")
+  target_link_libraries(${name} PRIVATE net)
+endmacro()
+
+add_target(playground)
+
+
 
 # -- test setup ----------------------------------------------------------------
 
@@ -100,6 +113,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/transport_adaptor.cpp
     test/net/stream_transport.cpp
     test/net/udp_datagram_socket.cpp
+    test/net/uri.cpp
     
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
