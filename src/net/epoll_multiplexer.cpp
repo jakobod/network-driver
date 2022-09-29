@@ -3,23 +3,45 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "net/epoll_multiplexer.hpp"
+#if defined(__linux__)
 
-#include "net/acceptor.hpp"
-#include "net/socket_manager.hpp"
-#include "net/socket_sys_includes.hpp"
+#  include "net/epoll_multiplexer.hpp"
 
-#include "util/error.hpp"
-#include "util/format.hpp"
+#  include "net/acceptor.hpp"
+#  include "net/operation.hpp"
+#  include "net/socket_manager.hpp"
+#  include "net/socket_sys_includes.hpp"
 
-#include <algorithm>
-#include <chrono>
-#include <iostream>
-#include <utility>
+#  include "util/error.hpp"
+#  include "util/format.hpp"
+
+#  include <algorithm>
+#  include <chrono>
+#  include <iostream>
+#  include <utility>
 
 using std::chrono::milliseconds;
 using std::chrono::system_clock;
 using std::chrono::time_point_cast;
+
+namespace {
+
+uint32_t to_epoll_flag(net::operation op) {
+  switch (op) {
+    case net::operation::none:
+      return 0;
+    case net::operation::read:
+      return EPOLLIN;
+    case net::operation::write:
+      return EPOLLOUT;
+    case net::operation::read_write:
+      return (EPOLLIN | EPOLLOUT);
+    default:
+      return 0;
+  }
+}
+
+} // namespace
 
 namespace net {
 
@@ -171,7 +193,7 @@ epoll_multiplexer::del(manager_map::iterator it) {
 
 void epoll_multiplexer::mod(int fd, int op, operation events) {
   epoll_event event = {};
-  event.events = static_cast<uint32_t>(events);
+  event.events = to_epoll_flag(events);
   event.data.fd = fd;
   if (epoll_ctl(epoll_fd_, op, fd, &event) < 0) {
     handle_error(
@@ -250,12 +272,12 @@ void epoll_multiplexer::handle_events(int num_events) {
     } else {
       auto& mgr = managers_[event.data.fd];
       // Handle possible read event
-      if ((event.events & operation::read) == operation::read) {
+      if ((event.events & EPOLLIN) == EPOLLIN) {
         if (!handle_result(mgr, mgr->handle_read_event(), operation::read))
           continue;
       }
       // Handle possible write event
-      if ((event.events & operation::write) == operation::write) {
+      if ((event.events & EPOLLOUT) == EPOLLOUT) {
         if (!handle_result(mgr, mgr->handle_write_event(), operation::write))
           continue;
       }
@@ -279,3 +301,5 @@ make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
 }
 
 } // namespace net
+
+#endif

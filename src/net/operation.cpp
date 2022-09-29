@@ -5,7 +5,6 @@
 
 #include "net/operation.hpp"
 
-#include <bitset>
 #include <sstream>
 
 namespace net {
@@ -22,12 +21,6 @@ std::string to_string(operation op) {
     ss << "read|";
   if (contains(op, operation::write))
     ss << "write|";
-  if (contains(op, operation::edge_triggered))
-    ss << "edge_triggered|";
-  if (contains(op, operation::exclusive))
-    ss << "exclusive";
-  if (contains(op, operation::one_shot))
-    ss << "one_shot";
   ss << "]";
   return ss.str();
 }

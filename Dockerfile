@@ -13,14 +13,16 @@ ENV TZ=Europe/Berlin
 # Update image and install required packages
 RUN apt-get update && apt-get upgrade -y && apt-get autoremove
 RUN apt-get install -y \
-    gcc-10 \
-    g++-10 \
-    clang \
-    git \
-    cmake \
-    make \
-    libssl-dev \
-    vim
+  gcc-10 \
+  g++-10 \
+  clang \
+  git \
+  cmake \
+  make \
+  libssl-dev \
+  vim \
+  clang-format \
+  gdb
 
 # Add jenkins user
 RUN useradd -ms /bin/bash jenkins

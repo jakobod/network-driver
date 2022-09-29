@@ -3,18 +3,23 @@
  *  @email jakob.otto@haw-hamburg.de
  */
 
-#include "net/epoll_multiplexer.hpp"
-#include "net/ip/v4_address.hpp"
-#include "net/ip/v4_endpoint.hpp"
-#include "net/socket_manager_factory.hpp"
-#include "net/stream_socket.hpp"
-#include "net/tcp_stream_socket.hpp"
+#if defined(__linux__)
 
-#include "util/error.hpp"
+#  include "net/epoll_multiplexer.hpp"
+#  include "net/ip/v4_address.hpp"
+#  include "net/ip/v4_endpoint.hpp"
+#  include "net/socket_manager.hpp"
+#  include "net/socket_manager_factory.hpp"
+#  include "net/stream_socket.hpp"
+#  include "net/tcp_stream_socket.hpp"
 
-#include "net_test.hpp"
+#  include "util/error.hpp"
+#  include "util/error_or.hpp"
 
-#include <chrono>
+#  include "net_test.hpp"
+
+#  include <chrono>
+#  include <tuple>
 
 using namespace net;
 using namespace net::ip;
@@ -84,7 +89,7 @@ struct dummy_factory : public socket_manager_factory {
       register_writing_, false);
   }
 
-  void register_writing() {
+  void enable_register_writing() {
     register_writing_ = true;
   }
 
@@ -107,7 +112,7 @@ struct epoll_multiplexer_test : public testing::Test {
   tcp_stream_socket connect_to_mpx() {
     auto sock_res = make_connected_tcp_stream_socket(
       v4_endpoint{v4_address::localhost, mpx.port()});
-    EXPECT_EQ(get_error(sock_res), nullptr);
+    EXPECT_EQ(util::get_error(sock_res), nullptr);
     return std::get<tcp_stream_socket>(sock_res);
   }
 
@@ -142,7 +147,7 @@ TEST_F(epoll_multiplexer_test, manager_removed_after_disconnect) {
 
 TEST_F(epoll_multiplexer_test, event_handling) {
   auto sock = connect_to_mpx();
-  std::static_pointer_cast<dummy_factory>(factory)->register_writing();
+  std::static_pointer_cast<dummy_factory>(factory)->enable_register_writing();
   EXPECT_TRUE(nonblocking(sock, true));
   EXPECT_EQ(mpx.poll_once(false), util::none);
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);
@@ -197,3 +202,5 @@ TEST_F(epoll_multiplexer_test, multiple_timeouts) {
                    handled_timeouts.size()),
             0);
 }
+
+#endif

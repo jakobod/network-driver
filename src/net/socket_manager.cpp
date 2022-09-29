@@ -42,18 +42,16 @@ void socket_manager::mask_set(operation flag) noexcept {
 }
 
 bool socket_manager::mask_add(operation flag) noexcept {
-  auto x = mask();
-  if ((x & flag) == flag)
+  if ((mask() & flag) == flag)
     return false;
-  mask_ = x | flag;
+  mask_set(mask() | flag);
   return true;
 }
 
 bool socket_manager::mask_del(operation flag) noexcept {
-  auto x = mask();
-  if ((x & flag) == operation::none)
+  if ((mask() & flag) == operation::none)
     return false;
-  mask_ = x & ~flag;
+  mask_set(mask() & ~flag);
   return true;
 }
 

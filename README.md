@@ -13,7 +13,11 @@ This is a project I work on in my free time. It may be useful to some, but I jus
 # How to
 building the project is accomplished by doing
 ```
+// On linux this is sufficient
 ./configure
+// On MacOS the OpenSSL root directory must be specified
+./configure --openssl-root-dir=$(brew --prefix openssl)
+
 make -C build -j$(nproc)
 ```
 

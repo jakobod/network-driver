@@ -133,36 +133,6 @@ std::string last_error_as_string() {
       return "No message of desired type";
     case EIDRM:
       return "Identifier removed";
-    case ECHRNG:
-      return "Channel number out of range";
-    case EL2NSYNC:
-      return "Level 2 not synchronized";
-    case EL3HLT:
-      return "Level 3 halted";
-    case EL3RST:
-      return "Level 3 reset";
-    case ELNRNG:
-      return "Link number out of range";
-    case EUNATCH:
-      return "Protocol driver not attached";
-    case ENOCSI:
-      return "No CSI structure available";
-    case EL2HLT:
-      return "Level 2 halted";
-    case EBADE:
-      return "Invalid exchange";
-    case EBADR:
-      return "Invalid request descriptor";
-    case EXFULL:
-      return "Exchange full";
-    case ENOANO:
-      return "No anode";
-    case EBADRQC:
-      return "Invalid request code";
-    case EBADSLT:
-      return "Invalid slot";
-    case EBFONT:
-      return "Bad font file format";
     case ENOSTR:
       return "Device not a stream";
     case ENODATA:
@@ -171,52 +141,20 @@ std::string last_error_as_string() {
       return "Timer expired";
     case ENOSR:
       return "Out of streams resources";
-    case ENONET:
-      return "Machine is not on the network";
-    case ENOPKG:
-      return "Package not installed";
     case EREMOTE:
       return "Object is remote";
     case ENOLINK:
       return "Link has been severed";
-    case EADV:
-      return "Advertise error";
-    case ESRMNT:
-      return "Srmount error";
-    case ECOMM:
-      return "Communication error on send";
     case EPROTO:
       return "Protocol error";
     case EMULTIHOP:
       return "Multihop attempted";
-    case EDOTDOT:
-      return "RFS specific error";
     case EBADMSG:
       return "Bad message";
     case EOVERFLOW:
       return "Value too large for defined data type";
-    case ENOTUNIQ:
-      return "Name not unique on network";
-    case EBADFD:
-      return "File descriptor in bad state";
-    case EREMCHG:
-      return "Remote address changed";
-    case ELIBACC:
-      return "Can not access a needed shared library";
-    case ELIBBAD:
-      return "Accessing a corrupted shared library";
-    case ELIBSCN:
-      return ".lib section in a.out corrupted";
-    case ELIBMAX:
-      return "Attempting to link in too many shared libraries";
-    case ELIBEXEC:
-      return "Cannot exec a shared library directly";
     case EILSEQ:
       return "Invalid or incomplete multibyte or wide character";
-    case ERESTART:
-      return "Interrupted system call should be restarted";
-    case ESTRPIPE:
-      return "Streams pipe error";
     case EUSERS:
       return "Too many users";
     case ENOTSOCK:
@@ -277,40 +215,14 @@ std::string last_error_as_string() {
       return "Operation now in progress";
     case ESTALE:
       return "Stale file handle";
-    case EUCLEAN:
-      return "Structure needs cleaning";
-    case ENOTNAM:
-      return "Not a XENIX named type file";
-    case ENAVAIL:
-      return "No XENIX semaphores available";
-    case EISNAM:
-      return "Is a named type file";
-    case EREMOTEIO:
-      return "Remote I/O error";
     case EDQUOT:
       return "Disk quota exceeded";
-    case ENOMEDIUM:
-      return "No medium found";
-    case EMEDIUMTYPE:
-      return "Wrong medium type";
     case ECANCELED:
       return "Operation canceled";
-    case ENOKEY:
-      return "Required key not available";
-    case EKEYEXPIRED:
-      return "Key has expired";
-    case EKEYREVOKED:
-      return "Key has been revoked";
-    case EKEYREJECTED:
-      return "Key was rejected by service";
     case EOWNERDEAD:
       return "Owner died";
     case ENOTRECOVERABLE:
       return "State not recoverable";
-    case ERFKILL:
-      return "Operation not possible due to RF-kill";
-    case EHWPOISON:
-      return "Memory page has hardware error";
     default:
       return "unknown errno";
   }

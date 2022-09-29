@@ -5,20 +5,23 @@
 
 #pragma once
 
-#include "net/fwd.hpp"
+#if defined(__linux__)
 
-#include "net/multiplexer.hpp"
-#include "net/pipe_socket.hpp"
-#include "net/pollset_updater.hpp"
-#include "net/socket_manager.hpp"
-#include "net/timeout_entry.hpp"
+#  include "net/fwd.hpp"
 
-#include <array>
-#include <optional>
-#include <set>
-#include <sys/epoll.h>
-#include <thread>
-#include <unordered_map>
+#  include "net/multiplexer.hpp"
+#  include "net/operation.hpp"
+#  include "net/pipe_socket.hpp"
+#  include "net/pollset_updater.hpp"
+#  include "net/socket_manager.hpp"
+#  include "net/timeout_entry.hpp"
+
+#  include <array>
+#  include <optional>
+#  include <set>
+#  include <sys/epoll.h>
+#  include <thread>
+#  include <unordered_map>
 
 namespace net {
 
@@ -131,3 +134,5 @@ util::error_or<multiplexer_ptr>
 make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port = 0);
 
 } // namespace net
+
+#endif

@@ -49,7 +49,6 @@ TEST_F(udp_datagram_socket_test, write) {
   auto [recv_sock, recv_port]
     = std::get<udp_datagram_socket_result>(maybe_send_socket_res);
   auto recv_guard = net::make_socket_guard(recv_sock);
-  ASSERT_TRUE(nonblocking(recv_sock, true));
   v4_endpoint dst_ep{localhost, recv_port};
   // Write the testdata
   ASSERT_EQ(data.size(), write(send_sock, dst_ep, data));

@@ -6,19 +6,15 @@
 #pragma once
 
 #include <string>
-#include <sys/epoll.h>
 
 namespace net {
 
 /// Operation abstraction with same definition as epoll.
 enum class operation : uint32_t {
-  none = 0x000,
-  read = EPOLLIN,
-  write = EPOLLOUT,
+  none       = 0x00,
+  read       = 0x01,
+  write      = 0x02,
   read_write = read | write,
-  edge_triggered = EPOLLET,
-  exclusive = EPOLLEXCLUSIVE,
-  one_shot = EPOLLONESHOT,
 };
 
 /// @relates operation

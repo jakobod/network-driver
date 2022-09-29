@@ -5,6 +5,8 @@
 
 #include "util/format.hpp"
 
+#include <sstream>
+
 namespace util {
 
 std::vector<std::string> split(std::string str, const std::string& delim) {
