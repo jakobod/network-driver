@@ -10,7 +10,7 @@ void setBuildStatus(String message, String state) {
 
 
 pipeline {
-  agent { dockerfile true }
+  agent { dockerfile { additionalBuildArgs '--no-cache' } }
 
   stages {
     stage('Init') {

@@ -11,7 +11,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Berlin
 
 # Update image and install required packages
-RUN apt-get update && apt-get upgrade -y && apt-get autoremove
+RUN apt-get update && apt-get install -y apt-utils
+
+RUN apt-get upgrade -y && apt-get autoremove
 RUN apt-get install -y \
   gcc-10 \
   g++-10 \
