@@ -38,7 +38,7 @@ find_package(OpenSSL REQUIRED)
 # -- project files -------------------------------------------------------------
 
 # Find the packet-routing headers
-file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/header/*.hpp")
+file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
@@ -76,7 +76,7 @@ set(LIB_NET_SOURCES
 
 add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
+target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
 target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
 
 # Copy Dummy certs to build folder and set preprocessor definition to the folder
@@ -88,7 +88,7 @@ add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
 macro(add_target name)
   add_executable(${name} "src/${name}.cpp")
   target_include_directories(${name} PRIVATE 
-    "${CMAKE_CURRENT_SOURCE_DIR}/header")
+    "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
   target_link_libraries(${name} PRIVATE net)
 endmacro()
 
@@ -127,7 +127,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/scope_guard.cpp
   )
 
-  target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/header")
+  target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/test")
 
   target_link_libraries(

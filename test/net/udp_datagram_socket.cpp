@@ -9,11 +9,13 @@
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 
+#include "util/byte_array.hpp"
 #include "util/error.hpp"
 
 #include "net_test.hpp"
 
 #include <algorithm>
+#include <cstddef>
 
 using namespace net;
 using namespace net::ip;
