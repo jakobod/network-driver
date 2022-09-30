@@ -63,7 +63,7 @@ public:
   }
 
   /// Called when an error occurs
-  void handle_error(util::error err) override {
+  void handle_error(const util::error& err) override {
     parent_.handle_error(err);
   }
 

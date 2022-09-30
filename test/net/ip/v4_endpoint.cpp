@@ -63,7 +63,7 @@ TEST(v4_endpoint_test, from_sockaddr) {
       = std::uint32_t{0b00000000'00000000'00000000'00000000};
     saddr.sin_port = htons(22);
     saddr.sin_family = AF_INET;
-    v4_endpoint ep{saddr};
+    const v4_endpoint ep{saddr};
     ASSERT_EQ(any_endpoint, ep);
   }
   {
@@ -72,7 +72,7 @@ TEST(v4_endpoint_test, from_sockaddr) {
       = std::uint32_t{0b00000001'00000000'00000000'01111111};
     saddr.sin_port = htons(23);
     saddr.sin_family = AF_INET;
-    v4_endpoint ep{saddr};
+    const v4_endpoint ep{saddr};
     ASSERT_EQ(localhost_endpoint, ep);
   }
   {
@@ -81,7 +81,7 @@ TEST(v4_endpoint_test, from_sockaddr) {
       = std::uint32_t{0b11111111'11111111'11111111'11111111};
     saddr.sin_port = htons(24);
     saddr.sin_family = AF_INET;
-    v4_endpoint ep{saddr};
+    const v4_endpoint ep{saddr};
     ASSERT_EQ(broadcast_endpoint, ep);
   }
 }

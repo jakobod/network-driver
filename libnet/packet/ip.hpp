@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include "util/byte_container.hpp"
+
 #include <iostream>
 #include <netinet/ip.h>
-
-#include "detail/byte_container.hpp"
 
 namespace packet {
 

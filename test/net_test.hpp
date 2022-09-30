@@ -27,6 +27,6 @@
 
 #define ASSERT_NO_ERROR(expr)                                                  \
   do {                                                                         \
-    if (auto err = expr)                                                       \
+    if (auto err = (expr))                                                     \
       FAIL() << #expr << " returned an error: " << err << std::endl;           \
   } while (false)

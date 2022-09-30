@@ -7,6 +7,8 @@
 
 #include "net/fwd.hpp"
 
+#include "util/byte_array.hpp"
+
 #include <cstddef>
 
 namespace net {

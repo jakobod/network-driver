@@ -13,8 +13,8 @@
 namespace net {
 
 util::error_or<pipe_socket_pair> make_pipe() {
-  socket_id pipefds[2];
-  if (pipe(pipefds) != 0)
+  std::array<socket_id, 2> pipefds;
+  if (pipe(pipefds.data()) != 0)
     return util::error(util::error_code::socket_operation_failed,
                        util::format("make_pipe: {0}",
                                     last_socket_error_as_string()));

@@ -6,14 +6,15 @@
 
 #pragma once
 
+#include "net/mac_address.hpp"
+
+#include "util/byte_array.hpp"
+
 #include <arpa/inet.h>
 #include <cstring>
 #include <iostream>
 #include <net/ethernet.h>
 #include <string>
-
-#include "detail/byte_container.hpp"
-#include "net/mac_address.hpp"
 
 namespace packet {
 

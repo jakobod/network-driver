@@ -17,8 +17,14 @@ tls_context::tls_context() {
   SSL_library_init();
   OpenSSL_add_all_algorithms();
   SSL_load_error_strings();
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L && !defined(LIBRESSL_VERSION_NUMBER)
+  // OpenSSL now loads error strings automatically so these functions are not
+  // needed.
+#else
+  /* Load error strings into mem*/
   ERR_load_BIO_strings();
   ERR_load_crypto_strings();
+#endif
 }
 
 tls_context::~tls_context() {

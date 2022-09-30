@@ -122,7 +122,7 @@ struct socket_manager_test : public testing::Test {
 
 TEST_F(socket_manager_test, construction_and_destruction) {
   {
-    dummy_manager mgr{sockets.first, &mpx};
+    const dummy_manager mgr{sockets.first, &mpx};
     ASSERT_EQ(mgr.mpx(), &mpx);
     ASSERT_EQ(mgr.handle(), sockets.first);
     ASSERT_EQ(mgr.mask(), operation::none);
@@ -187,7 +187,7 @@ TEST_F(socket_manager_test, register_operations) {
 
 TEST_F(socket_manager_test, handle_error) {
   dummy_manager mgr{sockets.first, &mpx};
-  util::error err{util::error_code::runtime_error, "hello"};
+  const util::error err{util::error_code::runtime_error, "error"};
   mgr.handle_error(err);
   ASSERT_EQ(mpx.last_handled_error_, err);
 }

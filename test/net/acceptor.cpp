@@ -15,6 +15,7 @@
 #include "net_test.hpp"
 
 using namespace net;
+using namespace net::ip;
 
 namespace {
 
@@ -117,7 +118,7 @@ struct acceptor_test : public testing::Test {
 } // namespace
 
 TEST_F(acceptor_test, handle_read_event) {
-  net::ip::v4_endpoint ep{net::ip::v4_address::localhost, port};
+  const v4_endpoint ep{v4_address::localhost, port};
   auto sock = make_connected_tcp_stream_socket(ep);
   EXPECT_EQ(acc->handle_read_event(), event_result::ok);
   EXPECT_EQ(mpx.last_error, util::none);

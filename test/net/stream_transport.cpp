@@ -100,7 +100,7 @@ struct dummy_application {
     return event_result::ok;
   }
 
-  event_result handle_timeout(uint64_t) {
+  static event_result handle_timeout(uint64_t) {
     return event_result::ok;
   }
 

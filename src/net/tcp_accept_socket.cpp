@@ -42,7 +42,7 @@ tcp_stream_socket accept(tcp_accept_socket sock) {
 }
 
 util::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port) {
-  tcp_accept_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
+  const tcp_accept_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
   if (sock == invalid_socket) {
     return util::error(util::error_code::socket_operation_failed,
                        util::format("Failed to create socket {0}",

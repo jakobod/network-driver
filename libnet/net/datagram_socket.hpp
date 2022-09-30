@@ -10,7 +10,7 @@
 #include "net/socket.hpp"
 
 #include "util/byte_span.hpp"
-#include "util/error.hpp"
+#include "util/error_or.hpp"
 
 #include <cstddef>
 

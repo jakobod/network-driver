@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "packet/fwd.hpp"
-
 #include "net/mac_address.hpp"
 #include "net/socket_sys_includes.hpp"
 

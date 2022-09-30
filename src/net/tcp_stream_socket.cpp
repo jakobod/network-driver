@@ -17,7 +17,7 @@ make_connected_tcp_stream_socket(const ip::v4_endpoint& ep) {
   if (ep.port() == 0)
     return util::error(util::error_code::invalid_argument,
                        "port may not be zero");
-  tcp_stream_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
+  const tcp_stream_socket sock{::socket(AF_INET, SOCK_STREAM, 0)};
   auto guard = make_socket_guard(sock);
   if (sock == invalid_socket)
     return util::error(util::error_code::socket_operation_failed,

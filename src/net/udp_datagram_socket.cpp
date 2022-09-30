@@ -21,7 +21,7 @@ constexpr const int no_sigpipe_io_flag = MSG_NOSIGNAL;
 
 util::error_or<udp_datagram_socket_result>
 make_udp_datagram_socket(std::uint16_t port) {
-  udp_datagram_socket sock{::socket(AF_INET, SOCK_DGRAM, 0)};
+  const udp_datagram_socket sock{::socket(AF_INET, SOCK_DGRAM, 0)};
   if (sock == invalid_socket)
     return util::error(util::error_code::socket_operation_failed,
                        "Failed to create socket");
