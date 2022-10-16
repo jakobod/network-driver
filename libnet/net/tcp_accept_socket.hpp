@@ -31,6 +31,7 @@ util::error listen(tcp_accept_socket sock, int conn_backlog);
 tcp_stream_socket accept(tcp_accept_socket sock);
 
 /// Creates a tcp_accept_socket that is bound to `port`
-util::error_or<acceptor_pair> make_tcp_accept_socket(uint16_t port);
+util::error_or<acceptor_pair>
+make_tcp_accept_socket(const ip::v4_endpoint& ep, const int conn_backlog = 10);
 
 } // namespace net

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "net/ip/fwd.hpp"
+
 #include <cstddef>
 #include <memory>
 #include <utility>

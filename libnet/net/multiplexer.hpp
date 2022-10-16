@@ -24,7 +24,8 @@ public:
   virtual ~multiplexer() = default;
 
   /// Initializes the multiplexer.
-  virtual util::error init(socket_manager_factory_ptr factory, uint16_t port)
+  virtual util::error
+  init(socket_manager_factory_ptr factory, uint16_t port, bool local)
     = 0;
 
   /// Creates a thread that runs this multiplexer indefinately.
@@ -84,9 +85,7 @@ public:
   // -- members ----------------------------------------------------------------
 
   /// Returns the port the multiplexer is listening on.
-  [[nodiscard]] uint16_t port() const noexcept {
-    return port_;
-  }
+  [[nodiscard]] uint16_t port() const noexcept { return port_; }
 
 protected:
   uint16_t port_ = 0;

@@ -40,9 +40,7 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
-  util::error init() override {
-    return util::none;
-  }
+  util::error init() override { return util::none; }
 
   event_result handle_read_event() override {
     util::byte_array<1024> buf;
@@ -79,8 +77,7 @@ private:
 struct dummy_factory : public socket_manager_factory {
   dummy_factory(bool& handled_read_event, bool& handled_write_event)
     : handled_read_event_(handled_read_event),
-      handled_write_event_(handled_write_event) {
-  }
+      handled_write_event_(handled_write_event) {}
 
   socket_manager_ptr make(net::socket handle, multiplexer* mpx) override {
     return std::make_shared<dummy_socket_manager>(
@@ -88,9 +85,7 @@ struct dummy_factory : public socket_manager_factory {
       register_writing_, false);
   }
 
-  void enable_register_writing() {
-    register_writing_ = true;
-  }
+  void enable_register_writing() { register_writing_ = true; }
 
 private:
   bool& handled_read_event_;
@@ -104,7 +99,7 @@ struct multiplexer_impl_test : public testing::Test {
     : factory(std::make_shared<dummy_factory>(handled_read_event,
                                               handled_write_event)) {
     mpx.set_thread_id();
-    EXPECT_EQ(mpx.init(factory, 0), util::none);
+    EXPECT_EQ(mpx.init(factory, 0, true), util::none);
     default_num_socket_managers = mpx.num_socket_managers();
   }
 

@@ -19,4 +19,9 @@ error* get_error(error_or<T>& maybe_error) {
   return std::get_if<error>(&maybe_error);
 }
 
+template <class T>
+const error* get_error(const error_or<T>& maybe_error) {
+  return std::get_if<error>(&maybe_error);
+}
+
 } // namespace util

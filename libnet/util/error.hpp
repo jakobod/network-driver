@@ -8,6 +8,7 @@
 #include "net/fwd.hpp"
 
 #include "util/error_code.hpp"
+#include "util/format.hpp"
 
 #include <ostream>
 #include <string>
@@ -17,6 +18,12 @@ namespace util {
 class [[nodiscard]] error {
 public:
   error(error_code err, std::string err_msg);
+
+  template <class... Arguments>
+  error(error_code err, std::string format, Arguments... args)
+    : error{err, util::format(std::move(format), std::move(args)...)} {
+    // nop
+  }
 
   error(error_code err);
 

@@ -21,7 +21,7 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t) override {
+  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
     return util::none;
   }
 
@@ -37,17 +37,13 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  bool running() const override {
-    return false;
-  }
+  bool running() const override { return false; }
 
   void handle_error(const util::error& err) override {
     last_handled_error_ = err;
   }
 
-  util::error poll_once(bool) override {
-    return util::none;
-  }
+  util::error poll_once(bool) override { return util::none; }
 
   void add(socket_manager_ptr, operation) override {
     // nop
@@ -86,21 +82,13 @@ public:
     // nop
   }
 
-  util::error init() override {
-    return util::none;
-  }
+  util::error init() override { return util::none; }
 
-  event_result handle_read_event() override {
-    return event_result::done;
-  }
+  event_result handle_read_event() override { return event_result::done; }
 
-  event_result handle_write_event() override {
-    return event_result::done;
-  }
+  event_result handle_write_event() override { return event_result::done; }
 
-  event_result handle_timeout(uint64_t) override {
-    return event_result::done;
-  }
+  event_result handle_timeout(uint64_t) override { return event_result::done; }
 };
 
 struct socket_manager_test : public testing::Test {
