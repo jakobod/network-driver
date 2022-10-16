@@ -20,64 +20,12 @@
 #include <span>
 #include <utility>
 
-#if defined(EPOLL_MPX)
-
-using std::chrono::milliseconds;
-using std::chrono::system_clock;
-using std::chrono::time_point_cast;
-
-namespace {
-
-uint32_t to_epoll_flag(net::operation op) {
-  switch (op) {
-    case net::operation::none:
-      return 0;
-    case net::operation::read:
-      return EPOLLIN;
-    case net::operation::write:
-      return EPOLLOUT;
-    case net::operation::read_write:
-      return (EPOLLIN | EPOLLOUT);
-    default:
-      return 0;
-  }
-}
-
-} // namespace
+// -- identical implementation of the multiplexer_impl accross OSes ------------
 
 namespace net {
 
-multiplexer_impl::multiplexer_impl() : epoll_fd_(invalid_socket_id) {
-  // nop
-}
-
 multiplexer_impl::~multiplexer_impl() {
-  ::close(epoll_fd_);
-}
-
-util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
-                                   uint16_t port) {
-  epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
-  if (epoll_fd_ < 0)
-    return {util::error_code::runtime_error, "creating epoll fd failed"};
-  // Create pollset updater
-  auto pipe_res = make_pipe();
-  if (auto err = util::get_error(pipe_res))
-    return *err;
-  auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
-  pipe_reader_ = pipe_fds.first;
-  pipe_writer_ = pipe_fds.second;
-  add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
-  // Create Acceptor
-  auto res = net::make_tcp_accept_socket(port);
-  if (auto err = get_error(res))
-    return *err;
-  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
-  auto accept_socket = accept_socket_pair.first;
-  port_ = accept_socket_pair.second;
-  add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
-      operation::read);
-  return util::none;
+  ::close(mpx_fd_);
 }
 
 void multiplexer_impl::start() {
@@ -130,11 +78,89 @@ void multiplexer_impl::set_thread_id() {
   mpx_thread_id_ = std::this_thread::get_id();
 }
 
+void multiplexer_impl::run() {
+  while (running_) {
+    if (poll_once(true))
+      running_ = false;
+  }
+}
+
 // -- Error handling -----------------------------------------------------------
 
 void multiplexer_impl::handle_error(const util::error& err) {
   std::cerr << "ERROR: " << err << std::endl;
   shutdown();
+}
+
+// -- Timeout management -------------------------------------------------------
+
+uint64_t multiplexer_impl::set_timeout(
+  [[maybe_unused]] socket_manager& mgr,
+  [[maybe_unused]] std::chrono::system_clock::time_point when) {
+  // timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
+  // current_timeout_ = (current_timeout_ != std::nullopt)
+  //                      ? std::min(when, *current_timeout_)
+  //                      : when;
+  // return current_timeout_id_++;
+  return 0;
+}
+
+void multiplexer_impl::handle_timeouts() {
+  // auto now = time_point_cast<milliseconds>(system_clock::now());
+  // for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
+  //   auto& entry = *it;
+  //   auto when = time_point_cast<milliseconds>(entry.when_);
+  //   if (when <= now) {
+  //     // Registered timeout has expired
+  //     managers_.at(entry.handle_)->handle_timeout(entry.id_);
+  //   } else {
+  //     // Timeout not expired, delete handled entries and set the current
+  //     timeout timeouts_.erase(timeouts_.begin(), it); if (timeouts_.empty())
+  //       current_timeout_ = std::nullopt; // No timeout
+  //     else
+  //       current_timeout_ = entry.when_;
+  //     break;
+  //   }
+  // }
+}
+
+util::error_or<multiplexer_ptr>
+make_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
+  auto mpx = std::make_shared<multiplexer_impl>();
+  if (auto err = mpx->init(std::move(factory), port))
+    return err;
+  return mpx;
+}
+
+#if defined(EPOLL_MPX)
+
+using std::chrono::milliseconds;
+using std::chrono::system_clock;
+using std::chrono::time_point_cast;
+
+util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
+                                   uint16_t port) {
+  mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
+  if (mpx_fd_ < 0)
+    return {util::error_code::runtime_error, "creating epoll fd failed"};
+  // Create pollset updater
+  auto pipe_res = make_pipe();
+  if (auto err = util::get_error(pipe_res))
+    return *err;
+  auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
+  pipe_reader_ = pipe_fds.first;
+  pipe_writer_ = pipe_fds.second;
+  add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
+  // Create Acceptor
+  auto res = net::make_tcp_accept_socket(port);
+  if (auto err = get_error(res))
+    return *err;
+  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
+  auto accept_socket = accept_socket_pair.first;
+  port_ = accept_socket_pair.second;
+  add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
+      operation::read);
+  return util::none;
 }
 
 // -- Interface functions ------------------------------------------------------
@@ -165,16 +191,6 @@ void multiplexer_impl::disable(socket_manager& mgr, operation op, bool remove) {
     del(mgr.handle());
 }
 
-uint64_t
-multiplexer_impl::set_timeout(socket_manager& mgr,
-                              std::chrono::system_clock::time_point when) {
-  timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
-  current_timeout_ = (current_timeout_ != std::nullopt)
-                       ? std::min(when, *current_timeout_)
-                       : when;
-  return current_timeout_id_++;
-}
-
 void multiplexer_impl::del(socket handle) {
   mod(handle.id, EPOLL_CTL_DEL, operation::none);
   managers_.erase(handle.id);
@@ -193,10 +209,24 @@ multiplexer_impl::del(manager_map::iterator it) {
 }
 
 void multiplexer_impl::mod(int fd, int op, operation events) {
-  epoll_event event = {};
+  static const auto to_epoll_flag = [](net::operation op) -> uint32_t {
+    switch (op) {
+      case net::operation::none:
+        return 0;
+      case net::operation::read:
+        return EPOLLIN;
+      case net::operation::write:
+        return EPOLLOUT;
+      case net::operation::read_write:
+        return (EPOLLIN | EPOLLOUT);
+      default:
+        return 0;
+    }
+  };
+  epoll_event event{};
   event.events = to_epoll_flag(events);
   event.data.fd = fd;
-  if (epoll_ctl(epoll_fd_, op, fd, &event) < 0) {
+  if (epoll_ctl(mpx_fd_, op, fd, &event) < 0) {
     handle_error(
       {util::error_code::runtime_error,
        util::format("epoll_ctl: {0}", util::last_error_as_string())});
@@ -216,7 +246,7 @@ util::error multiplexer_impl::poll_once(bool blocking) {
   };
 
   // Poll for events on the reqistered sockets
-  auto num_events = epoll_wait(epoll_fd_, pollset_.data(),
+  auto num_events = epoll_wait(mpx_fd_, pollset_.data(),
                                static_cast<int>(pollset_.size()), timeout());
   // Check for errors
   if (num_events < 0) {
@@ -228,26 +258,6 @@ util::error multiplexer_impl::poll_once(bool blocking) {
   handle_timeouts();
   handle_events(num_events);
   return util::none;
-}
-
-void multiplexer_impl::handle_timeouts() {
-  auto now = time_point_cast<milliseconds>(system_clock::now());
-  for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
-    auto& entry = *it;
-    auto when = time_point_cast<milliseconds>(entry.when_);
-    if (when <= now) {
-      // Registered timeout has expired
-      managers_.at(entry.handle_)->handle_timeout(entry.id_);
-    } else {
-      // Timeout not expired, delete handled entries and set the current timeout
-      timeouts_.erase(timeouts_.begin(), it);
-      if (timeouts_.empty())
-        current_timeout_ = std::nullopt; // No timeout
-      else
-        current_timeout_ = entry.when_;
-      break;
-    }
-  }
 }
 
 void multiplexer_impl::handle_events(int num_events) {
@@ -286,50 +296,12 @@ void multiplexer_impl::handle_events(int num_events) {
   }
 }
 
-void multiplexer_impl::run() {
-  while (running_) {
-    if (poll_once(true))
-      running_ = false;
-  }
-}
-
-} // namespace net
-
 #elif defined(KQUEUE_MPX)
-
-namespace {
-
-int16_t to_kevent_filter(net::operation op) {
-  switch (op) {
-    case net::operation::none:
-      return 0;
-    case net::operation::read:
-      return EVFILT_READ;
-    case net::operation::write:
-      return EVFILT_WRITE;
-    case net::operation::read_write:
-      return (EVFILT_READ | EVFILT_WRITE);
-    default:
-      return 0;
-  }
-}
-
-} // namespace
-
-namespace net {
-
-multiplexer_impl::multiplexer_impl() : kqueue_fd_(invalid_socket_id) {
-  // nop
-}
-
-multiplexer_impl::~multiplexer_impl() {
-  ::close(kqueue_fd_);
-}
 
 util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
                                    uint16_t port) {
-  kqueue_fd_ = kqueue();
-  if (kqueue_fd_ < 0)
+  mpx_fd_ = kqueue();
+  if (mpx_fd_ < 0)
     return {util::error_code::runtime_error, "creating epoll fd failed"};
   // Create pollset updater
   auto pipe_res = make_pipe();
@@ -349,63 +321,6 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
   return util::none;
-}
-
-void multiplexer_impl::start() {
-  if (!running_) {
-    running_ = true;
-    mpx_thread_ = std::thread(&multiplexer_impl::run, this);
-    mpx_thread_id_ = mpx_thread_.get_id();
-  }
-}
-
-void multiplexer_impl::shutdown() {
-  if (std::this_thread::get_id() == mpx_thread_id_) {
-    auto it = managers_.begin();
-    while (it != managers_.end()) {
-      auto& mgr = it->second;
-      if (mgr->handle() != pipe_reader_) {
-        disable(*mgr, operation::read, false);
-        if (mgr->mask() == operation::none)
-          it = del(it);
-        else
-          ++it;
-      } else {
-        ++it;
-      }
-    }
-    shutting_down_ = true;
-    close(pipe_writer_);
-    pipe_writer_ = pipe_socket{};
-  } else if (!shutting_down_) {
-    std::byte code{pollset_updater::shutdown_code};
-    auto res = write(pipe_writer_, util::byte_span(&code, 1));
-    if (res != 1) {
-      std::cerr << "ERROR could not write to pipe: "
-                << last_socket_error_as_string() << std::endl;
-      exit(-1); // Can't be handled by shutting down, if shutdown fails.
-    }
-  }
-}
-
-void multiplexer_impl::join() {
-  if (mpx_thread_.joinable())
-    mpx_thread_.join();
-}
-
-bool multiplexer_impl::running() const {
-  return mpx_thread_.joinable();
-}
-
-void multiplexer_impl::set_thread_id() {
-  mpx_thread_id_ = std::this_thread::get_id();
-}
-
-// -- Error handling -----------------------------------------------------------
-
-void multiplexer_impl::handle_error(const util::error& err) {
-  std::cerr << "ERROR: " << err << std::endl;
-  shutdown();
 }
 
 // -- Interface functions ------------------------------------------------------
@@ -439,17 +354,6 @@ void multiplexer_impl::disable(socket_manager& mgr, operation op, bool remove) {
     del(mgr.handle());
 }
 
-uint64_t multiplexer_impl::set_timeout(
-  [[maybe_unused]] socket_manager& mgr,
-  [[maybe_unused]] std::chrono::system_clock::time_point when) {
-  // timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
-  // current_timeout_ = (current_timeout_ != std::nullopt)
-  //                      ? std::min(when, *current_timeout_)
-  //                      : when;
-  // return current_timeout_id_++;
-  return 0;
-}
-
 void multiplexer_impl::del(socket handle) {
   const auto fd = handle.id;
   mod(fd, EV_DELETE, operation::read_write);
@@ -469,6 +373,21 @@ multiplexer_impl::del(manager_map::iterator it) {
 }
 
 void multiplexer_impl::mod(int fd, int op, operation events) {
+  static const auto to_kevent_filter = [](net::operation op) -> int16_t {
+    switch (op) {
+      case net::operation::none:
+        return 0;
+      case net::operation::read:
+        return EVFILT_READ;
+      case net::operation::write:
+        return EVFILT_WRITE;
+      case net::operation::read_write:
+        return (EVFILT_READ | EVFILT_WRITE);
+      default:
+        return 0;
+    }
+  };
+
   // kqueue may not add sockets for both reading and writing in a single call..
   if (events == operation::read_write) {
     mod(fd, op, operation::read);
@@ -476,7 +395,7 @@ void multiplexer_impl::mod(int fd, int op, operation events) {
   } else {
     kqueue_event event;
     EV_SET(&event, fd, to_kevent_filter(events), op, 0, 0, nullptr);
-    if (kevent(kqueue_fd_, &event, 1, nullptr, 0, nullptr) < 0) {
+    if (kevent(mpx_fd_, &event, 1, nullptr, 0, nullptr) < 0) {
       const util::error err{util::error_code::runtime_error,
                             util::format("kevent: {0}",
                                          util::last_error_as_string())};
@@ -493,7 +412,7 @@ util::error multiplexer_impl::poll_once([[maybe_unused]] bool blocking) {
   // Poll for events on the reqistered sockets
   std::array<kqueue_event, 32> event_list;
   static constexpr const timespec nonblocking{0, 0};
-  const int num_events = kevent(kqueue_fd_, nullptr, 0, event_list.data(),
+  const int num_events = kevent(mpx_fd_, nullptr, 0, event_list.data(),
                                 event_list.size(),
                                 (blocking ? nullptr : &nonblocking));
   // Check for errors
@@ -503,29 +422,10 @@ util::error multiplexer_impl::poll_once([[maybe_unused]] bool blocking) {
                                           util::last_error_as_string()};
   }
   // Handle all timeouts and io-events that have been registered
-  // handle_timeouts();
+  handle_timeouts();
   handle_events(std::span<kqueue_event>(event_list.data(),
                                         static_cast<size_t>(num_events)));
   return util::none;
-}
-
-void multiplexer_impl::handle_timeouts() {
-  // auto now = time_point_cast<milliseconds>(system_clock::now());
-  // for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
-  //   auto& entry = *it;
-  //   auto when = time_point_cast<milliseconds>(entry.when_);
-  //   if (when <= now) {
-  //     // Registered timeout has expired
-  //     managers_.at(entry.handle_)->handle_timeout(entry.id_);
-  //   } else {
-  //     // Timeout not expired, delete handled entries and set the current
-  //     timeout timeouts_.erase(timeouts_.begin(), it); if (timeouts_.empty())
-  //       current_timeout_ = std::nullopt; // No timeout
-  //     else
-  //       current_timeout_ = entry.when_;
-  //     break;
-  //   }
-  // }
 }
 
 void multiplexer_impl::handle_events(std::span<kqueue_event> events) {
@@ -569,25 +469,6 @@ void multiplexer_impl::handle_events(std::span<kqueue_event> events) {
   }
 }
 
-} // namespace net
-
-namespace net {
-
-void multiplexer_impl::run() {
-  while (running_) {
-    if (poll_once(true))
-      running_ = false;
-  }
-}
-
-util::error_or<multiplexer_ptr>
-make_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
-  auto mpx = std::make_shared<multiplexer_impl>();
-  if (auto err = mpx->init(std::move(factory), port))
-    return err;
-  return mpx;
-}
-
-} // namespace net
-
 #endif
+
+} // namespace net

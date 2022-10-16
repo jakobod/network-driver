@@ -38,14 +38,14 @@ class multiplexer_impl : public multiplexer {
   using optional_timepoint
     = std::optional<std::chrono::system_clock::time_point>;
   using pollset = std::array<epoll_event, max_epoll_events>;
-  using epoll_fd = int;
+  using mpx_fd = int;
   using manager_map = std::unordered_map<int, socket_manager_ptr>;
   using timeout_entry_set = std::set<timeout_entry>;
 
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  multiplexer_impl();
+  multiplexer_impl() = default;
 
   ~multiplexer_impl() override;
 
@@ -121,7 +121,7 @@ private:
   pipe_socket pipe_reader_;
 
   // epoll variables
-  epoll_fd epoll_fd_ = invalid_socket_id;
+  mpx_fd mpx_fd_ = invalid_socket_id;
   pollset pollset_;
   manager_map managers_;
 
@@ -140,14 +140,17 @@ private:
 #elif defined(KQUEUE_MPX)
 
 class multiplexer_impl : public multiplexer {
+  static constexpr const size_t max_events = 32;
+
   using kqueue_event = struct kevent;
-  using kqueue_fd = int;
+  using mpx_fd = int;
+  using pollset = std::array<kqueue_event, max_events>;
   using manager_map = std::unordered_map<socket_id, socket_manager_ptr>;
 
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  multiplexer_impl();
+  multiplexer_impl() = default;
 
   ~multiplexer_impl() override;
 
@@ -223,7 +226,7 @@ private:
   pipe_socket pipe_reader_{invalid_socket_id};
 
   // epoll variables
-  kqueue_fd kqueue_fd_{invalid_socket_id};
+  mpx_fd mpx_fd_{invalid_socket_id};
   manager_map managers_;
 
   // thread variables
