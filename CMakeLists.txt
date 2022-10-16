@@ -6,6 +6,11 @@ project(lib_net CXX)
 include(FetchContent)
 include(GoogleTest)
 
+# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
 # -- set useful CMake options --------------------------------------------------
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -42,11 +47,12 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
-  # net sources
   src/net/acceptor.cpp
   src/net/datagram_socket.cpp
-  src/net/epoll_multiplexer.cpp
   src/net/event_result.cpp
+  src/net/ip/v4_address.cpp
+  src/net/ip/v4_endpoint.cpp
+  src/net/multiplexer_impl.cpp
   src/net/operation.cpp
   src/net/pipe_socket.cpp
   src/net/pollset_updater.cpp
@@ -58,17 +64,12 @@ set(LIB_NET_SOURCES
   src/net/tcp_stream_socket.cpp
   src/net/udp_datagram_socket.cpp
   src/net/uri.cpp
-  # net::ip sources
-  src/net/ip/v4_address.cpp
-  src/net/ip/v4_endpoint.cpp
-  # openssl
   src/openssl/tls_context.cpp
   src/openssl/tls_session.cpp
-  # util sources
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
-  src/util/error.cpp
   src/util/error_code.cpp
+  src/util/error.cpp
   src/util/format.cpp
 )
 
@@ -92,9 +93,7 @@ macro(add_target name)
   target_link_libraries(${name} PRIVATE net)
 endmacro()
 
-add_target(playground)
-
-
+# add_target(playground)
 
 # -- test setup ----------------------------------------------------------------
 
@@ -105,26 +104,23 @@ if (LIB_NET_ENABLE_TESTS)
     lib_net_test
     test/net/acceptor.cpp
     test/net/datagram_socket.cpp
-    test/net/epoll_multiplexer.cpp
+    test/net/multiplexer_impl.cpp
     test/net/socket_guard.cpp
     test/net/socket_manager.cpp
+    test/net/stream_transport.cpp
     test/net/tcp_socket.cpp
     test/net/tls.cpp
     test/net/transport_adaptor.cpp
-    test/net/stream_transport.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
-
     test/openssl/communication.cpp
-    
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/format.cpp
-    test/util/serialized_size.cpp
     test/util/scope_guard.cpp
+    test/util/serialized_size.cpp
   )
 
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
