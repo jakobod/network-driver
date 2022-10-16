@@ -5,6 +5,8 @@
 
 #include "net/acceptor.hpp"
 #include "net/event_result.hpp"
+#include "net/ip/v4_address.hpp"
+#include "net/ip/v4_endpoint.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/tcp_accept_socket.hpp"
@@ -20,7 +22,7 @@ using namespace net::ip;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t) override {
+  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
     return util::none;
   }
 
@@ -36,17 +38,11 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  bool running() const override {
-    return false;
-  }
+  bool running() const override { return false; }
 
-  void handle_error(const util::error& err) override {
-    last_error = err;
-  }
+  void handle_error(const util::error& err) override { last_error = err; }
 
-  util::error poll_once(bool) override {
-    return util::none;
-  }
+  util::error poll_once(bool) override { return util::none; }
 
   void add(socket_manager_ptr new_mgr, operation) override {
     mgr = std::move(new_mgr);
@@ -75,21 +71,13 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
-  util::error init() override {
-    return util::none;
-  }
+  util::error init() override { return util::none; }
 
-  event_result handle_read_event() override {
-    return event_result::done;
-  }
+  event_result handle_read_event() override { return event_result::done; }
 
-  event_result handle_write_event() override {
-    return event_result::done;
-  }
+  event_result handle_write_event() override { return event_result::done; }
 
-  event_result handle_timeout(uint64_t) override {
-    return event_result::done;
-  }
+  event_result handle_timeout(uint64_t) override { return event_result::done; }
 };
 
 struct dummy_factory : socket_manager_factory {
@@ -102,7 +90,7 @@ struct dummy_factory : socket_manager_factory {
 
 struct acceptor_test : public testing::Test {
   acceptor_test() {
-    auto res = make_tcp_accept_socket(0);
+    auto res = make_tcp_accept_socket({net::ip::v4_address::localhost, 0});
     EXPECT_EQ(get_error(res), nullptr);
     auto sock_pair = std::get<acceptor_pair>(res);
     acc = std::make_unique<acceptor>(sock_pair.first, &mpx,

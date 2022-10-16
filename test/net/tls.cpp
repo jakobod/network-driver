@@ -39,7 +39,7 @@ struct application_vars {
 };
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t) override {
+  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
     return util::none;
   }
 
@@ -55,17 +55,13 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  bool running() const override {
-    return false;
-  }
+  bool running() const override { return false; }
 
   void handle_error(const util::error& err) override {
     FAIL() << "There should be no errors! " << err << std::endl;
   }
 
-  util::error poll_once(bool) override {
-    return util::none;
-  }
+  util::error poll_once(bool) override { return util::none; }
 
   void add(socket_manager_ptr, operation) override {
     // nop
@@ -146,9 +142,7 @@ struct dummy_transport : transport {
     return next_layer_.handle_timeout(id);
   }
 
-  NextLayer& next_layer() {
-    return next_layer_;
-  }
+  NextLayer& next_layer() { return next_layer_; }
 
 private:
   NextLayer next_layer_;
@@ -178,9 +172,7 @@ struct dummy_application {
     return event_result::ok;
   }
 
-  bool has_more_data() const {
-    return !vars_.data.empty();
-  }
+  bool has_more_data() const { return !vars_.data.empty(); }
 
   event_result consume(util::const_byte_span bytes) {
     vars_.received.insert(vars_.received.begin(), bytes.begin(), bytes.end());
@@ -208,8 +200,7 @@ struct tls_test : public testing::Test {
       ctx.init(CERT_DIRECTORY "/server.crt", CERT_DIRECTORY "/server.key"));
 
     uint8_t b = 0;
-    for (auto& val : data)
-      val = std::byte{b++};
+    for (auto& val : data) val = std::byte{b++};
 
     client_application_vars_.data = util::const_byte_span{data};
     server_application_vars_.data = util::const_byte_span{data};

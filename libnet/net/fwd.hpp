@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "net/ip/fwd.hpp"
+
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -16,8 +18,8 @@ namespace net {
 // -- classes ------------------------------------------------------------------
 
 class acceptor;
-class epoll_multiplexer;
 class multiplexer;
+class multiplexer_impl;
 class pollset_updater;
 class socket_manager;
 class socket_manager_factory;

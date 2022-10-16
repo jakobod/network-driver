@@ -34,13 +34,11 @@ public:
     return ret;
   }
 
-  Socket operator*() {
-    return sock_;
-  }
+  Socket get() { return sock_; }
 
-  Socket operator->() {
-    return sock_;
-  }
+  Socket operator*() { return sock_; }
+
+  Socket operator->() { return sock_; }
 
   bool operator==(const socket_guard<Socket>& other) {
     return sock_ == other.sock_;

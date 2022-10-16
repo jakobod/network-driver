@@ -25,7 +25,7 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t) override {
+  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
     return util::none;
   }
 
@@ -41,17 +41,13 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  bool running() const override {
-    return false;
-  }
+  bool running() const override { return false; }
 
   void handle_error(const util::error& err) override {
     FAIL() << "There should be no errors! " << err << std::endl;
   }
 
-  util::error poll_once(bool) override {
-    return util::none;
-  }
+  util::error poll_once(bool) override { return util::none; }
 
   void add(socket_manager_ptr, operation) override {
     // nop
@@ -90,9 +86,7 @@ struct dummy_application {
     return event_result::ok;
   }
 
-  bool has_more_data() {
-    return !data_.empty();
-  }
+  bool has_more_data() { return !data_.empty(); }
 
   event_result consume(util::const_byte_span data) {
     received_.insert(received_.end(), data.begin(), data.end());
@@ -100,9 +94,7 @@ struct dummy_application {
     return event_result::ok;
   }
 
-  static event_result handle_timeout(uint64_t) {
-    return event_result::ok;
-  }
+  static event_result handle_timeout(uint64_t) { return event_result::ok; }
 
 private:
   util::byte_buffer& received_;
@@ -174,8 +166,7 @@ TEST_F(stream_transport_test, handle_write_event) {
       FAIL() << "socket diconnected prematurely!" << std::endl;
     received += res;
   };
-  while (mgr.handle_write_event() == event_result::ok)
-    read_some();
+  while (mgr.handle_write_event() == event_result::ok) read_some();
   read_some();
   ASSERT_EQ(received, data.size());
   EXPECT_EQ(memcmp(data.data(), received_data.data(), received_data.size()), 0);

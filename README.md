@@ -39,6 +39,9 @@ There are many tests bundled with this project, but they may not provide a good 
 - [ ] io_uring implementation
 - [ ] EBPF?! - https://www.nginx.com/blog/our-roadmap-quic-http-3-support-nginx/
 
+- [ ] Logging utility?
+  - Should be configurable from the cmake scaffold
+
 # Interesting Links
 - https://idea.popcount.org/2017-02-20-epoll-is-fundamentally-broken-12/
 - https://idea.popcount.org/2017-03-20-epoll-is-fundamentally-broken-22/

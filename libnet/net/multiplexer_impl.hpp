@@ -5,45 +5,59 @@
 
 #pragma once
 
+#include "net/fwd.hpp"
+
+#include "net/multiplexer.hpp"
+#include "net/pipe_socket.hpp"
+#include "net/timeout_entry.hpp"
+
+#include <array>
+#include <optional>
+#include <set>
+#include <thread>
+#include <unordered_map>
+
 #if defined(__linux__)
-
-#  include "net/fwd.hpp"
-
-#  include "net/multiplexer.hpp"
-#  include "net/operation.hpp"
-#  include "net/pipe_socket.hpp"
-#  include "net/pollset_updater.hpp"
-#  include "net/socket_manager.hpp"
-#  include "net/timeout_entry.hpp"
-
-#  include <array>
-#  include <optional>
-#  include <set>
+#  define EPOLL_MPX
 #  include <sys/epoll.h>
-#  include <thread>
-#  include <unordered_map>
+#elif defined(__APPLE__)
+#  define KQUEUE_MPX
+#  include <sys/event.h>
+#endif
 
 namespace net {
 
-class epoll_multiplexer : public multiplexer {
-  static constexpr const size_t max_epoll_events = 32;
+class multiplexer_impl : public multiplexer {
+  static constexpr const size_t max_events = 32;
 
+#if defined(EPOLL_MPX)
+  using event_type = epoll_event;
+  using mpx_fd = int;
+#elif defined(KQUEUE_MPX)
+  using event_type = struct kevent;
+  using mpx_fd = int;
+#endif
+
+  // Pollset types
+  using pollset = std::array<event_type, max_events>;
+  using event_span = std::span<event_type>;
+  using manager_map = std::unordered_map<socket_id, socket_manager_ptr>;
+
+  // Timeout handling types
   using optional_timepoint
     = std::optional<std::chrono::system_clock::time_point>;
-  using pollset = std::array<epoll_event, max_epoll_events>;
-  using epoll_fd = int;
-  using manager_map = std::unordered_map<int, socket_manager_ptr>;
   using timeout_entry_set = std::set<timeout_entry>;
 
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  epoll_multiplexer();
+  multiplexer_impl() = default;
 
-  ~epoll_multiplexer() override;
+  ~multiplexer_impl() override;
 
   /// Initializes the multiplexer.
-  util::error init(socket_manager_factory_ptr factory, uint16_t port) override;
+  util::error init(socket_manager_factory_ptr factory, uint16_t port,
+                   bool local = false) override;
 
   // -- Thread functions -------------------------------------------------------
 
@@ -62,9 +76,7 @@ public:
 
   // -- members ----------------------------------------------------------------
 
-  [[nodiscard]] uint16_t num_socket_managers() const {
-    return managers_.size();
-  }
+  uint16_t num_socket_managers() const { return managers_.size(); }
 
   // -- Error Handling ---------------------------------------------------------
 
@@ -94,7 +106,7 @@ private:
   void handle_timeouts();
 
   /// Handles all IO-events that occurred.
-  void handle_events(int num_events);
+  void handle_events(event_span events);
 
   /// The main multiplexer loop.
   void run();
@@ -110,29 +122,27 @@ private:
   void mod(int fd, int op, operation events);
 
   // pipe for synchronous access to mpx
-  pipe_socket pipe_writer_;
-  pipe_socket pipe_reader_;
+  pipe_socket pipe_writer_{invalid_socket_id};
+  pipe_socket pipe_reader_{invalid_socket_id};
 
-  // epoll variables
-  epoll_fd epoll_fd_ = invalid_socket_id;
+  // Multiplexing variables
+  mpx_fd mpx_fd_{invalid_socket_id};
   pollset pollset_;
   manager_map managers_;
 
   // timeout handling
   timeout_entry_set timeouts_;
-  optional_timepoint current_timeout_ = std::nullopt;
-  uint64_t current_timeout_id_ = 0;
+  optional_timepoint current_timeout_{std::nullopt};
+  // uint64_t current_timeout_id_{0};
 
   // thread variables
-  bool shutting_down_ = false;
-  bool running_ = false;
+  bool shutting_down_{false};
+  bool running_{false};
   std::thread mpx_thread_;
   std::thread::id mpx_thread_id_;
 };
 
 util::error_or<multiplexer_ptr>
-make_epoll_multiplexer(socket_manager_factory_ptr factory, uint16_t port = 0);
+make_multiplexer(socket_manager_factory_ptr factory, uint16_t port = 0);
 
 } // namespace net
-
-#endif
