@@ -7,7 +7,6 @@
 
 #include "net/fwd.hpp"
 
-#include "net/event_result.hpp"
 #include "net/layer.hpp"
 #include "net/receive_policy.hpp"
 #include "net/transport.hpp"
@@ -24,20 +23,13 @@ class transport_adaptor : public layer {
 public:
   template <class... Ts>
   explicit transport_adaptor(transport& parent, Ts&&... xs)
-    : parent_{parent}, next_layer_{*this, std::forward<Ts>(xs)...} {
-  }
+    : parent_{parent}, next_layer_{*this, std::forward<Ts>(xs)...} {}
 
-  util::error init() override {
-    return next_layer_.init();
-  }
+  util::error init() override { return next_layer_.init(); }
 
-  bool has_more_data() override {
-    return next_layer_.has_more_data();
-  }
+  bool has_more_data() override { return next_layer_.has_more_data(); }
 
-  event_result produce() override {
-    return next_layer_.produce();
-  }
+  event_result produce() override { return next_layer_.produce(); }
 
   event_result consume(util::const_byte_span bytes) override {
     return next_layer_.consume(bytes);
@@ -53,14 +45,10 @@ public:
   }
 
   /// Returns a reference to the send_buffer
-  util::byte_buffer& write_buffer() override {
-    return parent_.write_buffer();
-  }
+  util::byte_buffer& write_buffer() override { return parent_.write_buffer(); }
 
   /// Enqueues data to the transport extension
-  void enqueue(util::const_byte_span bytes) override {
-    parent_.enqueue(bytes);
-  }
+  void enqueue(util::const_byte_span bytes) override { parent_.enqueue(bytes); }
 
   /// Called when an error occurs
   void handle_error(const util::error& err) override {
@@ -68,9 +56,7 @@ public:
   }
 
   /// Registers the stack for write events
-  void register_writing() override {
-    parent_.register_writing();
-  }
+  void register_writing() override { parent_.register_writing(); }
 
   /// Sets a timeout in `duration` milliseconds with the id `timeout_id`
   uint64_t set_timeout_in(std::chrono::milliseconds duration) override {
@@ -84,9 +70,7 @@ public:
   }
 
   /// Returns a reference to the following layer
-  NextLayer& next_layer() {
-    return next_layer_;
-  }
+  NextLayer& next_layer() { return next_layer_; }
 
 private:
   transport& parent_;

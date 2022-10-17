@@ -43,7 +43,7 @@ struct application_vars {
 };
 
 template <class NextLayer>
-struct dummy_transport : transport {
+struct dummy_transport : public transport {
   template <class... Ts>
   dummy_transport(net::socket handle, multiplexer* mpx, transport_vars& vars,
                   Ts&&... xs)
@@ -61,8 +61,7 @@ struct dummy_transport : transport {
   util::error init() override {
     if (!nonblocking(handle(), true))
       return {util::error_code::runtime_error,
-              util::format("Failed to set nonblocking on sock={0}",
-                           handle().id)};
+              "Failed to set nonblocking on sock={0}", handle().id};
     return next_layer_.init();
   }
 
@@ -118,9 +117,7 @@ struct dummy_application {
     return event_result::ok;
   }
 
-  bool has_more_data() const {
-    return !vars_.data.empty();
-  }
+  bool has_more_data() const { return !vars_.data.empty(); }
 
   event_result consume(util::const_byte_span bytes) {
     vars_.received.insert(vars_.received.begin(), bytes.begin(), bytes.end());
@@ -146,8 +143,7 @@ struct transport_adaptor_test : public testing::Test {
     sockets = std::get<stream_socket_pair>(maybe_sockets);
 
     uint8_t b = 0;
-    for (auto& val : data)
-      val = std::byte{b++};
+    for (auto& val : data) val = std::byte{b++};
 
     transport_vars_.data = util::const_byte_span{data};
     application_vars_.data = util::const_byte_span{data};
@@ -196,8 +192,7 @@ TEST_F(transport_adaptor_test, handle_write_event) {
     free_space = free_space.subspan(res);
   };
   size_t rounds = 0;
-  while (!free_space.empty() && (++rounds < 20))
-    read_some();
+  while (!free_space.empty() && (++rounds < 20)) read_some();
   EXPECT_TRUE(std::equal(data.begin(), data.end(), receive_buffer.begin()));
 }
 

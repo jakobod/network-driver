@@ -5,14 +5,9 @@
 
 #pragma once
 
-#include "net/fwd.hpp"
-
 #include "net/socket.hpp"
 
-#include "util/byte_span.hpp"
-#include "util/error.hpp"
-
-#include <cstddef>
+#include "net/fwd.hpp"
 
 namespace net {
 
@@ -31,9 +26,6 @@ util::error_or<stream_socket_pair> make_stream_socket_pair();
 
 /// Enables or disables keepalive on `x`.
 bool keepalive(stream_socket x, bool new_value);
-
-/// Enables or disables Nagle's algorithm on `x`.
-bool nodelay(stream_socket x, bool new_value);
 
 /// Receives data from `x`.
 ptrdiff_t read(stream_socket x, util::byte_span buf);

@@ -5,6 +5,7 @@
 
 #include "util/format.hpp"
 
+#include <numeric>
 #include <sstream>
 
 namespace util {
@@ -27,6 +28,14 @@ std::vector<std::string> split(const std::string& str, const char delim) {
   while (std::getline(stream, token, delim))
     tokens.emplace_back(std::move(token));
   return tokens;
+}
+
+std::string join(const std::vector<std::string>& strings, const char delim) {
+  return std::accumulate(std::next(strings.begin()), strings.end(),
+                         strings.front(),
+                         [delim](const std::string& a, const std::string& b) {
+                           return a + delim + b;
+                         });
 }
 
 } // namespace util

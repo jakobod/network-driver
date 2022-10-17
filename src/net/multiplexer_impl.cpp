@@ -6,19 +6,20 @@
 #include "net/multiplexer_impl.hpp"
 
 #include "net/acceptor.hpp"
+#include "net/event_result.hpp"
 #include "net/operation.hpp"
+#include "net/pipe_socket.hpp"
 #include "net/pollset_updater.hpp"
 #include "net/socket_manager.hpp"
-#include "net/socket_sys_includes.hpp"
+#include "net/tcp_accept_socket.hpp"
 
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 #include "util/format.hpp"
 
 #include <algorithm>
-#include <array>
-#include <chrono>
 #include <iostream>
-#include <span>
+#include <unistd.h>
 #include <utility>
 
 // -- identical implementation of the multiplexer_impl accross OSes ------------
@@ -37,7 +38,8 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   mpx_fd_ = kqueue();
 #endif
   if (mpx_fd_ < 0)
-    return {util::error_code::runtime_error, "creating epoll fd failed"};
+    return {util::error_code::runtime_error,
+            "[multiplexer_impl]: Creating epoll fd failed"};
   // Create pollset updater
   auto pipe_res = make_pipe();
   if (auto err = util::get_error(pipe_res))
@@ -49,7 +51,7 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   // Create Acceptor
   auto res = net::make_tcp_accept_socket(
     {(local ? ip::v4_address::localhost : ip::v4_address::any), port});
-  if (auto err = get_error(res))
+  if (auto err = util::get_error(res))
     return *err;
   auto accept_socket_pair = std::get<net::acceptor_pair>(res);
   auto accept_socket = accept_socket_pair.first;
@@ -217,20 +219,24 @@ multiplexer_impl::del(manager_map::iterator it) {
 void multiplexer_impl::mod(int fd, int op, operation events) {
   static const auto to_epoll_flag = [](net::operation op) -> uint32_t {
     switch (op) {
-      case net::operation::none: return 0;
-      case net::operation::read: return EPOLLIN;
-      case net::operation::write: return EPOLLOUT;
-      case net::operation::read_write: return (EPOLLIN | EPOLLOUT);
-      default: return 0;
+      case net::operation::none:
+        return 0;
+      case net::operation::read:
+        return EPOLLIN;
+      case net::operation::write:
+        return EPOLLOUT;
+      case net::operation::read_write:
+        return (EPOLLIN | EPOLLOUT);
+      default:
+        return 0;
     }
   };
   epoll_event event{};
   event.events = to_epoll_flag(events);
   event.data.fd = fd;
   if (epoll_ctl(mpx_fd_, op, fd, &event) < 0) {
-    handle_error(
-      {util::error_code::runtime_error,
-       util::format("epoll_ctl: {0}", util::last_error_as_string())});
+    handle_error({util::error_code::runtime_error, "epoll_ctl: {0}",
+                  util::last_error_as_string()});
   }
 }
 
@@ -257,8 +263,7 @@ util::error multiplexer_impl::poll_once(bool blocking) {
   }
   // Handle all timeouts and io-events that have been registered
   handle_timeouts();
-  handle_events(
-    std::span<event_type>(pollset_.data(), static_cast<size_t>(num_events)));
+  handle_events(event_span(pollset_.data(), static_cast<size_t>(num_events)));
   return util::none;
 }
 
@@ -350,10 +355,14 @@ void multiplexer_impl::mod(int fd, int op, operation events) {
   static constexpr const auto to_kevent_filter
     = [](net::operation op) -> int16_t {
     switch (op) {
-      case net::operation::none: return 0;
-      case net::operation::read: return EVFILT_READ;
-      case net::operation::write: return EVFILT_WRITE;
-      default: return 0;
+      case net::operation::none:
+        return 0;
+      case net::operation::read:
+        return EVFILT_READ;
+      case net::operation::write:
+        return EVFILT_WRITE;
+      default:
+        return 0;
     }
   };
 
@@ -365,10 +374,9 @@ void multiplexer_impl::mod(int fd, int op, operation events) {
     event_type event;
     EV_SET(&event, fd, to_kevent_filter(events), op, 0, 0, nullptr);
     if (kevent(mpx_fd_, &event, 1, nullptr, 0, nullptr) < 0) {
-      const util::error err{util::error_code::runtime_error,
-                            util::format("kevent: {0}",
-                                         util::last_error_as_string())};
-      // ignore ENOENT for now.
+      const util::error err{util::error_code::runtime_error, "kevent: {0}",
+                            util::last_error_as_string()};
+      // TODO: ignore ENOENT for now.
       if (net::last_socket_error() != ENOENT)
         handle_error(err);
       else
@@ -391,8 +399,7 @@ util::error multiplexer_impl::poll_once([[maybe_unused]] bool blocking) {
   }
   // Handle all timeouts and io-events that have been registered
   handle_timeouts();
-  handle_events(
-    std::span<event_type>(pollset_.data(), static_cast<size_t>(num_events)));
+  handle_events(event_span(pollset_.data(), static_cast<size_t>(num_events)));
   return util::none;
 }
 
@@ -400,8 +407,12 @@ void multiplexer_impl::handle_events(event_span events) {
   auto handle_result = [this](socket_manager_ptr& mgr, event_result res,
                               operation op) {
     switch (res) {
-      case event_result::done: disable(*mgr, op, true); break;
-      case event_result::error: del(mgr->handle()); break;
+      case event_result::done:
+        disable(*mgr, op, true);
+        break;
+      case event_result::error:
+        del(mgr->handle());
+        break;
       default:
         // nop
         break;
@@ -411,8 +422,9 @@ void multiplexer_impl::handle_events(event_span events) {
   for (const auto& event : events) {
     const auto handle = socket{static_cast<net::socket_id>(event.ident)};
     if (event.flags & EV_EOF) {
-      std::cerr << util::format("epoll_wait failed: socket = {0}: {1}",
-                                handle.id, util::last_error_as_string())
+      std::cerr << util::format(
+        "[multiplexer_impl] kevent failed: socket = {0}: {1}", handle.id,
+        util::last_error_as_string())
                 << std::endl;
       del(handle);
       continue;

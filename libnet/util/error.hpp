@@ -20,8 +20,8 @@ public:
   error(error_code err, std::string err_msg);
 
   template <class... Arguments>
-  error(error_code err, std::string format, Arguments... args)
-    : error{err, util::format(std::move(format), std::move(args)...)} {
+  error(error_code err, std::string form, Arguments... args)
+    : error{err, format(std::move(form), std::move(args)...)} {
     // nop
   }
 
@@ -46,7 +46,7 @@ public:
   }
 
 private:
-  error_code err_ = no_error;
+  error_code err_ = error_code::no_error;
   std::string err_msg_;
 };
 

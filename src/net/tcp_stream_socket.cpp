@@ -6,9 +6,11 @@
 #include "net/tcp_stream_socket.hpp"
 
 #include "net/ip/v4_endpoint.hpp"
-
 #include "net/socket_guard.hpp"
-#include "net/socket_sys_includes.hpp"
+
+#include "util/error.hpp"
+
+#include <netinet/tcp.h>
 
 namespace net {
 
@@ -29,6 +31,14 @@ make_connected_tcp_stream_socket(const ip::v4_endpoint& ep) {
     return util::error(util::error_code::socket_operation_failed,
                        last_socket_error_as_string());
   return guard.release();
+}
+
+bool nodelay(tcp_stream_socket x, bool new_value) {
+  int flag = new_value ? 1 : 0;
+  auto res = setsockopt(x.id, IPPROTO_TCP, TCP_NODELAY,
+                        reinterpret_cast<const void*>(&flag),
+                        static_cast<int>(sizeof(flag)));
+  return res == 0;
 }
 
 } // namespace net

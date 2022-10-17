@@ -12,8 +12,11 @@
 #include "net/timeout_entry.hpp"
 
 #include <array>
+#include <chrono>
+#include <cstdint>
 #include <optional>
 #include <set>
+#include <span>
 #include <thread>
 #include <unordered_map>
 
@@ -27,6 +30,8 @@
 
 namespace net {
 
+/// Implements a multiplexing backend for handling event multiplexing facilities
+/// such as epoll and kqueue.
 class multiplexer_impl : public multiplexer {
   static constexpr const size_t max_events = 32;
 
@@ -56,7 +61,7 @@ public:
   ~multiplexer_impl() override;
 
   /// Initializes the multiplexer.
-  util::error init(socket_manager_factory_ptr factory, uint16_t port,
+  util::error init(socket_manager_factory_ptr factory, std::uint16_t port,
                    bool local = false) override;
 
   // -- Thread functions -------------------------------------------------------
@@ -76,7 +81,7 @@ public:
 
   // -- members ----------------------------------------------------------------
 
-  uint16_t num_socket_managers() const { return managers_.size(); }
+  std::uint16_t num_socket_managers() const { return managers_.size(); }
 
   // -- Error Handling ---------------------------------------------------------
 
@@ -95,8 +100,9 @@ public:
   /// removed if `remove` is set.
   void disable(socket_manager& mgr, operation op, bool remove) override;
 
-  uint64_t set_timeout(socket_manager& mgr,
-                       std::chrono::system_clock::time_point when) override;
+  std::uint64_t
+  set_timeout(socket_manager& mgr,
+              std::chrono::system_clock::time_point when) override;
 
   /// Main multiplexing loop.
   util::error poll_once(bool blocking) override;
@@ -133,7 +139,7 @@ private:
   // timeout handling
   timeout_entry_set timeouts_;
   optional_timepoint current_timeout_{std::nullopt};
-  // uint64_t current_timeout_id_{0};
+  // std::uint64_t current_timeout_id_{0};
 
   // thread variables
   bool shutting_down_{false};
@@ -143,6 +149,6 @@ private:
 };
 
 util::error_or<multiplexer_ptr>
-make_multiplexer(socket_manager_factory_ptr factory, uint16_t port = 0);
+make_multiplexer(socket_manager_factory_ptr factory, std::uint16_t port = 0);
 
 } // namespace net

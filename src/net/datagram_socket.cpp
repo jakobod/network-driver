@@ -6,10 +6,9 @@
 #include "net/datagram_socket.hpp"
 
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 
-#include <netinet/in.h>
-#include <netinet/udp.h>
-#include <utility>
+#include <sys/socket.h>
 
 namespace net {
 
@@ -24,12 +23,12 @@ util::error_or<datagram_socket_pair> make_connected_datagram_socket_pair() {
                         datagram_socket{sockets[1]});
 }
 
-ptrdiff_t read(datagram_socket x, util::byte_span buf) {
+std::ptrdiff_t read(datagram_socket x, util::byte_span buf) {
   return recv(x.id, reinterpret_cast<char*>(buf.data()), buf.size(),
               no_sigpipe_io_flag);
 }
 
-ptrdiff_t write(datagram_socket x, util::const_byte_span buf) {
+std::ptrdiff_t write(datagram_socket x, util::const_byte_span buf) {
   return send(x.id, reinterpret_cast<const char*>(buf.data()), buf.size(),
               no_sigpipe_io_flag);
 }

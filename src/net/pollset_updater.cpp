@@ -12,8 +12,6 @@
 #include "util/byte_span.hpp"
 #include "util/error.hpp"
 
-#include <cstddef>
-
 namespace net {
 
 pollset_updater::pollset_updater(pipe_socket handle, multiplexer* mpx)
@@ -29,11 +27,13 @@ util::error pollset_updater::init() {
 
 event_result pollset_updater::handle_read_event() {
   opcode code;
-  auto res = read(handle<pipe_socket>(), util::as_bytes(&code, 1));
+  const auto res = read(handle<pipe_socket>(), util::as_bytes(&code, 1));
   if (res > 0) {
     switch (code) {
       case add_code:
+        [[fallthrough]];
       case enable_code:
+        [[fallthrough]];
       case disable_code:
         /// Currently not implemented
         break;
@@ -48,17 +48,16 @@ event_result pollset_updater::handle_read_event() {
 }
 
 event_result pollset_updater::handle_write_event() {
-  mpx()->handle_error(util::error(
-    util::error_code::runtime_error,
-    "[pollset_updater::handle_write_event()] pollset_updater should not "
-    "be registered for writing"));
+  mpx()->handle_error(
+    {util::error_code::runtime_error,
+     "[pollset_updater::handle_write_event()] pollset_updater should not "
+     "be registered for writing"});
   return event_result::error;
 }
 
 event_result pollset_updater::handle_timeout(uint64_t) {
-  mpx()->handle_error(
-    util::error(util::error_code::runtime_error,
-                "[pollset_updater::handle_timeout()] not implemented!"));
+  mpx()->handle_error({util::error_code::runtime_error,
+                       "[pollset_updater::handle_timeout()] not implemented!"});
   return event_result::error;
 }
 

@@ -5,29 +5,27 @@
 
 #pragma once
 
-#include <functional>
+#include <utility>
 
 namespace util {
 
 template <class Func>
 class scope_guard {
 public:
-  explicit scope_guard(Func func) : func_(std::move(func)) {
+  constexpr explicit scope_guard(Func func) : func_(std::move(func)) {
     // nop
   }
 
   ~scope_guard() {
-    if (!disabled_)
+    if (engaged_)
       func_();
   }
 
-  void reset() {
-    disabled_ = true;
-  }
+  void reset() { engaged_ = false; }
 
 private:
   Func func_;
-  bool disabled_ = false;
+  bool engaged_ = true;
 };
 
 } // namespace util

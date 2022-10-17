@@ -13,6 +13,7 @@
 #include "net/tcp_stream_socket.hpp"
 
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 
 #include <chrono>
 #include <string>
@@ -74,7 +75,7 @@ public:
   util::error
   tcp_connect(const ip::v4_endpoint& ep, operation initial_op, Ts&&... xs) {
     auto sock = make_connected_tcp_stream_socket(ep);
-    if (auto err = get_error(sock))
+    if (auto err = util::get_error(sock))
       return *err;
     auto mgr = std::make_shared<Manager>(std::get<tcp_stream_socket>(sock),
                                          this, std::forward<Ts>(xs)...);

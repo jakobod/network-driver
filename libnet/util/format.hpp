@@ -7,9 +7,12 @@
 
 #include "net/fwd.hpp"
 
-#include "meta/type_traits.hpp"
+#include "meta/concepts.hpp"
 
+#include <cstdint>
 #include <regex>
+#include <string>
+#include <vector>
 
 namespace {
 
@@ -21,8 +24,7 @@ std::string format_helper(std::string form, std::string arg) {
                             arg);
 }
 
-template <std::size_t i, class T,
-          std::enable_if_t<std::is_integral_v<T>>* = nullptr>
+template <std::size_t i, meta::integral T>
 std::string format_helper(std::string form, T arg) {
   return format_helper<i>(std::move(form), std::to_string(arg));
 }
@@ -50,5 +52,7 @@ std::string format(std::string form, Ts... args) {
 std::vector<std::string> split(std::string str, const std::string& delim);
 
 std::vector<std::string> split(const std::string& str, const char delim);
+
+std::string join(const std::vector<std::string>& strings, const char delim);
 
 } // namespace util

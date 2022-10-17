@@ -7,9 +7,9 @@
 
 #include "net/fwd.hpp"
 
-#include "meta/type_traits.hpp"
+#include "meta/concepts.hpp"
 
-#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <span>
 #include <string>
@@ -36,7 +36,7 @@ public:
   }
 
 private:
-  template <class T, std::enable_if_t<meta::has_trivial_size_v<T>>* = nullptr>
+  template <meta::flat_type T>
   static constexpr std::size_t calculate_size(const T&) noexcept {
     return sizeof(T);
   }
@@ -60,25 +60,25 @@ private:
     return calculate_size(arr, Size);
   }
 
-  template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
+  template <meta::visitable T>
   std::size_t calculate_size(const T& t) {
     return const_cast<T&>(t).visit(*this);
   }
 
   // -- Container functions ----------------------------------------------------
 
-  template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>
+  template <meta::container T>
   std::size_t calculate_size(const T& container) {
     return calculate_size(container.data(), container.size());
   }
 
   // Calculates size for integral types
-  template <class T, std::enable_if_t<meta::has_trivial_size_v<T>>* = nullptr>
+  template <meta::flat_type T>
   constexpr std::size_t calculate_size(const T*, std::size_t size) {
     return sizeof(std::size_t) + (size * sizeof(T));
   }
 
-  template <class T, std::enable_if_t<!meta::has_trivial_size_v<T>>* = nullptr>
+  template <meta::complex_type T>
   std::size_t calculate_size(const T* ptr, std::size_t size) {
     auto num_bytes = sizeof(std::size_t);
     for (const auto& val : std::span(ptr, size))

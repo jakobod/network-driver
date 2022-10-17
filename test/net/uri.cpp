@@ -5,8 +5,10 @@
 
 #include "net/uri.hpp"
 
-#include "util/error.hpp"
-#include "util/format.hpp"
+#include "util/error_or.hpp"
+
+#include <string>
+#include <vector>
 
 #include "net_test.hpp"
 

@@ -9,14 +9,10 @@ namespace net {
 
 std::string to_string(event_result res) {
   switch (res) {
-    case event_result::ok:
-      return "ok";
-    case event_result::done:
-      return "done";
-    case event_result::error:
-      return "error";
-    default:
-      return "unknown result";
+    case event_result::ok: return "event_result::ok";
+    case event_result::done: return "event_result::done";
+    case event_result::error: return "event_result::error";
+    default: return "event_result::unknown";
   }
 }
 

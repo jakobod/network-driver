@@ -9,17 +9,17 @@ namespace util {
 
 std::string to_string(error_code err) {
   switch (err) {
-    case no_error:
+    case error_code::no_error:
       return "no_error";
-    case runtime_error:
+    case error_code::runtime_error:
       return "runtime_error";
-    case socket_operation_failed:
+    case error_code::socket_operation_failed:
       return "socket_operation_failed";
-    case invalid_argument:
+    case error_code::invalid_argument:
       return "invalid_argument";
-    case parser_error:
+    case error_code::parser_error:
       return "parser_error";
-    case openssl_error:
+    case error_code::openssl_error:
       return "openssl_error";
     default:
       return "???";
