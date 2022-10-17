@@ -38,8 +38,6 @@ ssl_status get_status(SSL* ssl, int ret) {
 
 namespace openssl {
 
-using util::error_code::openssl_error;
-
 tls_session::tls_session(tls_context& ctx, util::byte_buffer& write_buffer,
                          on_data_callback_type on_data, session_type type)
   : type_{type},
@@ -63,11 +61,11 @@ tls_session::~tls_session() {
 util::error tls_session::init() {
   // Check the relevant ssl members
   if (!ssl_)
-    return {openssl_error, "SSL object was not created"};
+    return {util::error_code::openssl_error, "SSL object was not created"};
   if (!rbio_)
-    return {openssl_error, "rBIO object was not created"};
+    return {util::error_code::openssl_error, "rBIO object was not created"};
   if (!wbio_)
-    return {openssl_error, "wBIO object was not created"};
+    return {util::error_code::openssl_error, "wBIO object was not created"};
   // As client, initiate handshake
   if (type_ == session_type::client) {
     if (auto err = handle_handshake()) {
@@ -82,7 +80,7 @@ util::error tls_session::consume(util::const_byte_span bytes) {
     auto write_res = BIO_write(rbio_, bytes.data(),
                                static_cast<int>(bytes.size()));
     if (write_res <= 0)
-      return {openssl_error, "BIO_read failed"};
+      return {util::error_code::openssl_error, "BIO_read failed"};
     bytes = bytes.subspan(write_res);
 
     if (!is_initialized()) {
@@ -109,7 +107,7 @@ util::error tls_session::consume(util::const_byte_span bytes) {
         return util::none;
 
       case fail:
-        return {openssl_error, "SSL_read failed"};
+        return {util::error_code::openssl_error, "SSL_read failed"};
 
       default:
         return util::none;
@@ -134,7 +132,7 @@ util::error tls_session::encrypt(util::const_byte_span bytes) {
       encrypt_buf_.erase(encrypt_buf_.begin(),
                          encrypt_buf_.begin() + write_res);
     } else if (write_res < 0) {
-      return {openssl_error, "SSL_write failed"};
+      return {util::error_code::openssl_error, "SSL_write failed"};
     }
   }
 
@@ -153,7 +151,7 @@ util::error tls_session::read_from_ssl() {
     else if (BIO_should_retry(wbio_))
       return util::none;
     else
-      return {openssl_error, "BIO_read failed"};
+      return {util::error_code::openssl_error, "BIO_read failed"};
   }
 }
 
@@ -166,7 +164,7 @@ util::error tls_session::handle_handshake() {
       return util::none;
 
     case fail:
-      return {openssl_error, "SSL_do_handshake failed"};
+      return {util::error_code::openssl_error, "SSL_do_handshake failed"};
 
     default:
       return util::none;
