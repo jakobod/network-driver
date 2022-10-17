@@ -5,11 +5,9 @@
 
 #pragma once
 
-#include "net/fwd.hpp"
-
-#include "net/receive_policy.hpp"
-#include "net/socket.hpp"
 #include "net/socket_manager.hpp"
+
+#include "net/fwd.hpp"
 
 #include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
@@ -29,9 +27,7 @@ public:
   virtual void configure_next_read(receive_policy policy) = 0;
 
   /// Returns a reference to the send_buffer
-  util::byte_buffer& write_buffer() {
-    return write_buffer_;
-  }
+  util::byte_buffer& write_buffer() { return write_buffer_; }
 
   void enqueue(util::const_byte_span bytes) {
     write_buffer_.insert(write_buffer_.end(), bytes.begin(), bytes.end());

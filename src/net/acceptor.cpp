@@ -8,9 +8,10 @@
 #include "net/multiplexer.hpp"
 #include "net/socket_manager_factory.hpp"
 #include "net/tcp_accept_socket.hpp"
-#include "net/tcp_stream_socket.hpp"
 
+#include "net/event_result.hpp"
 #include "util/error.hpp"
+#include "util/error_code.hpp"
 
 #include <iostream>
 #include <memory>
@@ -33,15 +34,16 @@ event_result acceptor::handle_read_event() {
   auto hdl = handle<tcp_accept_socket>();
   auto accepted = accept(hdl);
   if (accepted == invalid_socket) {
-    mpx()->handle_error(
-      util::error(util::error_code::socket_operation_failed,
-                  "accepting failed: " + last_socket_error_as_string()));
+    mpx()->handle_error({util::error_code::socket_operation_failed,
+                         "[acceptor::handle_read_event()] accept failed: {0}",
+                         last_socket_error_as_string()});
     return event_result::ok;
   }
   if (!nonblocking(accepted, true)) {
     mpx()->handle_error(
-      util::error(util::error_code::socket_operation_failed,
-                  "nonblocking failed " + last_socket_error_as_string()));
+      {util::error_code::socket_operation_failed,
+       "[acceptor::handle_read_event()] nonblocking failed: {0}",
+       last_socket_error_as_string()});
     return event_result::ok;
   }
   auto mgr = factory_->make(accepted, mpx());
@@ -50,17 +52,15 @@ event_result acceptor::handle_read_event() {
 }
 
 event_result acceptor::handle_write_event() {
-  mpx()->handle_error(
-    util::error(util::error_code::runtime_error,
-                "[acceptor::handle_write_event()] acceptor should not "
-                "be registered for writing"));
+  mpx()->handle_error({util::error_code::runtime_error,
+                       "[acceptor::handle_write_event()] acceptor should not "
+                       "be registered for writing"});
   return event_result::error;
 }
 
 event_result acceptor::handle_timeout(uint64_t) {
-  mpx()->handle_error(
-    util::error(util::error_code::runtime_error,
-                "[acceptor::handle_timeout()] not implemented!"));
+  mpx()->handle_error({util::error_code::runtime_error,
+                       "[acceptor::handle_timeout()] not implemented!"});
   return event_result::error;
 }
 

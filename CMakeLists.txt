@@ -56,7 +56,6 @@ set(LIB_NET_SOURCES
   src/net/operation.cpp
   src/net/pipe_socket.cpp
   src/net/pollset_updater.cpp
-  src/net/raw_socket.cpp
   src/net/socket_manager.cpp
   src/net/socket.cpp
   src/net/stream_socket.cpp
@@ -93,7 +92,7 @@ macro(add_target name)
   target_link_libraries(${name} PRIVATE net)
 endmacro()
 
-# add_target(playground)
+add_target(playground)
 
 # -- test setup ----------------------------------------------------------------
 

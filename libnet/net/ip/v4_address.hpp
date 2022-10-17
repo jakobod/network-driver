@@ -6,10 +6,10 @@
 #pragma once
 
 #include "util/byte_array.hpp"
-#include "util/error_or.hpp"
+#include "util/fwd.hpp"
 
 #include <cstddef>
-#include <string_view>
+#include <string>
 
 namespace net::ip {
 
@@ -27,7 +27,7 @@ public:
   /// Predefined localhost address
   static constexpr const octet_array localhost = util::make_byte_array(127, 0,
                                                                        0, 1);
-  /// Predefined localhost address
+  /// Predefined local broadcast address
   static constexpr const octet_array local_broadcast
     = util::make_byte_array(255, 255, 255, 255);
 
@@ -55,14 +55,10 @@ public:
   // -- Members ----------------------------------------------------------------
 
   /// returns the address in bitwise representation in network-byte-order.
-  constexpr std::uint32_t bits() const noexcept {
-    return bits_;
-  }
+  constexpr std::uint32_t bits() const noexcept { return bits_; }
 
   /// returns the address in bytewise representation in network-byte-order.
-  constexpr const octet_array& bytes() const noexcept {
-    return bytes_;
-  }
+  constexpr const octet_array& bytes() const noexcept { return bytes_; }
 
 private:
   /// Union for either representing the address in bitwise or bytewise

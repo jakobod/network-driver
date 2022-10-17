@@ -4,6 +4,7 @@
  */
 
 #include "net/multiplexer_impl.hpp"
+#include "net/event_result.hpp"
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 #include "net/multiplexer.hpp"

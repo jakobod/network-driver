@@ -6,8 +6,11 @@
 #include "net/ip/v4_endpoint.hpp"
 
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 
 #include "net_test.hpp"
+
+#include <netinet/ip.h>
 
 using namespace net;
 using namespace net::ip;
@@ -29,21 +32,21 @@ constexpr const v4_endpoint broadcast_endpoint{broadcast_address, 24};
 TEST(v4_endpoint_test, parse) {
   {
     auto maybe_endpoint = parse_v4_endpoint("0.0.0.0:0");
-    ASSERT_EQ(nullptr, get_error(maybe_endpoint));
+    ASSERT_EQ(nullptr, util::get_error(maybe_endpoint));
     auto ep = std::get<v4_endpoint>(maybe_endpoint);
     ASSERT_EQ(any_address, ep.address());
     ASSERT_EQ(std::uint16_t{0}, ep.port());
   }
   {
     auto maybe_endpoint = parse_v4_endpoint("127.0.0.1:12345");
-    ASSERT_EQ(nullptr, get_error(maybe_endpoint));
+    ASSERT_EQ(nullptr, util::get_error(maybe_endpoint));
     auto ep = std::get<v4_endpoint>(maybe_endpoint);
     ASSERT_EQ(localhost_address, ep.address());
     ASSERT_EQ(std::uint16_t{12345}, ep.port());
   }
   {
     auto maybe_endpoint = parse_v4_endpoint("255.255.255.255:22");
-    ASSERT_EQ(nullptr, get_error(maybe_endpoint));
+    ASSERT_EQ(nullptr, util::get_error(maybe_endpoint));
     auto ep = std::get<v4_endpoint>(maybe_endpoint);
     ASSERT_EQ(broadcast_address, ep.address());
     ASSERT_EQ(std::uint16_t{22}, ep.port());

@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "net/ip/v4_endpoint.hpp"
+#include "net/fwd.hpp"
 
-#include "util/error_or.hpp"
+#include "net/ip/v4_endpoint.hpp"
 
 #include <cstddef>
 #include <string>
@@ -20,34 +20,17 @@ class uri {
 public:
   uri(std::string scheme, const ip::v4_endpoint& auth,
       std::vector<std::string> path, std::vector<std::string> queries,
-      std::vector<std::string> fragments)
-    : scheme_{std::move(scheme)},
-      auth_{auth},
-      path_{std::move(path)},
-      queries_{std::move(queries)},
-      fragments_{std::move(fragments)} {
-    // nop
-  }
+      std::vector<std::string> fragments);
 
-  const std::string& scheme() const {
-    return scheme_;
-  }
+  const std::string& scheme() const { return scheme_; }
 
-  const ip::v4_endpoint& authority() const {
-    return auth_;
-  }
+  const ip::v4_endpoint& authority() const { return auth_; }
 
-  const std::vector<std::string>& path() const {
-    return path_;
-  }
+  const std::vector<std::string>& path() const { return path_; }
 
-  const std::vector<std::string>& queries() const {
-    return queries_;
-  }
+  const std::vector<std::string>& queries() const { return queries_; }
 
-  const std::vector<std::string>& fragments() const {
-    return fragments_;
-  }
+  const std::vector<std::string>& fragments() const { return fragments_; }
 
 private:
   std::string scheme_;
@@ -67,6 +50,6 @@ bool operator!=(const uri& lhs, const uri& rhs);
 std::string to_string(const uri& addr);
 
 /// parses a uri from string.
-util::error_or<uri> parse_uri(std::string str);
+util::error_or<uri> parse_uri(const std::string& str);
 
 } // namespace net

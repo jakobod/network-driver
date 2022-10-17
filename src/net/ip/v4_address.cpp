@@ -6,6 +6,7 @@
 #include "net/ip/v4_address.hpp"
 
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 #include "util/format.hpp"
 
 namespace net::ip {

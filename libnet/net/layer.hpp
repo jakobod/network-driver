@@ -9,7 +9,6 @@
 #include "util/fwd.hpp"
 
 #include "util/byte_buffer.hpp"
-#include "util/byte_span.hpp"
 
 #include <chrono>
 

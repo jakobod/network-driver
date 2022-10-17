@@ -4,6 +4,7 @@
  */
 
 #include "net/socket_manager.hpp"
+#include "net/event_result.hpp"
 #include "net/multiplexer.hpp"
 #include "net/stream_socket.hpp"
 

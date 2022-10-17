@@ -6,6 +6,7 @@
 #include "net/ip/v4_address.hpp"
 
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 
 #include "net_test.hpp"
 
@@ -55,17 +56,17 @@ TEST(v4_address_test, toString) {
 TEST(v4_address_test, parse) {
   {
     auto maybe_addr = parse_v4_address("0.0.0.0");
-    ASSERT_EQ(nullptr, get_error(maybe_addr));
+    ASSERT_EQ(nullptr, util::get_error(maybe_addr));
     ASSERT_EQ(any_address, std::get<v4_address>(maybe_addr));
   }
   {
     auto maybe_addr = parse_v4_address("127.0.0.1");
-    ASSERT_EQ(nullptr, get_error(maybe_addr));
+    ASSERT_EQ(nullptr, util::get_error(maybe_addr));
     ASSERT_EQ(localhost_address, std::get<v4_address>(maybe_addr));
   }
   {
     auto maybe_addr = parse_v4_address("255.255.255.255");
-    ASSERT_EQ(nullptr, get_error(maybe_addr));
+    ASSERT_EQ(nullptr, util::get_error(maybe_addr));
     ASSERT_EQ(broadcast_address, std::get<v4_address>(maybe_addr));
   }
 }

@@ -7,7 +7,6 @@
 
 #include "net/fwd.hpp"
 
-#include "net/event_result.hpp"
 #include "net/operation.hpp"
 #include "net/socket.hpp"
 
@@ -44,9 +43,7 @@ public:
   // -- properties -------------------------------------------------------------
 
   /// Returns a ptr to the multiplexer
-  multiplexer* mpx() const noexcept {
-    return mpx_;
-  }
+  multiplexer* mpx() const noexcept { return mpx_; }
 
   /// Returns the handle.
   template <class Socket = socket>
@@ -55,9 +52,7 @@ public:
   }
 
   /// Returns registered operations (read, write, or both).
-  operation mask() const noexcept {
-    return mask_;
-  }
+  operation mask() const noexcept { return mask_; }
 
   /// Sets the event mask to the given flag(s).
   void mask_set(operation flag) noexcept;
@@ -68,8 +63,7 @@ public:
   /// Tries to clear given flag(s) from the event mask.
   bool mask_del(operation flag) noexcept;
 
-  // -- event loop management
-  // --------------------------------------------------
+  // -- event loop management --------------------------------------------------
 
   /// Registers this socket_manager for read-events at the multiplexer
   void register_reading();
@@ -83,8 +77,7 @@ public:
   /// Sets a timeout at timepoint `point` with the id `timeout_id`
   uint64_t set_timeout_at(std::chrono::system_clock::time_point point);
 
-  // -- event handling
-  // ---------------------------------------------------------
+  // -- event handling ---------------------------------------------------------
 
   /// Handles a read-event
   virtual event_result handle_read_event() = 0;

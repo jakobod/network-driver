@@ -5,11 +5,9 @@
 
 #pragma once
 
-#include "net/fwd.hpp"
-
 #include "util/byte_array.hpp"
 
-#include <cstddef>
+#include <cstdint>
 
 namespace net {
 

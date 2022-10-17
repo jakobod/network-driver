@@ -6,41 +6,42 @@
 #pragma once
 
 #include "net/fwd.hpp"
-#include "net/ip/fwd.hpp"
-#include "util/fwd.hpp"
-
 #include "net/socket_id.hpp"
 
-#include <sys/socket.h>
+#include "util/fwd.hpp"
 
 namespace net {
 
+/// base class of the typed socket abstraction.
 struct socket {
+  /// Default constructs a socket object
   constexpr socket() noexcept : id(invalid_socket_id) {
     // nop
   }
 
+  /// Constructs a socket object from a socekt_id
   constexpr explicit socket(socket_id id) noexcept : id(id) {
     // nop
   }
 
+  /// Copy constructor
   constexpr socket(const socket& other) noexcept = default;
 
+  /// Copy assignment operator
   socket& operator=(const socket& other) noexcept = default;
 
-  bool operator==(const socket other) const {
-    return id == other.id;
-  }
+  /// Comparison operator for equality of two sockets
+  bool operator==(const socket other) const { return id == other.id; }
 
-  bool operator!=(const socket other) const {
-    return id != other.id;
-  }
+  /// Comparison operator for inequality of two sockets
+  bool operator!=(const socket other) const { return id != other.id; }
 
-  socket_id id = invalid_socket_id;
+  /// contained socket_id of the socket
+  socket_id id{invalid_socket_id};
 };
 
 /// Denotes the invalid socket.
-constexpr auto invalid_socket = socket{invalid_socket_id};
+constexpr socket invalid_socket{invalid_socket_id};
 
 /// Converts between different socket types.
 template <class To, class From>

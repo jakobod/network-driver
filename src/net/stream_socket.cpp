@@ -5,10 +5,10 @@
 
 #include "net/stream_socket.hpp"
 
-#include "util/error_or.hpp"
+#include <util/error.hpp>
 
+#include <array>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <utility>
 
 namespace net {
@@ -27,14 +27,6 @@ bool keepalive(stream_socket x, bool new_value) {
   int value = new_value ? 1 : 0;
   auto res = setsockopt(x.id, SOL_SOCKET, SO_KEEPALIVE, &value,
                         static_cast<unsigned>(sizeof(value)));
-  return res == 0;
-}
-
-bool nodelay(stream_socket x, bool new_value) {
-  int flag = new_value ? 1 : 0;
-  auto res = setsockopt(x.id, IPPROTO_TCP, TCP_NODELAY,
-                        reinterpret_cast<const void*>(&flag),
-                        static_cast<int>(sizeof(flag)));
   return res == 0;
 }
 

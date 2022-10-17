@@ -4,8 +4,10 @@
  */
 
 #include "net/operation.hpp"
+#include "util/format.hpp"
 
-#include <sstream>
+#include <string>
+#include <vector>
 
 namespace net {
 
@@ -14,15 +16,13 @@ std::string to_string(operation op) {
     return (mask & what) == what;
   };
   if (op == operation::none)
-    return "none";
-  std::stringstream ss;
-  ss << "operation::[";
+    return "operation::[none]";
+  std::vector<std::string> parts;
   if (contains(op, operation::read))
-    ss << "read|";
+    parts.emplace_back("read");
   if (contains(op, operation::write))
-    ss << "write|";
-  ss << "]";
-  return ss.str();
+    parts.emplace_back("write");
+  return util::format("operation::[{0}]", util::join(parts, '|'));
 }
 
 } // namespace net

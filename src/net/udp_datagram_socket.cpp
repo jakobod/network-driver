@@ -5,17 +5,19 @@
 
 #include "net/udp_datagram_socket.hpp"
 
+#include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
-
 #include "net/socket_guard.hpp"
-#include "net/socket_sys_includes.hpp"
 
+#include "util/error.hpp"
 #include "util/error_or.hpp"
 
-namespace net {
+#include <netinet/in.h>
+#include <utility>
 
-using ip::v4_address;
-using ip::v4_endpoint;
+using namespace net::ip;
+
+namespace net {
 
 constexpr const int no_sigpipe_io_flag = MSG_NOSIGNAL;
 
@@ -29,16 +31,16 @@ make_udp_datagram_socket(std::uint16_t port) {
   if (auto err = bind(sock, v4_endpoint{v4_address::any, htons(port)}))
     return err;
   auto res = net::port_of(*guard);
-  if (auto err = get_error(res))
+  if (auto err = util::get_error(res))
     return *err;
   return std::make_pair(guard.release(), std::get<uint16_t>(res));
 }
 
 ptrdiff_t write(udp_datagram_socket x, v4_endpoint ep,
                 util::const_byte_span buf) {
-  auto dest = ip::to_sockaddr_in(ep);
+  const auto dest = to_sockaddr_in(ep);
   return sendto(x.id, reinterpret_cast<const void*>(buf.data()), buf.size(),
-                no_sigpipe_io_flag, reinterpret_cast<sockaddr*>(&dest),
+                no_sigpipe_io_flag, reinterpret_cast<const sockaddr*>(&dest),
                 sizeof(sockaddr_in));
 }
 

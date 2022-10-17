@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include <chrono>
-#include <cstddef>
-
 #include "net/socket_id.hpp"
+
+#include <chrono>
+#include <cstdint>
 
 namespace net {
 

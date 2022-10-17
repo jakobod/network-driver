@@ -9,7 +9,7 @@
 
 #include "meta/concepts.hpp"
 
-#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <span>
 #include <string>

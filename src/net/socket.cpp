@@ -1,19 +1,17 @@
 /**
  *  @author Jakob Otto
  *  @email jakob.otto@haw-hamburg.de
- *  @date 04.03.2021
  */
 
 #include "net/socket.hpp"
+
 #include "net/ip/v4_endpoint.hpp"
-#include "net/socket_sys_includes.hpp"
 
 #include "util/error.hpp"
-#include "util/format.hpp"
 
-#include <cstring>
-#include <iostream>
-#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
 namespace net {
 
@@ -28,12 +26,12 @@ void shutdown(socket hdl, int how) {
 }
 
 util::error bind(socket sock, ip::v4_endpoint ep) {
-  auto addr = ip::to_sockaddr_in(ep);
-  if ((::bind(sock.id, reinterpret_cast<sockaddr*>(&addr), sizeof(sockaddr_in)))
+  const auto sin = ip::to_sockaddr_in(ep);
+  if (::bind(sock.id, reinterpret_cast<const sockaddr*>(&sin),
+             sizeof(sockaddr_in))
       != 0)
     return {util::error_code::socket_operation_failed,
-            util::format("Failed to bind socket: {0}",
-                         last_socket_error_as_string())};
+            "Failed to bind socket: {0}", last_socket_error_as_string()};
   return util::none;
 }
 
@@ -55,7 +53,6 @@ std::string last_socket_error_as_string() {
 }
 
 bool nonblocking(socket hdl, bool new_value) {
-  // read flags for x
   auto flags = fcntl(hdl.id, F_GETFL, 0);
   if (flags == -1)
     return false;
@@ -64,8 +61,8 @@ bool nonblocking(socket hdl, bool new_value) {
 }
 
 util::error_or<uint16_t> port_of(socket x) {
-  struct sockaddr_in sin;
-  socklen_t len = sizeof(sin);
+  sockaddr_in sin = {};
+  socklen_t len = sizeof(sockaddr_in);
   if (getsockname(x.id, reinterpret_cast<sockaddr*>(&sin), &len) == -1)
     return util::error(util::error_code::socket_operation_failed,
                        last_socket_error_as_string());

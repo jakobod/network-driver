@@ -7,6 +7,8 @@
 
 #include "net/ip/fwd.hpp"
 
+#include "meta/concepts.hpp"
+
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -18,11 +20,12 @@ namespace net {
 // -- classes ------------------------------------------------------------------
 
 class acceptor;
-class multiplexer;
 class multiplexer_impl;
+class multiplexer;
 class pollset_updater;
-class socket_manager;
 class socket_manager_factory;
+class socket_manager;
+class uri;
 
 // -- structs ------------------------------------------------------------------
 
@@ -34,29 +37,27 @@ struct raw_socket;
 struct receive_policy;
 struct socket;
 struct stream_socket;
-struct tcp_stream_socket;
 struct tcp_accept_socket;
+struct tcp_stream_socket;
 struct timeout_entry;
 
 // -- enums --------------------------------------------------------------------
 
-enum class event_result : uint8_t;
-enum class operation : uint32_t;
+enum class event_result : std::uint8_t;
+enum class operation : std::uint32_t;
 
-// -- pair types ---------------------------------------------------------------
+// -- type aliases -------------------------------------------------------------
 
-using acceptor_pair = std::pair<tcp_accept_socket, uint16_t>;
+using acceptor_pair = std::pair<tcp_accept_socket, std::uint16_t>;
 using datagram_socket_pair = std::pair<datagram_socket, datagram_socket>;
-
-// -- pointer types ------------------------------------------------------------
-
+using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
 using multiplexer_ptr = std::shared_ptr<multiplexer>;
-using socket_manager_ptr = std::shared_ptr<socket_manager>;
 using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
+using socket_manager_ptr = std::shared_ptr<socket_manager>;
 
 // -- template types -----------------------------------------------------------
 
-template <class Socket>
+template <meta::derived_from<socket> Socket>
 class socket_guard;
 template <class NextLayer>
 class transport_adaptor;

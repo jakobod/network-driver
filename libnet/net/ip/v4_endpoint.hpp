@@ -11,6 +11,7 @@
 
 #include <cstddef>
 #include <netinet/ip.h>
+#include <string>
 
 namespace net::ip {
 
@@ -36,17 +37,15 @@ public:
 
   // -- Members ----------------------------------------------------------------
 
-  constexpr const v4_address& address() const noexcept {
-    return address_;
-  }
+  /// Returns the contained v4 address
+  constexpr const v4_address& address() const noexcept { return address_; }
 
-  constexpr std::uint16_t port() const noexcept {
-    return port_;
-  }
+  /// Returns the contained port
+  constexpr std::uint16_t port() const noexcept { return port_; }
 
 private:
   const v4_address address_;
-  const std::uint16_t port_ = 0;
+  const std::uint16_t port_{0};
 };
 
 bool operator==(const v4_endpoint& lhs, const v4_endpoint& rhs);

@@ -5,8 +5,8 @@
 
 #include "net/pipe_socket.hpp"
 
+#include "util/error.hpp"
 #include "util/error_or.hpp"
-#include "util/format.hpp"
 
 #include <unistd.h>
 
@@ -16,8 +16,7 @@ util::error_or<pipe_socket_pair> make_pipe() {
   std::array<socket_id, 2> pipefds;
   if (pipe(pipefds.data()) != 0)
     return util::error(util::error_code::socket_operation_failed,
-                       util::format("make_pipe: {0}",
-                                    last_socket_error_as_string()));
+                       "make_pipe: {0}", last_socket_error_as_string());
   return std::make_pair(pipe_socket{pipefds[0]}, pipe_socket{pipefds[1]});
 }
 
