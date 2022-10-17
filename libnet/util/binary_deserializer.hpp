@@ -7,7 +7,7 @@
 
 #include "net/fwd.hpp"
 
-#include "meta/type_traits.hpp"
+#include "meta/concepts.hpp"
 
 #include "util/byte_span.hpp"
 
@@ -29,8 +29,7 @@ public:
   }
 
 private:
-  template <class T,
-            std::enable_if_t<meta::is_trivially_serializable_v<T>>* = nullptr>
+  template <meta::trivially_serializable T>
   void deserialize(T& val) {
     if (bytes_.size() < sizeof(T))
       throw std::runtime_error("Not enough bytes to deserialize T");
@@ -53,16 +52,16 @@ private:
     (deserialize(std::get<Ts>(t)), ...);
   }
 
-  template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
+  template <meta::visitable T>
   void deserialize(T& t) {
     t.visit(*this);
   }
 
-  template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>
+  template <meta::container T>
   void deserialize(T& container) {
     std::size_t size;
     deserialize(size);
-    if constexpr (meta::has_resize_member_v<T>)
+    if constexpr (meta::resizable<T>)
       container.resize(size);
     if (container.size() < size)
       throw std::runtime_error("Container does not have enough free space");
@@ -72,8 +71,7 @@ private:
   // -- range deserialize functions --------------------------------------------
 
   // Serializes integral types
-  template <class T,
-            std::enable_if_t<meta::is_trivially_serializable_v<T>>* = nullptr>
+  template <meta::trivially_serializable T>
   void deserialize(T* ptr, std::size_t size) {
     const auto num_bytes = size * sizeof(T);
     if (bytes_.size() < num_bytes)
@@ -83,11 +81,9 @@ private:
   }
 
   // Serializes visitable types
-  template <class T,
-            std::enable_if_t<!meta::is_trivially_serializable_v<T>>* = nullptr>
+  template <meta::not_trivially_serializable T>
   void deserialize(T* ptr, std::size_t size) {
-    for (auto& val : make_span(ptr, size))
-      deserialize(val);
+    for (auto& val : make_span(ptr, size)) deserialize(val);
   }
 
   const_byte_span bytes_;

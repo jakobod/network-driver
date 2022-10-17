@@ -9,7 +9,7 @@
 
 #include "util/serialized_size.hpp"
 
-#include "meta/type_traits.hpp"
+#include "meta/concepts.hpp"
 
 #include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
@@ -22,7 +22,7 @@ namespace util {
 
 class binary_serializer {
 public:
-  explicit binary_serializer(byte_buffer& buf);
+  explicit binary_serializer(util::byte_buffer& buf);
 
   template <class... Ts>
   void operator()(const Ts&... ts) {
@@ -33,8 +33,7 @@ public:
 private:
   void realloc(std::size_t required_free_space);
 
-  template <class T,
-            std::enable_if_t<meta::is_trivially_serializable_v<T>>* = nullptr>
+  template <meta::trivially_serializable T>
   void serialize(const T& i) {
     std::memcpy(free_space_.data(), &i, sizeof(T));
     free_space_ = free_space_.subspan(sizeof(T));
@@ -55,7 +54,7 @@ private:
     (serialize(std::get<Ts>(t)), ...);
   }
 
-  template <class T, std::enable_if_t<meta::is_visitable_v<T>>* = nullptr>
+  template <meta::visitable T>
   void serialize(const T& what) {
     const_cast<T&>(what).visit(*this);
   }
@@ -65,7 +64,7 @@ private:
     serialize(arr, Size);
   }
 
-  template <class T, std::enable_if_t<meta::is_container_v<T>>* = nullptr>
+  template <meta::container T>
   void serialize(const T& container) {
     serialize(container.data(), container.size());
   }
@@ -73,8 +72,7 @@ private:
   // -- range serialize functions ----------------------------------------------
 
   // Serializes integral types
-  template <class T,
-            std::enable_if_t<meta::is_trivially_serializable_v<T>>* = nullptr>
+  template <meta::trivially_serializable T>
   void serialize(const T* ptr, std::size_t size) {
     serialize(size);
     const auto num_bytes = size * sizeof(T);
@@ -83,12 +81,10 @@ private:
   }
 
   // Serializes visitable types
-  template <class T,
-            std::enable_if_t<!meta::is_trivially_serializable_v<T>>* = nullptr>
+  template <meta::not_trivially_serializable T>
   void serialize(const T* ptr, std::size_t size) {
     serialize(size);
-    for (const auto& val : make_span(ptr, size))
-      serialize(val);
+    for (const auto& val : make_span(ptr, size)) serialize(val);
   }
 
   byte_buffer& buf_;
