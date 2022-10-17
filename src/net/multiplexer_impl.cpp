@@ -127,34 +127,35 @@ void multiplexer_impl::handle_error(const util::error& err) {
 
 // -- Timeout management -------------------------------------------------------
 
-uint64_t multiplexer_impl::set_timeout(
-  [[maybe_unused]] socket_manager& mgr,
-  [[maybe_unused]] std::chrono::system_clock::time_point when) {
-  // timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
-  // current_timeout_ = (current_timeout_ != std::nullopt)
-  //                      ? std::min(when, *current_timeout_)
-  //                      : when;
-  // return current_timeout_id_++;
-  return 0;
+uint64_t
+multiplexer_impl::set_timeout(socket_manager& mgr,
+                              std::chrono::system_clock::time_point when) {
+  timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
+  current_timeout_ = (current_timeout_ != std::nullopt)
+                       ? std::min(when, *current_timeout_)
+                       : when;
+  return current_timeout_id_++;
 }
 
 void multiplexer_impl::handle_timeouts() {
-  // auto now = time_point_cast<milliseconds>(system_clock::now());
-  // for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
-  //   auto& entry = *it;
-  //   auto when = time_point_cast<milliseconds>(entry.when_);
-  //   if (when <= now) {
-  //     // Registered timeout has expired
-  //     managers_.at(entry.handle_)->handle_timeout(entry.id_);
-  //   } else {
-  //     // Timeout not expired, delete handled entries and set the current
-  //     timeout timeouts_.erase(timeouts_.begin(), it); if (timeouts_.empty())
-  //       current_timeout_ = std::nullopt; // No timeout
-  //     else
-  //       current_timeout_ = entry.when_;
-  //     break;
-  //   }
-  // }
+  using namespace std::chrono;
+  const auto now = time_point_cast<milliseconds>(system_clock::now());
+  for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
+    const auto& entry = *it;
+    const auto when = time_point_cast<milliseconds>(entry.when_);
+    if (when <= now) {
+      // Registered timeout has expired
+      managers_.at(entry.handle_)->handle_timeout(entry.id_);
+    } else {
+      // Timeout not expired, delete handled entries and set the current timeout
+      timeouts_.erase(timeouts_.begin(), it);
+      if (timeouts_.empty())
+        current_timeout_ = std::nullopt;
+      else
+        current_timeout_ = entry.when_;
+      break;
+    }
+  }
 }
 
 util::error_or<multiplexer_ptr>
@@ -385,12 +386,21 @@ void multiplexer_impl::mod(int fd, int op, operation events) {
   }
 }
 
-util::error multiplexer_impl::poll_once([[maybe_unused]] bool blocking) {
-  // Poll for events on the reqistered sockets
-  static constexpr const timespec nonblocking{0, 0};
+util::error multiplexer_impl::poll_once(bool blocking) {
+  using namespace std::chrono;
+  // Calculates the timeout value for the kqueue call
+  auto calculate_timeout = [this, blocking]() -> timespec {
+    if (!blocking || !current_timeout_)
+      return {0, 0};
+    const auto now = time_point_cast<milliseconds>(system_clock::now());
+    const auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
+    const auto diff_ms = (timeout_tp - now).count();
+    return {(diff_ms / 1000), ((diff_ms % 1000) * 1000000)};
+  };
+  const auto timeout = calculate_timeout();
   const int num_events = kevent(mpx_fd_, nullptr, 0, pollset_.data(),
                                 static_cast<int>(pollset_.size()),
-                                (blocking ? nullptr : &nonblocking));
+                                (!current_timeout_ ? nullptr : &timeout));
   // Check for errors
   if (num_events < 0) {
     return (errno == EINTR) ? util::none
