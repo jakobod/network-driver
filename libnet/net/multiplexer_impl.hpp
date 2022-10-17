@@ -139,7 +139,7 @@ private:
   // timeout handling
   timeout_entry_set timeouts_;
   optional_timepoint current_timeout_{std::nullopt};
-  // std::uint64_t current_timeout_id_{0};
+  std::uint64_t current_timeout_id_{0};
 
   // thread variables
   bool shutting_down_{false};
