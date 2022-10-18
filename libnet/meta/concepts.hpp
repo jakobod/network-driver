@@ -29,6 +29,14 @@ concept enumeration = std::is_enum_v<T>;
 template <class Base, class T>
 concept derived_from = std::is_base_of_v<T, Base>;
 
+/// Constraints a template to `T`s derived from `Base`
+template <class T, class U>
+concept same_as = std::is_same_v<T, U>;
+
+/// Constraints a template to `T`s derived from `Base`
+template <class T, class U>
+concept derived_or_same_as = derived_from<U, T> || same_as<T, U>;
+
 // -- compositions of constraints ----------------------------------------------
 
 // Concept that requires types that are trivially serializable

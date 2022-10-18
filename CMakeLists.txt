@@ -83,6 +83,15 @@ target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
 file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
 
+# -- logging configuration -----------------------------------------------------
+
+if(LIB_NET_ENABLE_LOGGING)
+  message(STATUS "Logging enabled")
+  add_compile_definitions(NET_ENABLE_LOGGING)
+else()
+  message(STATUS "Logging disabled")
+endif()
+
 # -- main for playing with things ----------------------------------------------
 
 macro(add_target name)
@@ -103,6 +112,8 @@ if (LIB_NET_ENABLE_TESTS)
     lib_net_test
     test/net/acceptor.cpp
     test/net/datagram_socket.cpp
+    test/net/ip/v4_address.cpp
+    test/net/ip/v4_endpoint.cpp
     test/net/multiplexer_impl.cpp
     test/net/socket_guard.cpp
     test/net/socket_manager.cpp
@@ -112,12 +123,11 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    test/net/ip/v4_address.cpp
-    test/net/ip/v4_endpoint.cpp
     test/openssl/communication.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/format.cpp
+    test/util/logger.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
   )
