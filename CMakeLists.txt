@@ -127,7 +127,6 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/format.cpp
-    test/util/logger.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
   )
