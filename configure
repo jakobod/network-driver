@@ -28,13 +28,26 @@ set_build_flag() {
   FlagName=''
   case "$1" in
     testing)                 FlagName='LIB_NET_ENABLE_TESTS' ;;
-    logging)                 FlagName='LIB_NET_ENABLE_LOGGING' ;;
+    logging)                 append_cache_entry 'LIB_NET_ENABLE_TESTS' STRING 'DEBUG';;
     *)
       echo "Invalid flag '$1'.  Try $0 --help to see available options."
       exit 1
       ;;
   esac
   append_cache_entry $FlagName BOOL $2
+}
+
+set_log_level() {
+  case "$1" in
+    debug)                 append_cache_entry 'LIB_NET_LOG_LEVEL' STRING 'debug';;
+    info)                  append_cache_entry 'LIB_NET_LOG_LEVEL' STRING 'info';;
+    warning)               append_cache_entry 'LIB_NET_LOG_LEVEL' STRING 'warning';;
+    error)                 append_cache_entry 'LIB_NET_LOG_LEVEL' STRING 'error';;
+    *)
+      echo "Invalid log level '$1'.  Try $0 --help to see available options."
+      exit 1
+      ;;
+  esac
 }
 
 # Set defaults.
@@ -64,8 +77,8 @@ while [ $# -ne 0 ]; do
     --openssl-root-dir=*)
       append_cache_entry OPENSSL_ROOT_DIR PATH "$optarg"
       ;;
-    --openssl-root-dir=*)
-      append_cache_entry LIB_NET_ENABLE_LOGGING PATH "$optarg"
+    --log-level=*)
+      set_log_level "$optarg"
       ;;
     *)
       echo "Invalid option '$1'. Try $0 --help to see available options."

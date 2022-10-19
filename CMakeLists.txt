@@ -85,9 +85,9 @@ add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
 
 # -- logging configuration -----------------------------------------------------
 
-if(LIB_NET_ENABLE_LOGGING)
-  message(STATUS "Logging enabled")
-  add_compile_definitions(NET_ENABLE_LOGGING)
+if(LIB_NET_LOG_LEVEL)
+  message(STATUS "Logging enabled: ${LIB_NET_LOG_LEVEL}")
+  add_compile_definitions(NET_LOG_LEVEL=${LIB_NET_LOG_LEVEL})
 else()
   message(STATUS "Logging disabled")
 endif()

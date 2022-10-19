@@ -5,7 +5,7 @@
 
 #pragma once
 
-#if defined(NET_ENABLE_LOGGING)
+#if defined(NET_LOG_LEVEL)
 
 #  include "meta/concepts.hpp"
 
@@ -31,26 +31,7 @@ public:
   struct warning : public info {};
   struct error : public warning {};
 
-  template <meta::derived_from<log_level> Level, class... Ts>
-  static void
-  log(const std::string& file_name, const std::size_t line, const Ts&... ts) {
-    const std::string location = file_name + ":" + std::to_string(line);
-    if constexpr (meta::same_as<Level, debug>) {
-      log_debug(location, ts...);
-    } else if constexpr (meta::same_as<Level, info>) {
-      log_info(location, ts...);
-    } else if constexpr (meta::same_as<Level, warning>) {
-      log_warning(location, ts...);
-    } else if constexpr (meta::same_as<Level, error>) {
-      log_error(location, ts...);
-    }
-  }
-
-private:
-  template <class... Ts>
-  static void log_line(const Ts&... ts) {
-    (std::cout << ... << ts) << std::endl;
-  }
+  using configured_log_level = NET_LOG_LEVEL;
 
   template <class... Ts>
   static void log_debug(const std::string& location, const Ts&... ts) {
@@ -75,21 +56,39 @@ private:
     log_line(error_formatting, "[Error]   ", location, " - ", reset_bold, ts...,
              reset_formatting);
   }
+
+private:
+  template <class... Ts>
+  static void log_line(const Ts&... ts) {
+    (std::cout << ... << ts) << std::endl;
+  }
 };
 
 } // namespace util
 
 #  define LOG_DEBUG(...)                                                       \
-    util::logger::log<util::logger::debug>(__FILE__, __LINE__, __VA_ARGS__);
+    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
+                                           util::logger::debug>)               \
+      util::logger::log_debug(                                                 \
+        std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__);
 
 #  define LOG_INFO(...)                                                        \
-    util::logger::log<util::logger::info>(__FILE__, __LINE__, __VA_ARGS__);
+    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
+                                           util::logger::info>)                \
+      util::logger::log_info(                                                  \
+        std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__);
 
 #  define LOG_WARNING(...)                                                     \
-    util::logger::log<util::logger::warning>(__FILE__, __LINE__, __VA_ARGS__);
+    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
+                                           util::logger::warning>)             \
+      util::logger::log_warning(                                               \
+        std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__);
 
 #  define LOG_ERROR(...)                                                       \
-    util::logger::log<util::logger::error>(__FILE__, __LINE__, __VA_ARGS__);
+    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
+                                           util::logger::error>)               \
+      util::logger::log_error(                                                 \
+        std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__);
 
 #else
 
