@@ -8,6 +8,7 @@
 #include "net_test.hpp"
 
 #include <algorithm>
+#include <array>
 
 TEST(format_test, replace_single_string) {
   const auto res = util::format("Hello {0}", "World");

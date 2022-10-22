@@ -16,6 +16,7 @@
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 #include "util/format.hpp"
+#include "util/logger.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -33,8 +34,10 @@ multiplexer_impl::~multiplexer_impl() {
 util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
                                    uint16_t port, bool local) {
 #if defined(EPOLL_MPX)
+  LOG_DEBUG("initializing epoll multiplexer");
   mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
 #elif defined(KQUEUE_MPX)
+  LOG_DEBUG("initializing kqueue multiplexer");
   mpx_fd_ = kqueue();
 #endif
   if (mpx_fd_ < 0)

@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <cstdint>
+#include <string>
 #include <type_traits>
 
 namespace meta {
