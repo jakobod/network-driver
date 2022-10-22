@@ -3,10 +3,7 @@
 
 int main(int argc, char** argv) {
   // Disables logging alltogether
-  if (auto err = util::logger::init({false, ""})) {
-    MESSAGE() << "Could not configure logging" << std::endl;
-    std::terminate();
-  }
+  LOG_INIT(false, "");
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

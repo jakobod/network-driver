@@ -5,10 +5,17 @@
 
 #pragma once
 
-#if defined(NET_LOG_LEVEL)
+#define NET_LOG_LEVEL_NONE (0)
+#define NET_LOG_LEVEL_ERROR (1)
+#define NET_LOG_LEVEL_WARNING (2)
+#define NET_LOG_LEVEL_DEBUG (3)
+#define NET_LOG_LEVEL_TRACE (4)
+
+#if NET_LOG_LEVEL > NET_LOG_LEVEL_NONE
 
 #  include "meta/concepts.hpp"
 #  include "util/error.hpp"
+#  include "util/scope_guard.hpp"
 
 #  include <fstream>
 #  include <iostream>
@@ -22,81 +29,43 @@ class logger {
   /// Escape sequences for formatting the logging output
   static constexpr const std::string_view reset_formatting{"\033[0m"};
   static constexpr const std::string_view reset_bold{"\033[22m"};
-  static constexpr const std::string_view debug_formatting{"\033[1m"};
-  static constexpr const std::string_view info_formatting{"\033[1;32m"};
+  static constexpr const std::string_view trace_formatting{"\033[1;34m"};
+  static constexpr const std::string_view debug_formatting{"\033[1;32m"};
   static constexpr const std::string_view warning_formatting{"\033[1;33m"};
   static constexpr const std::string_view error_formatting{"\033[1;31m"};
 
-  struct log_level {};
-
 public:
-  struct debug : public log_level {};
-  struct info : public debug {};
-  struct warning : public info {};
-  struct error : public warning {};
-
-  using configured_log_level = NET_LOG_LEVEL;
-
-  struct config {
-    bool terminal_logging{true};
-    std::string log_file_name;
-  };
-
   static logger& instance() {
     static logger instance;
     return instance;
   }
 
-  static util::error init(const config& cfg) {
+  static void init(const bool terminal_logging,
+                   const std::string_view log_file_path) {
     auto& inst = instance();
-    if (!cfg.log_file_name.empty()) {
-      inst.log_file_.open(cfg.log_file_name);
-      if (!inst.log_file_.is_open())
-        return {error_code::runtime_error,
-                "Could not open log file with name: {0}", cfg.log_file_name};
-    }
-    inst.terminal_logging_ = cfg.terminal_logging;
-    return none;
+    if (!log_file_path.empty())
+      inst.log_file_.open(log_file_path);
+    inst.terminal_logging_ = terminal_logging;
   }
 
   template <class... Ts>
-  void log_debug(std::string_view location, const Ts&... ts) {
-    if (terminal_logging_)
-      std::cout << concatenate(debug_formatting, "[  Debug   ] ", location,
-                               " - ", reset_bold, ts..., reset_formatting,
-                               '\n');
-    if (log_file_.is_open())
-      log_file_ << concatenate("[  Debug   ] ", location, " - ", ts..., '\n');
+  void log_trace(std::string_view func_name, const Ts&... ts) {
+    log(trace_formatting, "[TRACE]", func_name, ts...);
   }
 
   template <class... Ts>
-  void log_info(std::string_view location, const Ts&... ts) {
-    if (terminal_logging_)
-      std::cout << concatenate(info_formatting, "[   Info   ] ", location,
-                               " - ", reset_bold, ts..., reset_formatting,
-                               '\n');
-    if (log_file_.is_open())
-      log_file_ << concatenate("[   Info   ] ", location, " - ", ts..., '\n');
+  void log_debug(std::string_view func_name, const Ts&... ts) {
+    log(debug_formatting, "[DEBUG]", func_name, ts...);
   }
 
   template <class... Ts>
-  void log_warning(std::string_view location, const Ts&... ts) {
-    if (terminal_logging_)
-      std::cout << concatenate(warning_formatting, "[ Warning  ] ", location,
-                               " - ", reset_bold, ts..., reset_formatting,
-                               '\n');
-    if (log_file_.is_open())
-      log_file_ << concatenate("[ Warning  ] ", location, " - ", ts..., '\n');
+  void log_warning(std::string_view func_name, const Ts&... ts) {
+    log(warning_formatting, "[WARNING]", func_name, ts...);
   }
 
   template <class... Ts>
-  void log_error(std::string_view location, const Ts&... ts) {
-    if (terminal_logging_)
-      std::cout << concatenate(error_formatting, "[  Error   ] ", location,
-                               " - ", reset_bold, ts..., reset_formatting,
-                               '\n');
-    if (log_file_.is_open())
-      log_file_ << concatenate("[  Error   ] ", location, " - ", ts..., '\n');
+  void log_error(std::string_view func_name, const Ts&... ts) {
+    log(error_formatting, "[ERROR]", func_name, ts...);
   }
 
 private:
@@ -111,48 +80,73 @@ private:
     return ss.str();
   }
 
+  template <class... Ts>
+  void log(std::string_view formatting, std::string_view level,
+           std::string_view func_name, const Ts&... ts) {
+    if (terminal_logging_)
+      std::cout << concatenate(formatting, level, " ", func_name, " - ",
+                               reset_bold, ts..., reset_formatting, '\n');
+    if (log_file_.is_open())
+      log_file_ << concatenate(level, " ", func_name, " - ", ts..., '\n');
+  }
+
   bool terminal_logging_{true};
   std::ofstream log_file_;
 };
 
 } // namespace util
 
-// utility macros for stringifying macro arguments
-#  define STRINGIFY(x) STRINGIFY2(x)
-#  define STRINGIFY2(x) #x
+/// Macro for initializing the logger
+#  define LOG_INIT(terminal_logging, log_file_path)                            \
+    util::logger::init(terminal_logging, log_file_path)
 
-#  define LOG_DEBUG(...)                                                       \
-    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
-                                           util::logger::debug>)               \
-      util::logger::instance().log_debug(__FILE__ ":" STRINGIFY(__LINE__),     \
-                                         __VA_ARGS__);
+/// Macro for tracing runtime paths, prints entry and exit messages
+#  if NET_LOG_LEVEL >= NET_LOG_LEVEL_TRACE
+#    define LOG_TRACE()                                                        \
+      util::logger::instance().log_trace(__PRETTY_FUNCTION__, "Entry");        \
+      util::scope_guard guard{[func_name = __PRETTY_FUNCTION__] {              \
+        util::logger::instance().log_trace(func_name, "Exit");                 \
+      }};
+#  endif
 
-#  define LOG_INFO(...)                                                        \
-    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
-                                           util::logger::info>)                \
-      util::logger::instance().log_info(__FILE__ ":" STRINGIFY(__LINE__),      \
-                                        __VA_ARGS__);
+/// Macro for prints debug messages
+#  if NET_LOG_LEVEL >= NET_LOG_LEVEL_DEBUG
+#    define LOG_DEBUG(...)                                                     \
+      util::logger::instance().log_debug(__PRETTY_FUNCTION__, __VA_ARGS__)
+#  endif
 
-#  define LOG_WARNING(...)                                                     \
-    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
-                                           util::logger::warning>)             \
-      util::logger::instance().log_warning(__FILE__ ":" STRINGIFY(__LINE__),   \
-                                           __VA_ARGS__);
+/// Macro for prints warning messages
+#  if NET_LOG_LEVEL >= NET_LOG_LEVEL_WARNING
+#    define LOG_WARNING(...)                                                   \
+      util::logger::instance().log_warning(__PRETTY_FUNCTION__, __VA_ARGS__)
+#  endif
 
-#  define LOG_ERROR(...)                                                       \
-    if constexpr (meta::derived_or_same_as<util::logger::configured_log_level, \
-                                           util::logger::error>)               \
-      util::logger::instance().log_error(__FILE__ ":" STRINGIFY(__LINE__),     \
-                                         __VA_ARGS__);
+/// Macro for prints error messages
+#  if NET_LOG_LEVEL >= NET_LOG_LEVEL_ERROR
+#    define LOG_ERROR(...)                                                     \
+      util::logger::instance().log_error(__PRETTY_FUNCTION__, __VA_ARGS__)
+#  endif
 
-#else
+#endif
 
-#  define LOG_INFO(...)
+// -- Anything that has not been defined shall be default defined --------------
 
-#  define LOG_WARNING(...)
+#ifndef LOG_INIT
+#  define LOG_INIT(...)
+#endif
 
+#ifndef LOG_TRACE
+#  define LOG_TRACE(...)
+#endif
+
+#ifndef LOG_DEBUG
 #  define LOG_DEBUG(...)
+#endif
 
+#ifndef LOG_WARNING
+#  define LOG_WARNING(...)
+#endif
+
+#ifndef LOG_ERROR
 #  define LOG_ERROR(...)
-
 #endif
