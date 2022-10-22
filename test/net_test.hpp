@@ -28,7 +28,3 @@
     if (auto err = (expr))                                                     \
       FAIL() << #expr << " returned an error: " << err << std::endl;           \
   } while (false)
-
-// -- Stop logger from logging to console --------------------------------------
-
-#undef NET_LOG_LEVEL

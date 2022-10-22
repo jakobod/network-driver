@@ -110,6 +110,7 @@ if (LIB_NET_ENABLE_TESTS)
 
   add_executable(
     lib_net_test
+    test/net_test_main.cpp
     test/net/acceptor.cpp
     test/net/datagram_socket.cpp
     test/net/ip/v4_address.cpp
@@ -137,7 +138,7 @@ if (LIB_NET_ENABLE_TESTS)
   target_link_libraries(
     lib_net_test
     net
-    gtest_main
+    gtest
   )
 
   gtest_discover_tests(lib_net_test)
