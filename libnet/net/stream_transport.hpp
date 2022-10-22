@@ -14,6 +14,7 @@
 
 #include "util/error.hpp"
 #include "util/format.hpp"
+#include "util/logger.hpp"
 
 #include <utility>
 
@@ -26,10 +27,11 @@ public:
   template <class... Ts>
   stream_transport(stream_socket handle, multiplexer* mpx, Ts&&... xs)
     : transport(handle, mpx), next_layer_(*this, std::forward<Ts>(xs)...) {
-    // nop
+    LOG_DEBUG("Creating stream_transport with ", NET_ARG2("id", handle.id));
   }
 
   util::error init() override {
+    LOG_DEBUG("init stream_transport with ", NET_ARG2("socket", handle().id));
     if (!nonblocking(handle(), true))
       return {util::error_code::runtime_error,
               util::format("Failed to set nonblocking on sock={0}",
@@ -40,11 +42,15 @@ public:
   // -- socket_manager API -----------------------------------------------------
 
   event_result handle_read_event() override {
+    LOG_TRACE();
+    LOG_DEBUG("handle read_event on ", NET_ARG2("socket", handle().id));
     for (size_t i = 0; i < max_consecutive_reads; ++i) {
       auto data = read_buffer_.data() + received_;
       auto size = read_buffer_.size() - received_;
       auto read_res = read(handle<stream_socket>(), std::span(data, size));
       if (read_res > 0) {
+        LOG_DEBUG("Read ", read_res, " bytes from ",
+                  NET_ARG2("socket", handle().id));
         received_ += read_res;
         if (received_ >= min_read_size_) {
           if (next_layer_.consume(
@@ -70,6 +76,8 @@ public:
   }
 
   event_result handle_write_event() override {
+    LOG_TRACE();
+    LOG_DEBUG("handle write_event on ", NET_ARG2("socket", handle().id));
     auto done_writing = [&]() {
       return (write_buffer_.empty() && !next_layer_.has_more_data());
     };
@@ -85,6 +93,8 @@ public:
     for (size_t i = 0; i < max_consecutive_writes; ++i) {
       auto write_res = write(handle<stream_socket>(), write_buffer_);
       if (write_res > 0) {
+        LOG_DEBUG("Wrote ", write_res, " bytes to ",
+                  NET_ARG2("socket", handle().id));
         write_buffer_.erase(write_buffer_.begin(),
                             write_buffer_.begin() + write_res);
         if (write_buffer_.empty())
@@ -116,6 +126,9 @@ public:
     min_read_size_ = policy.min_size;
     if (read_buffer_.size() != policy.max_size)
       read_buffer_.resize(policy.max_size);
+    LOG_DEBUG("Configuring next read on ", NET_ARG2("socket", handle().id),
+              ": ", NET_ARG(min_read_size_), ", ",
+              NET_ARG2("max_read_size_", policy.max_size));
   }
 
 private:

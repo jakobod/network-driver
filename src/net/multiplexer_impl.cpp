@@ -28,11 +28,13 @@
 namespace net {
 
 multiplexer_impl::~multiplexer_impl() {
+  LOG_TRACE();
   ::close(mpx_fd_);
 }
 
 util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
                                    uint16_t port, bool local) {
+  LOG_TRACE();
 #if defined(EPOLL_MPX)
   LOG_DEBUG("initializing epoll multiplexer");
   mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
@@ -43,6 +45,7 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   if (mpx_fd_ < 0)
     return {util::error_code::runtime_error,
             "[multiplexer_impl]: Creating epoll fd failed"};
+  LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
   // Create pollset updater
   auto pipe_res = make_pipe();
   if (auto err = util::get_error(pipe_res))
@@ -65,6 +68,7 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
 }
 
 void multiplexer_impl::start() {
+  LOG_TRACE();
   if (!running_) {
     running_ = true;
     mpx_thread_ = std::thread(&multiplexer_impl::run, this);
@@ -73,7 +77,9 @@ void multiplexer_impl::start() {
 }
 
 void multiplexer_impl::shutdown() {
+  LOG_TRACE();
   if (std::this_thread::get_id() == mpx_thread_id_) {
+    LOG_DEBUG("multiplexer shutting down");
     auto it = managers_.begin();
     while (it != managers_.end()) {
       auto& mgr = it->second;
@@ -91,19 +97,23 @@ void multiplexer_impl::shutdown() {
     close(pipe_writer_);
     pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {
+    LOG_DEBUG("requesting multiplexer shutdown");
     std::byte code{pollset_updater::shutdown_code};
     auto res = write(pipe_writer_, util::byte_span(&code, 1));
     if (res != 1) {
-      std::cerr << "ERROR could not write to pipe: "
-                << last_socket_error_as_string() << std::endl;
-      exit(-1); // Can't be handled by shutting down, if shutdown fails.
+      LOG_ERROR("could not write shutdown code to pipe: ",
+                last_socket_error_as_string());
+      std::terminate(); // Can't be handled by shutting down, if shutdown fails.
     }
   }
 }
 
 void multiplexer_impl::join() {
-  if (mpx_thread_.joinable())
+  LOG_TRACE();
+  if (mpx_thread_.joinable()) {
+    LOG_DEBUG("joining on multiplexer thread");
     mpx_thread_.join();
+  }
 }
 
 bool multiplexer_impl::running() const {
@@ -115,6 +125,7 @@ void multiplexer_impl::set_thread_id() {
 }
 
 void multiplexer_impl::run() {
+  LOG_TRACE();
   while (running_) {
     if (poll_once(true))
       running_ = false;
@@ -123,8 +134,8 @@ void multiplexer_impl::run() {
 
 // -- Error handling -----------------------------------------------------------
 
-void multiplexer_impl::handle_error(const util::error& err) {
-  std::cerr << "ERROR: " << err << std::endl;
+void multiplexer_impl::handle_error([[maybe_unused]] const util::error& err) {
+  LOG_ERROR(err);
   shutdown();
 }
 
@@ -133,6 +144,9 @@ void multiplexer_impl::handle_error(const util::error& err) {
 uint64_t
 multiplexer_impl::set_timeout(socket_manager& mgr,
                               std::chrono::system_clock::time_point when) {
+  LOG_TRACE();
+  LOG_DEBUG("Setting timeout ", current_timeout_id_, " on ",
+            NET_ARG2("mgr", mgr.handle().id));
   timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
   current_timeout_ = (current_timeout_ != std::nullopt)
                        ? std::min(when, *current_timeout_)
@@ -142,6 +156,7 @@ multiplexer_impl::set_timeout(socket_manager& mgr,
 
 void multiplexer_impl::handle_timeouts() {
   using namespace std::chrono;
+  LOG_TRACE();
   const auto now = time_point_cast<milliseconds>(system_clock::now());
   for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
     const auto& entry = *it;
@@ -152,10 +167,13 @@ void multiplexer_impl::handle_timeouts() {
     } else {
       // Timeout not expired, delete handled entries and set the current timeout
       timeouts_.erase(timeouts_.begin(), it);
-      if (timeouts_.empty())
+      if (timeouts_.empty()) {
+        LOG_DEBUG("No further timeouts registered");
         current_timeout_ = std::nullopt;
-      else
+      } else {
+        LOG_DEBUG("Next timeout with ", NET_ARG2("id", entry.id_));
         current_timeout_ = entry.when_;
+      }
       break;
     }
   }
@@ -163,6 +181,7 @@ void multiplexer_impl::handle_timeouts() {
 
 util::error_or<multiplexer_ptr>
 make_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
+  LOG_TRACE();
   auto mpx = std::make_shared<multiplexer_impl>();
   if (auto err = mpx->init(std::move(factory), port))
     return err;
@@ -285,9 +304,8 @@ void multiplexer_impl::handle_events(event_span events) {
 
   for (auto& event : events) {
     if (event.events == (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
-      std::cerr << util::format("epoll_wait failed: socket = {0}: {1}",
-                                event.data.fd, util::last_error_as_string())
-                << std::endl;
+      LOG_ERROR("epoll_wait failed on socket = ", event.data.fd, ": ",
+                util::last_error_as_string());
       del(socket{event.data.fd});
       continue;
     } else {
@@ -309,6 +327,7 @@ void multiplexer_impl::handle_events(event_span events) {
 #elif defined(KQUEUE_MPX) // -- kqueue specific implementation -----------------
 
 void multiplexer_impl::add(socket_manager_ptr mgr, operation initial) {
+  LOG_TRACE();
   // Set nonblocking behavior on socket
   if (!nonblocking(mgr->handle(), true))
     handle_error(util::error(util::error_code::socket_operation_failed,
@@ -324,12 +343,20 @@ void multiplexer_impl::add(socket_manager_ptr mgr, operation initial) {
 }
 
 void multiplexer_impl::enable(socket_manager& mgr, operation op) {
+  LOG_TRACE();
+  LOG_DEBUG("Enabling mgr with ", NET_ARG2("id", mgr.handle().id),
+            " registered for ", NET_ARG2("mask", to_string(mgr.mask())),
+            " for ", NET_ARG2("new_event", to_string(op)));
   if (!mgr.mask_add(op))
     return;
   mod(mgr.handle().id, EV_ENABLE, mgr.mask());
 }
 
 void multiplexer_impl::disable(socket_manager& mgr, operation op, bool remove) {
+  LOG_TRACE();
+  LOG_DEBUG("Disabling mgr with ", NET_ARG2("id", mgr.handle().id),
+            " registered for ", NET_ARG2("mask", to_string(mgr.mask())),
+            " for ", NET_ARG2("event", to_string(op)));
   if (!mgr.mask_del(op))
     return;
   mod(mgr.handle().id, EV_DISABLE, op);
@@ -338,8 +365,9 @@ void multiplexer_impl::disable(socket_manager& mgr, operation op, bool remove) {
 }
 
 void multiplexer_impl::del(socket handle) {
-  const auto fd = handle.id;
-  mod(fd, EV_DELETE, operation::read_write);
+  LOG_TRACE();
+  LOG_DEBUG("Deleting mgr with ", NET_ARG2("id", handle.id));
+  mod(handle.id, EV_DELETE, operation::read_write);
   managers_.erase(handle.id);
   if (shutting_down_ && managers_.empty())
     running_ = false;
@@ -347,7 +375,9 @@ void multiplexer_impl::del(socket handle) {
 
 multiplexer_impl::manager_map::iterator
 multiplexer_impl::del(manager_map::iterator it) {
+  LOG_TRACE();
   auto fd = it->second->handle().id;
+  LOG_DEBUG("Deleting mgr with ", NET_ARG2("id", fd));
   mod(fd, EV_DELETE, operation::read_write);
   auto new_it = managers_.erase(it);
   if (shutting_down_ && managers_.empty())
@@ -356,6 +386,9 @@ multiplexer_impl::del(manager_map::iterator it) {
 }
 
 void multiplexer_impl::mod(int fd, int op, operation events) {
+  LOG_TRACE();
+  LOG_DEBUG("Modifying mgr with ", NET_ARG2("id", fd), ", ", NET_ARG(op),
+            ", for ", NET_ARG2("events", to_string(events)));
   static constexpr const auto to_kevent_filter
     = [](net::operation op) -> int16_t {
     switch (op) {
@@ -384,13 +417,14 @@ void multiplexer_impl::mod(int fd, int op, operation events) {
       if (net::last_socket_error() != ENOENT)
         handle_error(err);
       else
-        std::cerr << err << std::endl;
+        LOG_ERROR(err);
     }
   }
 }
 
 util::error multiplexer_impl::poll_once(bool blocking) {
   using namespace std::chrono;
+  LOG_TRACE();
   // Calculates the timeout value for the kqueue call
   auto calculate_timeout = [this, blocking]() -> timespec {
     if (!blocking || !current_timeout_)
@@ -401,6 +435,8 @@ util::error multiplexer_impl::poll_once(bool blocking) {
     return {(diff_ms / 1000), ((diff_ms % 1000) * 1000000)};
   };
   const auto timeout = calculate_timeout();
+  LOG_DEBUG("kevent ", NET_ARG(blocking), ", timeout={", timeout.tv_sec, "s,",
+            timeout.tv_nsec, "ns}");
   const int num_events = kevent(mpx_fd_, nullptr, 0, pollset_.data(),
                                 static_cast<int>(pollset_.size()),
                                 (!current_timeout_ ? nullptr : &timeout));
@@ -417,8 +453,11 @@ util::error multiplexer_impl::poll_once(bool blocking) {
 }
 
 void multiplexer_impl::handle_events(event_span events) {
+  LOG_TRACE();
+  LOG_DEBUG("Handling ", events.size(), " I/O events");
   auto handle_result = [this](socket_manager_ptr& mgr, event_result res,
                               operation op) {
+    LOG_DEBUG(NET_ARG2("res", to_string(res)));
     switch (res) {
       case event_result::done:
         disable(*mgr, op, true);
@@ -435,23 +474,25 @@ void multiplexer_impl::handle_events(event_span events) {
   for (const auto& event : events) {
     const auto handle = socket{static_cast<net::socket_id>(event.ident)};
     if (event.flags & EV_EOF) {
-      std::cerr << util::format(
-        "[multiplexer_impl] kevent failed: socket = {0}: {1}", handle.id,
-        util::last_error_as_string())
-                << std::endl;
+      LOG_ERROR("EV_EOF on ", NET_ARG2("handle", handle.id), ": ",
+                util::last_error_as_string());
       del(handle);
       continue;
     } else {
       auto& mgr = managers_[handle.id];
       switch (event.filter) {
         case EVFILT_READ:
+          LOG_DEBUG("Handling EVFILT_READ on manager with ",
+                    NET_ARG2("id", handle.id));
           handle_result(mgr, mgr->handle_read_event(), operation::read);
           break;
         case EVFILT_WRITE:
+          LOG_DEBUG("Handling EVFILT_WRITE on manager with ",
+                    NET_ARG2("id", handle.id));
           handle_result(mgr, mgr->handle_write_event(), operation::write);
           break;
         default:
-          // nop
+          LOG_WARNING("Event filter unknown");
           break;
       }
     }

@@ -14,7 +14,7 @@
 #if NET_LOG_LEVEL > NET_LOG_LEVEL_NONE
 
 #  include "meta/concepts.hpp"
-#  include "util/error.hpp"
+
 #  include "util/scope_guard.hpp"
 
 #  include <fstream>
@@ -35,6 +35,20 @@ class logger {
   static constexpr const std::string_view error_formatting{"\033[1;31m"};
 
 public:
+  template <class T>
+  struct arg_wrapper {
+    arg_wrapper(std::string_view name, T t) : name_{name}, t_{std::move(t)} {}
+
+    friend std::ostream& operator<<(std::ostream& os,
+                                    const arg_wrapper<T>& wrapper) {
+      return os << wrapper.name_ << "=" << wrapper.t_;
+    }
+
+  public:
+    std::string_view name_;
+    const T t_;
+  };
+
   static logger& instance() {
     static logger instance;
     return instance;
@@ -96,6 +110,10 @@ private:
 
 } // namespace util
 
+#  define NET_ARG(arg) util::logger::arg_wrapper(#arg, arg)
+
+#  define NET_ARG2(name, arg) util::logger::arg_wrapper(name, arg)
+
 /// Macro for initializing the logger
 #  define LOG_INIT(terminal_logging, log_file_path)                            \
     util::logger::init(terminal_logging, log_file_path)
@@ -103,9 +121,9 @@ private:
 /// Macro for tracing runtime paths, prints entry and exit messages
 #  if NET_LOG_LEVEL >= NET_LOG_LEVEL_TRACE
 #    define LOG_TRACE()                                                        \
-      util::logger::instance().log_trace(__PRETTY_FUNCTION__, "Entry");        \
-      util::scope_guard guard{[func_name = __PRETTY_FUNCTION__] {              \
-        util::logger::instance().log_trace(func_name, "Exit");                 \
+      util::logger::instance().log_trace(__PRETTY_FUNCTION__, ">>> ENTRY");    \
+      const util::scope_guard guard{[func_name = __PRETTY_FUNCTION__] {        \
+        util::logger::instance().log_trace(func_name, "<<< EXIT");             \
       }};
 #  endif
 
@@ -130,6 +148,18 @@ private:
 #endif
 
 // -- Anything that has not been defined shall be default defined --------------
+
+#ifndef NET_ARG
+#  define NET_ARG(...)
+#endif
+
+#ifndef NET_ARG2
+#  define NET_ARG2(...)
+#endif
+
+#ifndef NET_ARG2
+#  define NET_ARG2(...)
+#endif
 
 #ifndef LOG_INIT
 #  define LOG_INIT(...)

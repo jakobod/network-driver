@@ -6,20 +6,10 @@
 
 using namespace std::chrono_literals;
 
-namespace beebop {
-struct something {
-  static void do_something() {
-    LOG_TRACE();
-    LOG_DEBUG("Debug");
-    LOG_WARNING("Warning");
-    LOG_ERROR("Error");
-  }
-};
-} // namespace beebop
-
 int main(int, char**) {
-  LOG_INIT(true, "");
   LOG_TRACE();
-  beebop::something::do_something();
+  LOG_DEBUG("DEBUG");
+  LOG_WARNING("WARNING");
+  LOG_ERROR("ERROR");
   return 0;
 }
