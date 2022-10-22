@@ -4,26 +4,6 @@ set -e
 Command="$0 $*"
 CommandDirname=`dirname $0`
 SourceDir=$(cd $CommandDirname && pwd)
-
-usage="\
-Usage:
-  $0 [--<variable>=<value>...]
-
-General CMake options:
-  --cmake=PATH              set a custom path to the CMake binary
-  --build-dir=PATH          set build directory [build]
-  --build-type=STRING       set build type of single-configuration generators
-  --generator=STRING        set CMake generator (see cmake --help)
-  --cxx-flags=STRING        set CMAKE_CXX_FLAGS when running CMake
-  --prefix=PATH             set installation directory
-
-Debugging options:
-  --sanitizers=STRING     build with this list of sanitizers enabled
-
-Flags (use --enable-<name> to activate and --disable-<name> to deactivate):
-  testing                 build tests [OFF]
-"
-
 # Appends a CMake cache entry definition to the CMakeCacheEntries variable.
 #   $1: variable name
 #   $2: CMake type
@@ -48,13 +28,27 @@ set_build_flag() {
   FlagName=''
   case "$1" in
     testing)                 FlagName='LIB_NET_ENABLE_TESTS' ;;
-    prefer-pthread-flag)     FlagName='THREADS_PREFER_PTHREAD_FLAG' ;;
     *)
       echo "Invalid flag '$1'.  Try $0 --help to see available options."
       exit 1
       ;;
   esac
   append_cache_entry $FlagName BOOL $2
+}
+
+set_log_level() {
+  case "$1" in
+    trace)                   level='4' ;;
+    debug)                   level='3' ;;
+    warning)                 level='2' ;;
+    error)                   level='1' ;;
+    *)
+      echo "Invalid log level '$1'.  Try $0 --help to see available options."
+      exit 1
+      ;;
+  esac
+
+  append_cache_entry 'LIB_NET_LOG_LEVEL' STRING $level
 }
 
 # Set defaults.
@@ -72,24 +66,8 @@ while [ $# -ne 0 ]; do
   esac
   # Consume current input.
   case "$1" in
-    --help|-h)
-      echo "${usage}" 1>&2
-      exit 1
-      ;;
-    --cmake=*)
-      CMakeCommand="$optarg"
-      ;;
-    --build-dir=*)
-      CMakeBuildDir="$optarg"
-      ;;
-    --generator=*)
-      CMakeGenerator="$optarg"
-      ;;
     --build-type=*)
       append_cache_entry CMAKE_BUILD_TYPE STRING "$optarg"
-      ;;
-    --cxx-flags=*)
-      append_cache_entry CMAKE_CXX_FLAGS STRING "$optarg"
       ;;
     --enable-*)
       set_build_flag $optarg ON
@@ -99,6 +77,9 @@ while [ $# -ne 0 ]; do
       ;;
     --openssl-root-dir=*)
       append_cache_entry OPENSSL_ROOT_DIR PATH "$optarg"
+      ;;
+    --log-level=*)
+      set_log_level "$optarg"
       ;;
     *)
       echo "Invalid option '$1'. Try $0 --help to see available options."

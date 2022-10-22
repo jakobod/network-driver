@@ -44,7 +44,7 @@ public:
   Socket operator*() { return sock_; }
 
   /// Returns the managed socket object without giving up ownership.
-  Socket operator->() { return sock_; }
+  Socket* operator->() { return &sock_; }
 
   /// Compares two socket_guard objects for equality.
   bool operator==(const socket_guard<Socket>& other) {

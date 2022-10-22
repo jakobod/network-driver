@@ -83,6 +83,15 @@ target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
 file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
 
+# -- logging configuration -----------------------------------------------------
+
+if(LIB_NET_LOG_LEVEL)
+  message(STATUS "Logging enabled: ${LIB_NET_LOG_LEVEL}")
+  add_compile_definitions(NET_LOG_LEVEL=${LIB_NET_LOG_LEVEL})
+else()
+  message(STATUS "Logging disabled")
+endif()
+
 # -- main for playing with things ----------------------------------------------
 
 macro(add_target name)
@@ -101,8 +110,11 @@ if (LIB_NET_ENABLE_TESTS)
 
   add_executable(
     lib_net_test
+    test/net_test_main.cpp
     test/net/acceptor.cpp
     test/net/datagram_socket.cpp
+    test/net/ip/v4_address.cpp
+    test/net/ip/v4_endpoint.cpp
     test/net/multiplexer_impl.cpp
     test/net/socket_guard.cpp
     test/net/socket_manager.cpp
@@ -112,8 +124,6 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    test/net/ip/v4_address.cpp
-    test/net/ip/v4_endpoint.cpp
     test/openssl/communication.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
@@ -128,7 +138,7 @@ if (LIB_NET_ENABLE_TESTS)
   target_link_libraries(
     lib_net_test
     net
-    gtest_main
+    gtest
   )
 
   gtest_discover_tests(lib_net_test)

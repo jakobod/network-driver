@@ -8,6 +8,7 @@
 #include "net/multiplexer.hpp"
 
 #include "util/error.hpp"
+#include "util/logger.hpp"
 
 #include <iostream>
 #include <memory>
@@ -16,20 +17,23 @@ namespace net {
 
 socket_manager::socket_manager(socket handle, multiplexer* mpx)
   : handle_(handle), mpx_(mpx), mask_(operation::none) {
-  // nop
+  LOG_TRACE();
 }
 
 socket_manager::~socket_manager() {
+  LOG_TRACE();
   shutdown(handle_, SHUT_RDWR);
   close(handle_);
 }
 
 socket_manager::socket_manager(socket_manager&& other) noexcept
   : handle_(other.handle_), mpx_(other.mpx_), mask_(other.mask_) {
+  LOG_TRACE();
   other.handle_ = invalid_socket;
 }
 
 socket_manager& socket_manager::operator=(socket_manager&& other) noexcept {
+  LOG_TRACE();
   handle_ = other.handle_;
   other.handle_ = invalid_socket;
   mask_ = other.mask_;
@@ -56,12 +60,14 @@ bool socket_manager::mask_del(operation flag) noexcept {
 }
 
 void socket_manager::register_reading() {
+  LOG_TRACE();
   if ((mask() & operation::read) == operation::read)
     return;
   mpx_->enable(*this, operation::read);
 }
 
 void socket_manager::register_writing() {
+  LOG_TRACE();
   if ((mask() & operation::write) == operation::write)
     return;
   mpx_->enable(*this, operation::write);

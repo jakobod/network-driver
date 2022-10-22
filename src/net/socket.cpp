@@ -8,6 +8,7 @@
 #include "net/ip/v4_endpoint.hpp"
 
 #include "util/error.hpp"
+#include "util/logger.hpp"
 
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -16,18 +17,22 @@
 namespace net {
 
 void close(socket hdl) {
+  LOG_DEBUG("closing ", NET_ARG2("socket", hdl.id));
   if (hdl != invalid_socket)
     ::close(hdl.id);
 }
 
 void shutdown(socket hdl, int how) {
+  LOG_DEBUG("shutdown ", NET_ARG2("socket", hdl.id), ", ", NET_ARG(how));
   if (hdl != invalid_socket)
     ::shutdown(hdl.id, how);
 }
 
-util::error bind(socket sock, ip::v4_endpoint ep) {
+util::error bind(socket hdl, ip::v4_endpoint ep) {
+  LOG_DEBUG("binding ", NET_ARG2("socket", hdl.id), " to ",
+            NET_ARG2("endpoint", to_string(ep)));
   const auto sin = ip::to_sockaddr_in(ep);
-  if (::bind(sock.id, reinterpret_cast<const sockaddr*>(&sin),
+  if (::bind(hdl.id, reinterpret_cast<const sockaddr*>(&sin),
              sizeof(sockaddr_in))
       != 0)
     return {util::error_code::socket_operation_failed,
@@ -53,6 +58,8 @@ std::string last_socket_error_as_string() {
 }
 
 bool nonblocking(socket hdl, bool new_value) {
+  LOG_DEBUG("nonblocking on ", NET_ARG2("socket", hdl.id), ", ",
+            NET_ARG(new_value));
   auto flags = fcntl(hdl.id, F_GETFL, 0);
   if (flags == -1)
     return false;
@@ -69,9 +76,11 @@ util::error_or<uint16_t> port_of(socket x) {
   return ntohs(sin.sin_port);
 }
 
-bool reuseaddr(socket x, bool new_value) {
+bool reuseaddr(socket sock, bool new_value) {
+  LOG_DEBUG("reuseaddr on ", NET_ARG2("socket", sock.id), ", ",
+            NET_ARG(new_value));
   int on = new_value ? 1 : 0;
-  auto res = setsockopt(x.id, SOL_SOCKET, SO_REUSEADDR,
+  auto res = setsockopt(sock.id, SOL_SOCKET, SO_REUSEADDR,
                         reinterpret_cast<const void*>(&on),
                         static_cast<unsigned>(sizeof(on)));
   return res == 0;

@@ -7,8 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include "util/byte_span.hpp"
-
 #include <iostream>
 
 // -- Helper macros for tests --------------------------------------------------

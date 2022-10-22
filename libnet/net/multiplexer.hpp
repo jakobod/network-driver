@@ -86,7 +86,7 @@ public:
   // -- members ----------------------------------------------------------------
 
   /// Returns the port the multiplexer is listening on.
-  [[nodiscard]] uint16_t port() const noexcept { return port_; }
+  uint16_t port() const noexcept { return port_; }
 
 protected:
   uint16_t port_ = 0;
