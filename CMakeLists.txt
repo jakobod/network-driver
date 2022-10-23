@@ -128,6 +128,8 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/format.cpp
+    test/util/intrusive_ptr.cpp
+    test/util/ref_counted.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
   )
