@@ -410,15 +410,7 @@ void multiplexer_impl::mod(int fd, int op, operation events) {
   } else {
     event_type event;
     EV_SET(&event, fd, to_kevent_filter(events), op, 0, 0, nullptr);
-    if (kevent(mpx_fd_, &event, 1, nullptr, 0, nullptr) < 0) {
-      const util::error err{util::error_code::runtime_error, "kevent: {0}",
-                            util::last_error_as_string()};
-      // TODO: ignore ENOENT for now.
-      if (net::last_socket_error() != ENOENT)
-        handle_error(err);
-      else
-        LOG_ERROR(err);
-    }
+    update_cache_.push_back(event);
   }
 }
 
@@ -437,9 +429,12 @@ util::error multiplexer_impl::poll_once(bool blocking) {
   const auto timeout = calculate_timeout();
   LOG_DEBUG("kevent ", NET_ARG(blocking), ", timeout={", timeout.tv_sec, "s,",
             timeout.tv_nsec, "ns}");
-  const int num_events = kevent(mpx_fd_, nullptr, 0, pollset_.data(),
+  const int num_events = kevent(mpx_fd_, update_cache_.data(),
+                                static_cast<int>(update_cache_.size()),
+                                pollset_.data(),
                                 static_cast<int>(pollset_.size()),
                                 (!current_timeout_ ? nullptr : &timeout));
+  update_cache_.clear();
   // Check for errors
   if (num_events < 0) {
     return (errno == EINTR) ? util::none

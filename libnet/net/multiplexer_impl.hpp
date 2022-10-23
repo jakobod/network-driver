@@ -45,6 +45,7 @@ class multiplexer_impl : public multiplexer {
 
   // Pollset types
   using pollset = std::array<event_type, max_events>;
+  using update_list = std::vector<event_type>;
   using event_span = std::span<event_type>;
   using manager_map = std::unordered_map<socket_id, socket_manager_ptr>;
 
@@ -134,6 +135,7 @@ private:
   // Multiplexing variables
   mpx_fd mpx_fd_{invalid_socket_id};
   pollset pollset_;
+  update_list update_cache_;
   manager_map managers_;
 
   // timeout handling
