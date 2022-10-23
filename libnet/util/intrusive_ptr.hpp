@@ -98,9 +98,60 @@ private:
   T* ptr_;
 };
 
+// -- Convenience functions to create intrusive_ptrs ---------------------------
+
 template <meta::derived_from<util::ref_counted> T, class... Ts>
 intrusive_ptr<T> make_intrusive(Ts&&... ts) {
   return intrusive_ptr<T>(new T(std::forward<Ts>(ts)...), false);
+}
+
+template <meta::derived_from<util::ref_counted> T>
+intrusive_ptr<T> make_intrusive(T* raw_ptr, bool add_ref = true) {
+  return intrusive_ptr<T>(raw_ptr, add_ref);
+}
+
+// -- Raw pointer comparisons --------------------------------------------------
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator==(const intrusive_ptr<T>& a, const T* b) {
+  return a.get() == b;
+}
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator==(const T* a, const intrusive_ptr<T>& b) {
+  return a == b.get();
+}
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator!=(const intrusive_ptr<T>& a, const T* b) {
+  return a.get() != b;
+}
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator!=(const T* a, const intrusive_ptr<T>& b) {
+  return a != b.get();
+}
+
+// -- nullptr comparisons ------------------------------------------------------
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator==(const intrusive_ptr<T>& ptr, std::nullptr_t) {
+  return !ptr;
+}
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator==(std::nullptr_t, const intrusive_ptr<T>& ptr) {
+  return !ptr;
+}
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator!=(const intrusive_ptr<T>& ptr, std::nullptr_t) {
+  return static_cast<bool>(ptr);
+}
+
+template <meta::derived_from<util::ref_counted> T>
+bool operator!=(std::nullptr_t, const intrusive_ptr<T>& ptr) {
+  return static_cast<bool>(ptr);
 }
 
 } // namespace util

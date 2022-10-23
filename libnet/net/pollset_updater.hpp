@@ -33,6 +33,8 @@ public:
   static constexpr const opcode disable_code = 0x02;
   /// Opcode for triggering a shutdown of the multiplexer.
   static constexpr const opcode shutdown_code = 0x03;
+  /// Opcode for denoting an unspecified code.
+  static constexpr const opcode unspecified_code = 0x04;
 
   // -- constructors, destructors, and assignment operators --------------------
 

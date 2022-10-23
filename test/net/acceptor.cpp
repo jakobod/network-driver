@@ -13,6 +13,7 @@
 #include "net/tcp_stream_socket.hpp"
 
 #include "util/error.hpp"
+#include "util/intrusive_ptr.hpp"
 
 #include "net_test.hpp"
 
@@ -48,15 +49,15 @@ struct dummy_multiplexer : public multiplexer {
     mgr = std::move(new_mgr);
   }
 
-  void enable(socket_manager&, operation) override {
+  void enable(socket_manager_ptr, operation) override {
     // nop
   }
 
-  void disable(socket_manager&, operation, bool) override {
+  void disable(socket_manager_ptr, operation, bool) override {
     // nop
   }
 
-  uint64_t set_timeout(socket_manager&,
+  uint64_t set_timeout(socket_manager_ptr,
                        std::chrono::system_clock::time_point) override {
     return 0;
   }
@@ -84,7 +85,7 @@ struct dummy_factory : socket_manager_factory {
   ~dummy_factory() override = default;
 
   socket_manager_ptr make(net::socket hdl, multiplexer* mpx) override {
-    return std::make_shared<dummy_socket_manager>(hdl, mpx);
+    return util::make_intrusive<dummy_socket_manager>(hdl, mpx);
   };
 };
 

@@ -50,17 +50,17 @@ struct dummy_multiplexer : public multiplexer {
     // nop
   }
 
-  void enable(socket_manager& mgr, operation op) override {
-    mgr.mask_add(op);
-    last_enabled_socket_ = mgr.handle();
+  void enable(socket_manager_ptr mgr, operation op) override {
+    mgr->mask_add(op);
+    last_enabled_socket_ = mgr->handle();
     last_enabled_operation_ = op;
   }
 
-  void disable(socket_manager&, operation, bool) override {
+  void disable(socket_manager_ptr, operation, bool) override {
     // nop
   }
 
-  uint64_t set_timeout(socket_manager&,
+  uint64_t set_timeout(socket_manager_ptr,
                        std::chrono::system_clock::time_point) override {
     return 0;
   }

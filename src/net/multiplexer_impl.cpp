@@ -13,9 +13,12 @@
 #include "net/socket_manager.hpp"
 #include "net/tcp_accept_socket.hpp"
 
+#include "util/binary_serializer.hpp"
+#include "util/byte_span.hpp"
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 #include "util/format.hpp"
+#include "util/intrusive_ptr.hpp"
 #include "util/logger.hpp"
 
 #include <algorithm>
@@ -53,7 +56,8 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
   pipe_reader_ = pipe_fds.first;
   pipe_writer_ = pipe_fds.second;
-  add(std::make_shared<pollset_updater>(pipe_reader_, this), operation::read);
+  add(util::make_intrusive<pollset_updater>(pipe_reader_, this),
+      operation::read);
   // Create Acceptor
   auto res = net::make_tcp_accept_socket(
     {(local ? ip::v4_address::localhost : ip::v4_address::any), port});
@@ -62,7 +66,7 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   auto accept_socket_pair = std::get<net::acceptor_pair>(res);
   auto accept_socket = accept_socket_pair.first;
   port_ = accept_socket_pair.second;
-  add(std::make_shared<acceptor>(accept_socket, this, std::move(factory)),
+  add(util::make_intrusive<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
   return util::none;
 }
@@ -84,7 +88,7 @@ void multiplexer_impl::shutdown() {
     while (it != managers_.end()) {
       auto& mgr = it->second;
       if (mgr->handle() != pipe_reader_) {
-        disable(*mgr, operation::read, false);
+        disable(mgr, operation::read, false);
         if (mgr->mask() == operation::none)
           it = del(it);
         else
@@ -98,8 +102,7 @@ void multiplexer_impl::shutdown() {
     pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {
     LOG_DEBUG("requesting multiplexer shutdown");
-    std::byte code{pollset_updater::shutdown_code};
-    auto res = write(pipe_writer_, util::byte_span(&code, 1));
+    auto res = write_to_pipe(pollset_updater::shutdown_code);
     if (res != 1) {
       LOG_ERROR("could not write shutdown code to pipe: ",
                 last_socket_error_as_string());
@@ -142,12 +145,12 @@ void multiplexer_impl::handle_error([[maybe_unused]] const util::error& err) {
 // -- Timeout management -------------------------------------------------------
 
 uint64_t
-multiplexer_impl::set_timeout(socket_manager& mgr,
+multiplexer_impl::set_timeout(socket_manager_ptr mgr,
                               std::chrono::system_clock::time_point when) {
   LOG_TRACE();
   LOG_DEBUG("Setting timeout ", current_timeout_id_, " on ",
-            NET_ARG2("mgr", mgr.handle().id));
-  timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
+            NET_ARG2("mgr", mgr->handle().id));
+  timeouts_.emplace(mgr->handle().id, when, current_timeout_id_);
   current_timeout_ = (current_timeout_ != std::nullopt)
                        ? std::min(when, *current_timeout_)
                        : when;
@@ -177,6 +180,14 @@ void multiplexer_impl::handle_timeouts() {
       break;
     }
   }
+}
+
+ptrdiff_t multiplexer_impl::write_to_pipe(std::uint8_t code,
+                                          socket_manager* ptr) {
+  util::byte_buffer buf(sizeof(std::uint8_t) + sizeof(ptr));
+  util::binary_serializer bs{buf};
+  bs(code, ptr);
+  return write(pipe_writer_, util::as_const_bytes(buf));
 }
 
 util::error_or<multiplexer_ptr>
@@ -335,33 +346,34 @@ void multiplexer_impl::add(socket_manager_ptr mgr, operation initial) {
   // Add the mgr to the pollset for both reading and writing and enable it for
   // the initial operations
   mod(mgr->handle().id, (EV_ADD | EV_DISABLE), operation::read_write);
-  enable(*mgr, initial);
+  enable(mgr, initial);
   managers_.emplace(mgr->handle().id, mgr);
   // TODO: This should probably return an error instead of calling handle_error
   if (auto err = mgr->init())
     handle_error(err);
 }
 
-void multiplexer_impl::enable(socket_manager& mgr, operation op) {
+void multiplexer_impl::enable(socket_manager_ptr mgr, operation op) {
   LOG_TRACE();
-  LOG_DEBUG("Enabling mgr with ", NET_ARG2("id", mgr.handle().id),
-            " registered for ", NET_ARG2("mask", to_string(mgr.mask())),
+  LOG_DEBUG("Enabling mgr with ", NET_ARG2("id", mgr->handle().id),
+            " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
             " for ", NET_ARG2("new_event", to_string(op)));
-  if (!mgr.mask_add(op))
+  if (!mgr->mask_add(op))
     return;
-  mod(mgr.handle().id, EV_ENABLE, mgr.mask());
+  mod(mgr->handle().id, EV_ENABLE, mgr->mask());
 }
 
-void multiplexer_impl::disable(socket_manager& mgr, operation op, bool remove) {
+void multiplexer_impl::disable(socket_manager_ptr mgr, operation op,
+                               bool remove) {
   LOG_TRACE();
-  LOG_DEBUG("Disabling mgr with ", NET_ARG2("id", mgr.handle().id),
-            " registered for ", NET_ARG2("mask", to_string(mgr.mask())),
+  LOG_DEBUG("Disabling mgr with ", NET_ARG2("id", mgr->handle().id),
+            " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
             " for ", NET_ARG2("event", to_string(op)));
-  if (!mgr.mask_del(op))
+  if (!mgr->mask_del(op))
     return;
-  mod(mgr.handle().id, EV_DISABLE, op);
-  if (remove && mgr.mask() == operation::none)
-    del(mgr.handle());
+  mod(mgr->handle().id, EV_DISABLE, op);
+  if (remove && mgr->mask() == operation::none)
+    del(mgr->handle());
 }
 
 void multiplexer_impl::del(socket handle) {
@@ -455,7 +467,7 @@ void multiplexer_impl::handle_events(event_span events) {
     LOG_DEBUG(NET_ARG2("res", to_string(res)));
     switch (res) {
       case event_result::done:
-        disable(*mgr, op, true);
+        disable(mgr, op, true);
         break;
       case event_result::error:
         del(mgr->handle());

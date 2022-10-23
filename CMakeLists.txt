@@ -124,6 +124,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
+    test/net/pollset_updater.cpp
     test/openssl/communication.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp

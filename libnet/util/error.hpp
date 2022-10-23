@@ -17,41 +17,47 @@ namespace util {
 
 class [[nodiscard]] error {
 public:
-  error(error_code err, std::string err_msg);
+  error(error_code code, std::string msg);
 
   template <class... Arguments>
-  error(error_code err, std::string form, Arguments... args)
-    : error{err, format(std::move(form), std::move(args)...)} {
+  error(error_code code, std::string form, Arguments... args)
+    : error{code, format(std::move(form), std::move(args)...)} {
     // nop
   }
 
-  error(error_code err);
+  error(error_code code);
 
   error() = default;
 
   ~error() = default;
 
+  // -- accessors --------------------------------------------------------------
+
+  error_code code() const noexcept { return code_; }
+
+  const std::string& msg() const { return msg_; }
+
   // -- boolean operators ------------------------------------------------------
 
-  bool is_error() const;
+  bool is_error() const noexcept;
 
-  operator bool() const;
+  operator bool() const noexcept;
 
-  bool operator==(const error& other);
+  bool operator==(const error& other) const noexcept;
 
-  bool operator!=(const error& other);
+  bool operator!=(const error& other) const noexcept;
 
   friend std::ostream& operator<<(std::ostream& os, const error& err) {
-    return os << to_string(err.err_) << std::string(": ") << err.err_msg_;
+    return os << to_string(err.code()) << std::string(": ") << err.msg();
   }
 
 private:
-  error_code err_ = error_code::no_error;
-  std::string err_msg_;
+  error_code code_{error_code::no_error};
+  std::string msg_;
 };
 
 /// Error-constant for returning no-error.
-const error none{};
+static const error none{};
 
 /// Stringifies an error
 std::string to_string(const error& err);

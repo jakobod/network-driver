@@ -8,7 +8,11 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
+#include "util/error.hpp"
+
 #include "net/socket.hpp"
+
+#include <utility>
 
 namespace net {
 
@@ -27,9 +31,9 @@ using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
 util::error_or<pipe_socket_pair> make_pipe();
 
 /// Transmits data from `x` to its peer.
-std::ptrdiff_t write(pipe_socket x, util::byte_span buf);
+[[nodiscard]] std::ptrdiff_t write(pipe_socket x, util::const_byte_span buf);
 
 /// Receives data from `x`.
-std::ptrdiff_t read(pipe_socket x, util::byte_span buf);
+[[nodiscard]] std::ptrdiff_t read(pipe_socket x, util::byte_span buf);
 
 } // namespace net

@@ -45,7 +45,7 @@ constexpr socket invalid_socket{invalid_socket_id};
 
 /// Converts between different socket types.
 template <class To, class From>
-To socket_cast(From x) {
+constexpr To socket_cast(From x) {
   return To{x.id};
 }
 

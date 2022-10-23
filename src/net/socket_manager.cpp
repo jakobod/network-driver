@@ -63,24 +63,24 @@ void socket_manager::register_reading() {
   LOG_TRACE();
   if ((mask() & operation::read) == operation::read)
     return;
-  mpx_->enable(*this, operation::read);
+  mpx_->enable(this, operation::read);
 }
 
 void socket_manager::register_writing() {
   LOG_TRACE();
   if ((mask() & operation::write) == operation::write)
     return;
-  mpx_->enable(*this, operation::write);
+  mpx_->enable(this, operation::write);
 }
 
 uint64_t socket_manager::set_timeout_in(std::chrono::milliseconds duration) {
   auto tp = std::chrono::system_clock::now() + duration;
-  return mpx_->set_timeout(*this, tp);
+  return mpx_->set_timeout(this, tp);
 }
 
 uint64_t
 socket_manager::set_timeout_at(std::chrono::system_clock::time_point point) {
-  return mpx_->set_timeout(*this, point);
+  return mpx_->set_timeout(this, point);
 }
 
 void socket_manager::handle_error(const util::error& err) {
