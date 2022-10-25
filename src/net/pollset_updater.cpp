@@ -9,10 +9,23 @@
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"
 
-#include "util/binary_deserializer.hpp"
-#include "util/byte_span.hpp"
 #include "util/error.hpp"
 #include "util/logger.hpp"
+
+namespace {
+
+template <class T>
+util::error read_from_pipe(net::pipe_socket handle, T& t) {
+  if (auto res = net::read(handle, util::as_bytes(&t, sizeof(T)));
+      res != sizeof(T)) {
+    LOG_ERROR("Could not read ", sizeof(T),
+              " bytes from pipe socket: ", net::last_socket_error_as_string());
+    return util::error_code::runtime_error;
+  }
+  return util::none;
+}
+
+} // namespace
 
 namespace net {
 
@@ -30,39 +43,22 @@ util::error pollset_updater::init() {
 
 event_result pollset_updater::handle_read_event() {
   LOG_TRACE();
-  opcode code = unspecified_code;
-  socket_manager* mgr_ptr = nullptr;
-
-  util::byte_array<sizeof(opcode) + sizeof(socket_manager*)> buf;
-  if (auto res = read(handle<pipe_socket>(), buf); res != buf.size()) {
-    LOG_ERROR("Could not read ", buf.size(),
-              " bytes from pipe socket: ", last_socket_error_as_string());
-    mpx()->handle_error({util::error_code::runtime_error,
-                         "Could not read {0} bytes from pipe socket: {1}",
-                         buf.size(), last_socket_error_as_string()});
+  opcode code;
+  if (auto err = read_from_pipe(handle<pipe_socket>(), code))
     return event_result::ok;
-  }
-  util::binary_deserializer source{buf};
-  source(code, mgr_ptr);
-
   switch (code) {
-    case add_code:
+    case add_code: {
+      socket_manager* mgr_ptr = nullptr;
+      operation op;
+      if (auto err = read_from_pipe(handle<pipe_socket>(), mgr_ptr))
+        return event_result::ok;
+      if (auto err = read_from_pipe(handle<pipe_socket>(), op))
+        return event_result::ok;
       LOG_DEBUG("Received add_code for mgr with ",
-                NET_ARG2("id", mgr_ptr->handle().id));
-      mpx()->add(util::make_intrusive(mgr_ptr, false), operation::read_write);
+                NET_ARG2("id", mgr_ptr->handle().id), " with ", NET_ARG(op));
+      mpx()->add(util::make_intrusive(mgr_ptr, false), op);
       break;
-    case enable_code:
-      LOG_DEBUG("Received enable_code for mgr with ",
-                NET_ARG2("id", mgr_ptr->handle().id));
-      mpx()->enable(util::make_intrusive(mgr_ptr, false),
-                    operation::read_write);
-      break;
-    case disable_code:
-      LOG_DEBUG("Received disable_code for mgr with ",
-                NET_ARG2("id", mgr_ptr->handle().id));
-      mpx()->disable(util::make_intrusive(mgr_ptr, false),
-                     operation::read_write, false);
-      break;
+    }
     case shutdown_code:
       LOG_DEBUG("Received shutdown_code");
       mpx()->shutdown();

@@ -25,4 +25,8 @@ std::string to_string(operation op) {
   return util::format("operation::[{0}]", util::join(parts, '|'));
 }
 
+std::ostream& operator<<(std::ostream& os, operation op) {
+  return os << to_string(op);
+}
+
 } // namespace net

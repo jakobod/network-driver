@@ -11,6 +11,9 @@
 #include "net/pipe_socket.hpp"
 #include "net/timeout_entry.hpp"
 
+#include "util/binary_serializer.hpp"
+#include "util/byte_buffer.hpp"
+
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -129,7 +132,17 @@ private:
   void mod(int fd, int op, operation events);
 
   /// Writes the pollset_update code to the pipe
-  ptrdiff_t write_to_pipe(std::uint8_t code, socket_manager* ptr = nullptr);
+  template <class... Ts>
+  ptrdiff_t write_to_pipe(Ts&&... ts) {
+    util::byte_buffer buf;
+    util::binary_serializer bs{buf};
+    bs(std::forward<Ts>(ts)...);
+    return write(pipe_writer_, util::as_const_bytes(buf));
+  }
+
+  bool is_multiplexer_thread() {
+    return std::this_thread::get_id() == mpx_thread_id_;
+  }
 
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_{invalid_socket_id};

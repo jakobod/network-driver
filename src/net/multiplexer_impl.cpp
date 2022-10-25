@@ -82,7 +82,7 @@ void multiplexer_impl::start() {
 
 void multiplexer_impl::shutdown() {
   LOG_TRACE();
-  if (std::this_thread::get_id() == mpx_thread_id_) {
+  if (is_multiplexer_thread()) {
     LOG_DEBUG("multiplexer shutting down");
     auto it = managers_.begin();
     while (it != managers_.end()) {
@@ -180,14 +180,6 @@ void multiplexer_impl::handle_timeouts() {
       break;
     }
   }
-}
-
-ptrdiff_t multiplexer_impl::write_to_pipe(std::uint8_t code,
-                                          socket_manager* ptr) {
-  util::byte_buffer buf(sizeof(std::uint8_t) + sizeof(ptr));
-  util::binary_serializer bs{buf};
-  bs(code, ptr);
-  return write(pipe_writer_, util::as_const_bytes(buf));
 }
 
 util::error_or<multiplexer_ptr>
@@ -339,18 +331,28 @@ void multiplexer_impl::handle_events(event_span events) {
 
 void multiplexer_impl::add(socket_manager_ptr mgr, operation initial) {
   LOG_TRACE();
-  // Set nonblocking behavior on socket
-  if (!nonblocking(mgr->handle(), true))
-    handle_error(util::error(util::error_code::socket_operation_failed,
-                             "Could not set nonblocking"));
-  // Add the mgr to the pollset for both reading and writing and enable it for
-  // the initial operations
-  mod(mgr->handle().id, (EV_ADD | EV_DISABLE), operation::read_write);
-  enable(mgr, initial);
-  managers_.emplace(mgr->handle().id, mgr);
-  // TODO: This should probably return an error instead of calling handle_error
-  if (auto err = mgr->init())
-    handle_error(err);
+  if (is_multiplexer_thread()) {
+    LOG_DEBUG("Adding socket_manager with ", NET_ARG2("id", mgr->handle().id),
+              " for ", NET_ARG(initial));
+    // Set nonblocking on socket
+    if (!nonblocking(mgr->handle(), true))
+      handle_error(util::error(util::error_code::socket_operation_failed,
+                               "Could not set nonblocking"));
+    // Add the mgr to the pollset for both reading and writing and enable it for
+    // the initial operations
+    mod(mgr->handle().id, (EV_ADD | EV_DISABLE), operation::read_write);
+    enable(mgr, initial);
+    managers_.emplace(mgr->handle().id, mgr);
+    // TODO: This should probably return an error instead of calling
+    // handle_error
+    if (auto err = mgr->init())
+      handle_error(err);
+  } else {
+    LOG_DEBUG("Requesting to add socket_manager with ",
+              NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
+    mgr->ref();
+    write_to_pipe(pollset_updater::add_code, mgr.get(), initial);
+  }
 }
 
 void multiplexer_impl::enable(socket_manager_ptr mgr, operation op) {
