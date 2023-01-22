@@ -114,7 +114,8 @@ private:
 
 #  define NET_ARG2(name, arg) util::logger::arg_wrapper(name, arg)
 
-/// Macro for initializing the logger
+/// Macro for initializing the logger. TODO: shall be replaced by a config file
+/// that is parsed
 #  define LOG_INIT(terminal_logging, log_file_path)                            \
     util::logger::init(terminal_logging, log_file_path)
 

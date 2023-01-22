@@ -27,12 +27,8 @@ public:
 
   /// Opcode for adding a socket_manager to the pollset.
   static constexpr const opcode add_code = 0x00;
-  /// Opcode for enabling a socket_manager.
-  static constexpr const opcode enable_code = 0x01;
-  /// Opcode for disabling a socket_manager.
-  static constexpr const opcode disable_code = 0x02;
   /// Opcode for triggering a shutdown of the multiplexer.
-  static constexpr const opcode shutdown_code = 0x03;
+  static constexpr const opcode shutdown_code = 0x01;
 
   // -- constructors, destructors, and assignment operators --------------------
 

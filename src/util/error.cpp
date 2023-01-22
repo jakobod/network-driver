@@ -11,31 +11,31 @@
 
 namespace util {
 
-error::error(error_code err, std::string err_msg)
-  : err_(err), err_msg_(std::move(err_msg)) {
+error::error(error_code code, std::string msg)
+  : code_(code), msg_(std::move(msg)) {
   // nop
 }
 
-error::error(error_code err) : err_(err) {
+error::error(error_code code) : code_(code) {
   // nop
 }
 
 // -- boolean operators ------------------------------------------------------
 
-bool error::is_error() const {
-  return err_ != error_code::no_error;
+bool error::is_error() const noexcept {
+  return code() != error_code::no_error;
 }
 
-error::operator bool() const {
+error::operator bool() const noexcept {
   return is_error();
 }
 
-bool error::operator==(const error& other) {
-  return err_ == other.err_;
+bool error::operator==(const error& other) const noexcept {
+  return code() == other.code();
 }
 
-bool error::operator!=(const error& other) {
-  return err_ != other.err_;
+bool error::operator!=(const error& other) const noexcept {
+  return code() != other.code();
 }
 
 std::string to_string(const error& err) {

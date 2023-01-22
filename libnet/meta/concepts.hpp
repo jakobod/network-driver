@@ -26,8 +26,12 @@ concept floating = std::is_floating_point_v<T>;
 template <class T>
 concept enumeration = std::is_enum_v<T>;
 
+/// Concept for checking that type is a pointer
+template <class T>
+concept pointer = std::is_pointer_v<T>;
+
 template <class To, class From>
-concept convertible_to = std::is_convertible_v<From*, To*>;
+concept convertible_to = std::is_convertible_v<To*, From*>;
 
 /// Constraints a template to `T`s derived from `Base`
 template <class Base, class T>
@@ -41,7 +45,8 @@ concept same_as = std::is_same_v<T, U>;
 
 // Concept that requires types that are trivially serializable
 template <class T>
-concept trivially_serializable = integral<T> || enumeration<T>;
+concept trivially_serializable = integral<T> || enumeration<T> || pointer<T>
+                                 || std::is_null_pointer_v<T>;
 
 // Concept that requires types that are not trivially serializable
 template <class T>
@@ -50,7 +55,8 @@ concept not_trivially_serializable = (!trivially_serializable<T>);
 /// Constrains a template to simple (eg. flat types) that allow simple sizeof
 /// operations
 template <class T>
-concept flat_type = integral<T> || floating<T> || enumeration<T>;
+concept flat_type = integral<T> || floating<T> || enumeration<T> || pointer<T>
+                    || std::is_null_pointer_v<T>;
 
 /// Constrains a template to complex (e.g. non-flat types) types such as
 /// integral, floating points, or enums

@@ -11,6 +11,9 @@
 #include "net/pipe_socket.hpp"
 #include "net/timeout_entry.hpp"
 
+#include "util/binary_serializer.hpp"
+#include "util/byte_buffer.hpp"
+
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -94,15 +97,15 @@ public:
   void add(socket_manager_ptr mgr, operation initial) override;
 
   /// Enables an operation `op` for socket manager `mgr`.
-  void enable(socket_manager&, operation op) override;
+  void enable(socket_manager_ptr, operation op) override;
 
   /// Disables an operation `op` for socket manager `mgr`.
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
-  void disable(socket_manager& mgr, operation op, bool remove) override;
+  void disable(socket_manager_ptr mgr, operation op, bool remove) override;
 
   std::uint64_t
-  set_timeout(socket_manager& mgr,
+  set_timeout(socket_manager_ptr mgr,
               std::chrono::system_clock::time_point when) override;
 
   /// Main multiplexing loop.
@@ -127,6 +130,19 @@ private:
 
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
+
+  /// Writes the pollset_update code to the pipe
+  template <class... Ts>
+  ptrdiff_t write_to_pipe(Ts&&... ts) {
+    util::byte_buffer buf;
+    util::binary_serializer bs{buf};
+    bs(std::forward<Ts>(ts)...);
+    return write(pipe_writer_, util::as_const_bytes(buf));
+  }
+
+  bool is_multiplexer_thread() {
+    return std::this_thread::get_id() == mpx_thread_id_;
+  }
 
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_{invalid_socket_id};

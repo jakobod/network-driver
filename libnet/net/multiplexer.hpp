@@ -10,6 +10,7 @@
 #include "net/ip/v4_endpoint.hpp"
 
 #include "net/operation.hpp"
+#include "net/socket_manager.hpp"
 #include "net/tcp_stream_socket.hpp"
 
 #include "util/error.hpp"
@@ -56,19 +57,19 @@ public:
 
   /// Enables an operation `op` for socket manager `mgr`.
   /// @warning This function is *NOT* thread-safe.
-  virtual void enable(socket_manager&, operation op) = 0;
+  virtual void enable(socket_manager_ptr mgr, operation op) = 0;
 
   /// Disables an operation `op` for socket manager `mgr`.
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
   /// @warning This function is *NOT* thread-safe.
-  virtual void disable(socket_manager& mgr, operation op, bool remove) = 0;
+  virtual void disable(socket_manager_ptr mgr, operation op, bool remove) = 0;
 
   /// Sets a timeout for socket_manager `mgr` at timepoint `when` and returns
   /// the id.
   /// @warning This function is *NOT* thread-safe.
-  virtual uint64_t
-  set_timeout(socket_manager& mgr, std::chrono::system_clock::time_point when)
+  virtual uint64_t set_timeout(socket_manager_ptr mgr,
+                               std::chrono::system_clock::time_point when)
     = 0;
 
   template <class Manager, class... Ts>

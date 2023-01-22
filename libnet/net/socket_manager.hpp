@@ -10,18 +10,21 @@
 #include "net/operation.hpp"
 #include "net/socket.hpp"
 
+#include "util/intrusive_ptr.hpp"
+#include "util/ref_counted.hpp"
+
 #include <chrono>
 
 namespace net {
 
 /// Manages the lifetime of a socket and its events.
-class socket_manager {
+class socket_manager : public util::ref_counted {
 public:
   /// Constructs a socket_manager object
   socket_manager(socket handle, multiplexer* mpx);
 
   /// Destructs a socket manager object
-  virtual ~socket_manager();
+  ~socket_manager() override;
 
   /// Move constructor
   socket_manager(socket_manager&& mgr) noexcept;
@@ -47,7 +50,7 @@ public:
 
   /// Returns the handle.
   template <class Socket = socket>
-  Socket handle() const noexcept {
+  constexpr Socket handle() const noexcept {
     return socket_cast<Socket>(handle_);
   }
 
@@ -99,5 +102,7 @@ private:
   /// The mask containing all currently registered events
   operation mask_;
 };
+
+using socket_manager_ptr = util::intrusive_ptr<socket_manager>;
 
 } // namespace net

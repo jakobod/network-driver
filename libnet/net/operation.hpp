@@ -58,4 +58,6 @@ constexpr operation operator~(operation x) {
 
 std::string to_string(operation op);
 
+std::ostream& operator<<(std::ostream& os, operation op);
+
 } // namespace net

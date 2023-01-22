@@ -9,6 +9,9 @@
 
 #include "meta/concepts.hpp"
 
+#include "util/intrusive_ptr.hpp"
+#include "util/ref_counted.hpp"
+
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -53,7 +56,6 @@ using datagram_socket_pair = std::pair<datagram_socket, datagram_socket>;
 using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
 using multiplexer_ptr = std::shared_ptr<multiplexer>;
 using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
-using socket_manager_ptr = std::shared_ptr<socket_manager>;
 
 // -- template types -----------------------------------------------------------
 

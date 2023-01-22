@@ -81,7 +81,7 @@ struct dummy_factory : public socket_manager_factory {
       handled_write_event_(handled_write_event) {}
 
   socket_manager_ptr make(net::socket handle, multiplexer* mpx) override {
-    return std::make_shared<dummy_socket_manager>(
+    return util::make_intrusive<dummy_socket_manager>(
       handle, mpx, handled_read_event_, handled_write_event_, handled_timeouts_,
       register_writing_, false);
   }
@@ -196,7 +196,7 @@ TEST_F(multiplexer_impl_test, resetting_timeout) {
   auto res = make_stream_socket_pair();
   ASSERT_EQ(get_error(res), nullptr);
   auto sockets = std::get<stream_socket_pair>(res);
-  auto mgr = std::make_shared<dummy_socket_manager>(
+  auto mgr = util::make_intrusive<dummy_socket_manager>(
     sockets.first, &mpx, handled_read_event, handled_write_event,
     handled_timeouts, false, true);
   mpx.add(mgr, operation::read);
@@ -215,7 +215,7 @@ TEST_F(multiplexer_impl_test, multiple_timeouts) {
   auto res = make_stream_socket_pair();
   ASSERT_EQ(get_error(res), nullptr);
   auto sockets = std::get<stream_socket_pair>(res);
-  auto mgr = std::make_shared<dummy_socket_manager>(
+  auto mgr = util::make_intrusive<dummy_socket_manager>(
     sockets.first, &mpx, handled_read_event, handled_write_event,
     handled_timeouts, false, false);
   mpx.add(mgr, operation::read);
@@ -231,3 +231,6 @@ TEST_F(multiplexer_impl_test, multiple_timeouts) {
                    handled_timeouts.size()),
             0);
 }
+
+// TODO: Implement test that checks pipe-reading and  writing for adding and
+// removing socket_managers from the pollset.
