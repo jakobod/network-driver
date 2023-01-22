@@ -9,6 +9,7 @@
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"
 
+#include "util/byte_span.hpp"
 #include "util/error.hpp"
 #include "util/logger.hpp"
 
