@@ -67,6 +67,7 @@ set(LIB_NET_SOURCES
   src/openssl/tls_session.cpp
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
+  src/util/cli_parser.cpp
   src/util/error_code.cpp
   src/util/error.cpp
   src/util/format.cpp
@@ -116,6 +117,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
     test/net/multiplexer_impl.cpp
+    test/net/pollset_updater.cpp
     test/net/socket_guard.cpp
     test/net/socket_manager.cpp
     test/net/stream_transport.cpp
@@ -124,10 +126,10 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    test/net/pollset_updater.cpp
     test/openssl/communication.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
+    test/util/cli_parser.cpp
     test/util/format.cpp
     test/util/intrusive_ptr.cpp
     test/util/ref_counted.cpp
