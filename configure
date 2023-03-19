@@ -78,6 +78,9 @@ while [ $# -ne 0 ]; do
     --openssl-root-dir=*)
       append_cache_entry OPENSSL_ROOT_DIR PATH "$optarg"
       ;;
+    --compiler=*)
+      append_cache_entry CMAKE_CXX_COMPILER STRING "$optarg"
+      ;;
     --log-level=*)
       set_log_level "$optarg"
       ;;
