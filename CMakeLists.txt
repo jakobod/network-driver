@@ -68,6 +68,7 @@ set(LIB_NET_SOURCES
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
   src/util/cli_parser.cpp
+  src/util/config.cpp
   src/util/error_code.cpp
   src/util/error.cpp
   src/util/format.cpp

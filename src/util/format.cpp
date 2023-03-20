@@ -38,4 +38,11 @@ std::string join(const std::vector<std::string>& strings, const char delim) {
                          });
 }
 
+std::string remove(std::string str, char unwanted) {
+  str.erase(std::remove_if(str.begin(), str.end(),
+                           [unwanted](const char c) { return c == unwanted; }),
+            str.end());
+  return str;
+}
+
 } // namespace util

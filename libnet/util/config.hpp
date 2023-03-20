@@ -8,40 +8,76 @@
 #include "meta/concepts.hpp"
 
 #include <cstdint>
-#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <variant>
 
 namespace util {
 
+/// @brief Configuration class for specifying config params using a config-file
 class config {
 public:
   // -- Public member types ----------------------------------------------------
 
+  /// @brief Type of the key used for mapping the entries
   using key_type = std::string;
+  /// @brief Type of the entries
+  using entry_type = std::variant<bool, std::int64_t, double, std::string>;
+  /// @brief Type of the dictionary used for mapping the entries
+  using dictionary = std::unordered_map<key_type, entry_type>;
 
-private:
-  // -- Private member types ---------------------------------------------------
-
-  using value_type = std::variant<bool, std::int64_t, double, std::string>;
-  using dictionary = std::unordered_map<key_type, value_type>;
-
-public:
+  /// @brief Constructs an empty config instance
   config() = default;
 
-  config(const std::string& config_path_);
+  /// @brief Constructs a config instance from a config file
+  /// @param config_path  Path to the config file
+  config(const std::string& config_path);
 
+  /// @brief Copy constructs a config instance from another instance
+  /// @param other  The instance to copy
+  config(const config& other) = default;
+
+  /// @brief Move constructs a config instance from another instance
+  /// @param other  The instance to move
+  config(config&& other) = default;
+
+  /// @brief Copy assigns a config instance from another instance
+  /// @param other  The instance to copy
+  config& operator=(const config& other) noexcept = default;
+
+  /// @brief Move assigns a config instance from another instance
+  /// @param other  The instance to copy
+  config& operator=(config&& other) noexcept = default;
+
+  /// @brief Parses a given config file and adds the values to this instance
+  /// @param config_path  Path to the config file
+  void parse(const std::string& config_path);
+
+  /// @brief Adds a single entry to the config
+  /// @tparam Entry  Type of the entry
+  /// @param key  The key to add the entry at
+  /// @param entry  The entry to add
   template <meta::one_of<bool, std::int64_t, double, std::string> Entry>
   void add_config_entry(key_type key, Entry entry) {
     config_values_.emplace(std::move(key), std::move(entry));
   }
 
+  /// @brief Retrieves a config entry from the config
+  /// @tparam T  type of the config entry
+  /// @param key  The key of the config entry
+  /// @returns A pointer to the config entry if it exists, nullptr when the
+  ///          entry does not have type T or does not exist
   template <meta::one_of<bool, std::int64_t, double, std::string> T>
   const T* get(const key_type& key) const {
     return try_get<T>(key);
   }
 
+  /// @brief Retrieves a config entry from the config
+  /// @tparam T  type of the config entry
+  /// @param key  The key of the config entry
+  /// @param fallback  The fallback value in case of errors
+  /// @returns The entry value if it exists and has type `T`, the fallback
+  ///          otherwise
   template <meta::one_of<bool, std::int64_t, double, std::string> T>
   const T& get_or(const key_type& key, const T& fallback) const {
     if (auto ptr = try_get<T>(key))
@@ -50,6 +86,11 @@ public:
   }
 
 private:
+  /// @brief Tries to retrieve a config entry from the config
+  /// @tparam T  type of the config entry
+  /// @param key  The key of the config entry
+  /// @returns A pointer to the config entry if it exists, nullptr in case the
+  ///          entry does not have type T or does not exist
   template <class T>
   const T* try_get(const key_type& key) const {
     if (!config_values_.contains(key))
@@ -60,6 +101,7 @@ private:
     return nullptr;
   }
 
+  /// @brief The dictionary containing the config_values
   dictionary config_values_;
 };
 

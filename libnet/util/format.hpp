@@ -55,4 +55,6 @@ std::vector<std::string> split(const std::string& str, const char delim);
 
 std::string join(const std::vector<std::string>& strings, const char delim);
 
+std::string remove(std::string str, char unwanted);
+
 } // namespace util
