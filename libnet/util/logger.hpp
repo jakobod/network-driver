@@ -11,7 +11,7 @@
 #define NET_LOG_LEVEL_DEBUG (3)
 #define NET_LOG_LEVEL_TRACE (4)
 
-#if 1 > NET_LOG_LEVEL_NONE
+#if NET_LOG_LEVEL > NET_LOG_LEVEL_NONE
 
 #  include "meta/concepts.hpp"
 

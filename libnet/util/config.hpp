@@ -62,6 +62,19 @@ public:
     config_values_.emplace(std::move(key), std::move(entry));
   }
 
+  /// @brief Checks wether the config contains an entry for `key` and the type
+  ///        is equal to `T`
+  /// @tparam T  The expected type of the entry
+  /// @param key  Key of the entry
+  /// @returns true in case the config contains an entry for `key` and the type
+  ///          is equal to `T`, false otherwise
+  template <meta::one_of<bool, std::int64_t, double, std::string> T>
+  bool has_entry(const key_type& key) const {
+    if (!config_values_.contains(key))
+      return false;
+    return std::holds_alternative<T>(config_values_.at(key));
+  }
+
   /// @brief Retrieves a config entry from the config
   /// @tparam T  type of the config entry
   /// @param key  The key of the config entry
@@ -84,6 +97,8 @@ public:
       return *ptr;
     return fallback;
   }
+
+  const dictionary& get_entries() const noexcept;
 
 private:
   /// @brief Tries to retrieve a config entry from the config

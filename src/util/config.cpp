@@ -108,4 +108,8 @@ void config::parse(const std::string& config_path) {
   config_values_ = parse_file(config_path);
 }
 
+const dictionary& config::get_entries() const noexcept {
+  return config_values_;
+}
+
 } // namespace util

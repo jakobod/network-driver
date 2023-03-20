@@ -131,6 +131,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp
+    test/util/config.cpp
     test/util/format.cpp
     test/util/intrusive_ptr.cpp
     test/util/ref_counted.cpp
