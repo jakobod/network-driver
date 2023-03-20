@@ -211,18 +211,18 @@ void multiplexer_impl::add(socket_manager_ptr mgr, operation initial) {
     handle_error(err);
 }
 
-void multiplexer_impl::enable(socket_manager& mgr, operation op) {
-  if (!mgr.mask_add(op))
+void multiplexer_impl::enable(socket_manager_ptr mgr, operation op) {
+  if (!mgr->mask_add(op))
     return;
-  mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
+  mod(mgr->handle().id, EPOLL_CTL_MOD, mgr->mask());
 }
 
-void multiplexer_impl::disable(socket_manager& mgr, operation op, bool remove) {
-  if (!mgr.mask_del(op))
+void multiplexer_impl::disable(socket_manager_ptr mgr, operation op, bool remove) {
+  if (!mgr->mask_del(op))
     return;
-  mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
-  if (remove && mgr.mask() == operation::none)
-    del(mgr.handle());
+  mod(mgr->handle().id, EPOLL_CTL_MOD, mgr->mask());
+  if (remove && mgr->mask() == operation::none)
+    del(mgr->handle());
 }
 
 void multiplexer_impl::del(socket handle) {
@@ -297,7 +297,7 @@ void multiplexer_impl::handle_events(event_span events) {
   auto handle_result = [&](socket_manager_ptr& mgr, event_result res,
                            operation op) -> bool {
     if (res == event_result::done) {
-      disable(*mgr, op, true);
+      disable(mgr, op, true);
     } else if (res == event_result::error) {
       del(mgr->handle());
       return false;
