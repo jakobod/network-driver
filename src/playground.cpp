@@ -1,35 +1,23 @@
-#include "util/cli_parser.hpp"
+#include "meta/concepts.hpp"
+#include "util/config.hpp"
 
 #include <iostream>
 
 using namespace std::string_literals;
 
-namespace {
-
-// constexpr const std::string_view id_no_opt = "no-opt";
-constexpr const std::string_view id_yes_opt = "yes-opt";
-
-} // namespace
-
 int main(int argc, const char** argv) {
-  util::cli_parser parser;
-  try {
-    parser.register_option(id_yes_opt.data(), "no-opt", 'n', false)
-      .register_option(id_yes_opt.data(), "yes-opt", 'y', true);
-  } catch (const std::runtime_error& err) {
-    std::cerr << err.what() << std::endl;
-    return EXIT_FAILURE;
-  }
+  util::config cfg;
+  // cfg.add_config_entry("logger.file-name", "/var/log/network-driver.log"s);
+  // cfg.add_config_entry("logger.log-to-terminal", true);
 
-  try {
-    parser.parse(util::cli_parser::arg_span(argv, argc));
-  } catch (const std::runtime_error& err) {
-    std::cerr << err.what() << std::endl;
-    return EXIT_FAILURE;
-  }
+  const auto file_name = cfg.get_or<std::string>("logger.file-name",
+                                                 "logfile.log");
+  std::cout << "size = " << file_name.size() << std::endl;
+  std::cout << file_name << std::endl;
 
-  std::cout << "Number of values for " << id_yes_opt << ": "
-            << parser.num_option_values(id_yes_opt.data()) << std::endl;
-  for (const auto& v : parser.option_values(id_yes_opt.data()))
-    std::cout << v << std::endl;
+  std::cout << (cfg.get_or<bool>("logger.log-to-terminal", false) ? "true"
+                                                                  : "false")
+            << std::endl;
+  // struct dummy {};
+  // [[maybe_unused]] auto d = cfg.get<dummy>("logger.log-to-terminal");
 }
