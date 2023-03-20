@@ -68,6 +68,7 @@ set(LIB_NET_SOURCES
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
   src/util/cli_parser.cpp
+  src/util/config.cpp
   src/util/error_code.cpp
   src/util/error.cpp
   src/util/format.cpp
@@ -130,6 +131,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp
+    test/util/config.cpp
     test/util/format.cpp
     test/util/intrusive_ptr.cpp
     test/util/ref_counted.cpp

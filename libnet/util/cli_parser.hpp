@@ -152,7 +152,7 @@ public:
   template <class T>
   T option_value([[maybe_unused]] const std::string& id,
                  [[maybe_unused]] std::size_t pos = 0) const {
-    throw std::runtime_error{"Casting to type T is not implemented"};
+    throw std::runtime_error{"Conversion to specified type is not supported"};
     return {};
   }
 

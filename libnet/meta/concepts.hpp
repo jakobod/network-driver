@@ -12,7 +12,7 @@
 
 namespace meta {
 
-// -- basic constraints --------------------------------------------------------
+// -- basic Constraints --------------------------------------------------------
 
 /// Concept for checking that type is integral
 template <class T>
@@ -33,15 +33,19 @@ concept pointer = std::is_pointer_v<T>;
 template <class To, class From>
 concept convertible_to = std::is_convertible_v<To*, From*>;
 
-/// Constraints a template to `T`s derived from `Base`
+/// Constrains a template to `T`s derived from `Base`
 template <class Base, class T>
 concept derived_from = std::is_base_of_v<T, Base>;
 
-/// Constraints a template to `T`s derived from `Base`
+/// Constrains a template to `T`s that are equal to `U`.
 template <class T, class U>
 concept same_as = std::is_same_v<T, U>;
 
-// -- compositions of constraints ----------------------------------------------
+/// Constrains a template to `U` that is equal to one of `Ts`
+template <class U, class... Ts>
+concept one_of = (std::is_same_v<Ts, U> || ...);
+
+// -- compositions of Constraints ----------------------------------------------
 
 // Concept that requires types that are trivially serializable
 template <class T>
