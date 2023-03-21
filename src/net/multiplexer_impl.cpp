@@ -1,6 +1,9 @@
 /**
- *  @author Jakob Otto
- *  @email jakob.otto@haw-hamburg.de
+ *  @author    Jakob Otto
+ *  @file      multiplexer_impl.cpp
+ *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
+ *             This file is part of the network-driver project, released under
+ *             the GNU GPL3 License.
  */
 
 #include "net/multiplexer_impl.hpp"
@@ -217,7 +220,8 @@ void multiplexer_impl::enable(socket_manager_ptr mgr, operation op) {
   mod(mgr->handle().id, EPOLL_CTL_MOD, mgr->mask());
 }
 
-void multiplexer_impl::disable(socket_manager_ptr mgr, operation op, bool remove) {
+void multiplexer_impl::disable(socket_manager_ptr mgr, operation op,
+                               bool remove) {
   if (!mgr->mask_del(op))
     return;
   mod(mgr->handle().id, EPOLL_CTL_MOD, mgr->mask());
