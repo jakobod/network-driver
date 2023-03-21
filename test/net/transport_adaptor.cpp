@@ -1,8 +1,9 @@
-
-
 /**
- *  @author Jakob Otto
- *  @email jakob.otto@haw-hamburg.de
+ *  @author    Jakob Otto
+ *  @file      transport_adaptor.cpp
+ *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
+ *             This file is part of the network-driver project, released under
+ *             the GNU GPL3 License.
  */
 
 #include "net/transport_adaptor.hpp"
@@ -143,7 +144,8 @@ struct transport_adaptor_test : public testing::Test {
     sockets = std::get<stream_socket_pair>(maybe_sockets);
 
     uint8_t b = 0;
-    for (auto& val : data) val = std::byte{b++};
+    for (auto& val : data)
+      val = std::byte{b++};
 
     transport_vars_.data = util::const_byte_span{data};
     application_vars_.data = util::const_byte_span{data};
@@ -192,7 +194,8 @@ TEST_F(transport_adaptor_test, handle_write_event) {
     free_space = free_space.subspan(res);
   };
   size_t rounds = 0;
-  while (!free_space.empty() && (++rounds < 20)) read_some();
+  while (!free_space.empty() && (++rounds < 20))
+    read_some();
   EXPECT_TRUE(std::equal(data.begin(), data.end(), receive_buffer.begin()));
 }
 

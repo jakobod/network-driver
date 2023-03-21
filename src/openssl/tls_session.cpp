@@ -1,6 +1,9 @@
 /**
- *  @author Jakob Otto
- *  @email jakob.otto@haw-hamburg.de
+ *  @author    Jakob Otto
+ *  @file      tls_session.cpp
+ *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
+ *             This file is part of the network-driver project, released under
+ *             the GNU GPL3 License.
  */
 
 #include "openssl/tls_session.hpp"

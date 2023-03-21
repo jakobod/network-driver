@@ -1,6 +1,9 @@
 /**
- *  @author Jakob Otto
- *  @email jakob.otto@haw-hamburg.de
+ *  @author    Jakob Otto
+ *  @file      v4_endpoint.cpp
+ *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
+ *             This file is part of the network-driver project, released under
+ *             the GNU GPL3 License.
  */
 
 #include "net/ip/v4_endpoint.hpp"
