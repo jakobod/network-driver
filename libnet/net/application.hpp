@@ -11,13 +11,11 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#include "util/byte_span.hpp"
-
 namespace net {
 
 struct application {
   /// Initializes the application.
-  virtual util::error init() = 0;
+  virtual util::error init(const util::config& cfg) = 0;
 
   /// Checks wether the application has more data to send.
   virtual bool has_more_data() = 0;

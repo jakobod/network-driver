@@ -15,6 +15,7 @@
 #include "net/tcp_accept_socket.hpp"
 #include "net/tcp_stream_socket.hpp"
 
+#include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/intrusive_ptr.hpp"
 
@@ -26,7 +27,7 @@ using namespace net::ip;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
+  util::error init(socket_manager_factory_ptr, const util::config&) override {
     return util::none;
   }
 
@@ -75,7 +76,7 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
-  util::error init() override { return util::none; }
+  util::error init(const util::config&) override { return util::none; }
 
   event_result handle_read_event() override { return event_result::done; }
 

@@ -15,6 +15,7 @@
 #include "net/stream_socket.hpp"
 #include "net/transport.hpp"
 
+#include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/format.hpp"
 #include "util/logger.hpp"
@@ -33,13 +34,15 @@ public:
     LOG_DEBUG("Creating stream_transport with ", NET_ARG2("id", handle.id));
   }
 
-  util::error init() override {
+  util::error init(const util::config& cfg) override {
     LOG_DEBUG("init stream_transport with ", NET_ARG2("socket", handle().id));
+    if (auto err = transport::init(cfg))
+      return err;
     if (!nonblocking(handle(), true))
       return {util::error_code::runtime_error,
               util::format("Failed to set nonblocking on sock={0}",
                            handle().id)};
-    return next_layer_.init();
+    return next_layer_.init(cfg);
   }
 
   // -- socket_manager API -----------------------------------------------------
@@ -47,7 +50,7 @@ public:
   event_result handle_read_event() override {
     LOG_TRACE();
     LOG_DEBUG("handle read_event on ", NET_ARG2("socket", handle().id));
-    for (size_t i = 0; i < max_consecutive_reads; ++i) {
+    for (size_t i = 0; i < transport::max_consecutive_reads_; ++i) {
       auto data = read_buffer_.data() + received_;
       auto size = read_buffer_.size() - received_;
       auto read_res = read(handle<stream_socket>(), std::span(data, size));
@@ -85,15 +88,16 @@ public:
       return (write_buffer_.empty() && !next_layer_.has_more_data());
     };
     auto fetch = [&]() {
-      for (size_t i = 0;
-           next_layer_.has_more_data() && (i < max_consecutive_fetches); ++i)
+      for (size_t i = 0; next_layer_.has_more_data()
+                         && (i < transport::max_consecutive_fetches_);
+           ++i)
         next_layer_.produce();
       return !write_buffer_.empty();
     };
     if (write_buffer_.empty())
       if (!fetch())
         return event_result::done;
-    for (size_t i = 0; i < max_consecutive_writes; ++i) {
+    for (size_t i = 0; i < transport::max_consecutive_writes_; ++i) {
       auto write_res = write(handle<stream_socket>(), write_buffer_);
       if (write_res > 0) {
         LOG_DEBUG("Wrote ", write_res, " bytes to ",

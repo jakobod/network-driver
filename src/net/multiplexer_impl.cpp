@@ -18,6 +18,7 @@
 
 #include "util/binary_serializer.hpp"
 #include "util/byte_span.hpp"
+#include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 #include "util/format.hpp"
@@ -39,8 +40,9 @@ multiplexer_impl::~multiplexer_impl() {
 }
 
 util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
-                                   uint16_t port, bool local) {
+                                   const util::config& cfg) {
   LOG_TRACE();
+  cfg_ = std::addressof(cfg);
 #if defined(EPOLL_MPX)
   LOG_DEBUG("initializing epoll multiplexer");
   mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
@@ -62,8 +64,10 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   add(util::make_intrusive<pollset_updater>(pipe_reader_, this),
       operation::read);
   // Create Acceptor
-  auto res = net::make_tcp_accept_socket(
-    {(local ? ip::v4_address::localhost : ip::v4_address::any), port});
+  auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
+    (cfg_->get_or("multiplexer.local", true) ? ip::v4_address::localhost
+                                             : ip::v4_address::any),
+    cfg_->get_or<std::int64_t>("multiplexer.port", 0)));
   if (auto err = util::get_error(res))
     return *err;
   auto accept_socket_pair = std::get<net::acceptor_pair>(res);
@@ -186,10 +190,10 @@ void multiplexer_impl::handle_timeouts() {
 }
 
 util::error_or<multiplexer_ptr>
-make_multiplexer(socket_manager_factory_ptr factory, uint16_t port) {
+make_multiplexer(socket_manager_factory_ptr factory, const util::config& cfg) {
   LOG_TRACE();
   auto mpx = std::make_shared<multiplexer_impl>();
-  if (auto err = mpx->init(std::move(factory), port))
+  if (auto err = mpx->init(std::move(factory), cfg))
     return err;
   return mpx;
 }
@@ -210,7 +214,7 @@ void multiplexer_impl::add(socket_manager_ptr mgr, operation initial) {
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
   managers_.emplace(mgr->handle().id, mgr);
   // TODO: This should probably return an error instead of calling handle_error
-  if (auto err = mgr->init())
+  if (auto err = mgr->init(*cfg_))
     handle_error(err);
 }
 
@@ -349,7 +353,7 @@ void multiplexer_impl::add(socket_manager_ptr mgr, operation initial) {
     managers_.emplace(mgr->handle().id, mgr);
     // TODO: This should probably return an error instead of calling
     // handle_error
-    if (auto err = mgr->init())
+    if (auto err = mgr->init(*cfg_))
       handle_error(err);
   } else {
     LOG_DEBUG("Requesting to add socket_manager with ",

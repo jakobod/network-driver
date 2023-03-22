@@ -13,6 +13,7 @@
 #include "net/transport.hpp"
 #include "net/transport_adaptor.hpp"
 
+#include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/format.hpp"
 
@@ -42,7 +43,7 @@ struct application_vars {
 };
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
+  util::error init(socket_manager_factory_ptr, const util::config&) override {
     return util::none;
   }
 
@@ -102,16 +103,18 @@ struct dummy_transport : transport {
     min_read_size_ = policy.min_size;
   }
 
-  util::error init() override {
+  util::error init(const util::config& cfg) override {
+    if (auto err = transport::init(cfg))
+      return err;
     if (!nonblocking(handle(), true))
       return {util::error_code::runtime_error,
               util::format("Failed to set nonblocking on sock={0}",
                            handle().id)};
-    return next_layer_.init();
+    return next_layer_.init(cfg);
   }
 
   event_result handle_read_event() override {
-    for (size_t i = 0; i < max_consecutive_reads; ++i) {
+    for (size_t i = 0; i < transport::max_consecutive_reads_; ++i) {
       auto read_res = read(handle<stream_socket>(), read_buffer_);
       if (read_res > 0) {
         next_layer_.consume(
@@ -203,7 +206,8 @@ struct tls_test : public testing::Test {
       ctx.init(CERT_DIRECTORY "/server.crt", CERT_DIRECTORY "/server.key"));
 
     uint8_t b = 0;
-    for (auto& val : data) val = std::byte{b++};
+    for (auto& val : data)
+      val = std::byte{b++};
 
     client_application_vars_.data = util::const_byte_span{data};
     server_application_vars_.data = util::const_byte_span{data};
@@ -238,10 +242,9 @@ void handle_handshake(Stack& client, Stack& server) {
 
 TEST_F(tls_test, init) {
   const bool is_client = true;
-
   stack_type stack{sockets.first, &mpx,      transport_vars_,
                    ctx,           is_client, client_application_vars_};
-  EXPECT_NO_ERROR(stack.init());
+  EXPECT_NO_ERROR(stack.init(util::config{}));
   EXPECT_TRUE(client_application_vars_.initialized);
   EXPECT_EQ(transport_vars_.configured_policy, receive_policy::up_to(2048));
 }
@@ -252,8 +255,8 @@ TEST_F(tls_test, roundtrip) {
   stack_type server{sockets.second,          &mpx, transport_vars_, ctx, false,
                     server_application_vars_};
   // Initialize them
-  EXPECT_NO_ERROR(client.init());
-  EXPECT_NO_ERROR(server.init());
+  EXPECT_NO_ERROR(client.init(util::config{}));
+  EXPECT_NO_ERROR(server.init(util::config{}));
 
   // Handle the handshake between both peers
   EXPECT_FALSE(client.next_layer().next_layer().handshake_done());

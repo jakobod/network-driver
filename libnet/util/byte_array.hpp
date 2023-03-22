@@ -18,8 +18,7 @@ template <size_t Size>
 using byte_array = std::array<std::byte, Size>;
 
 template <class... Ts>
-constexpr util::byte_array<sizeof...(Ts)>
-make_byte_array(Ts&&... args) noexcept {
+constexpr byte_array<sizeof...(Ts)> make_byte_array(Ts&&... args) noexcept {
   return {std::byte(std::forward<Ts>(args))...};
 }
 

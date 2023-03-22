@@ -9,6 +9,7 @@
 #pragma once
 
 #include "net/fwd.hpp"
+#include "util/fwd.hpp"
 
 #include "net/multiplexer.hpp"
 #include "net/pipe_socket.hpp"
@@ -68,8 +69,8 @@ public:
   ~multiplexer_impl() override;
 
   /// Initializes the multiplexer.
-  util::error init(socket_manager_factory_ptr factory, std::uint16_t port,
-                   bool local = false) override;
+  util::error init(socket_manager_factory_ptr factory,
+                   const util::config& cfg) override;
 
   // -- Thread functions -------------------------------------------------------
 
@@ -167,6 +168,8 @@ private:
   bool running_{false};
   std::thread mpx_thread_;
   std::thread::id mpx_thread_id_;
+
+  const util::config* cfg_ = nullptr;
 };
 
 util::error_or<multiplexer_ptr>

@@ -21,7 +21,7 @@ struct layer {
   // -- Upfacing interface (towards application) -------------------------------
 
   /// Initializes the application.
-  virtual util::error init() = 0;
+  virtual util::error init(const util::config&) = 0;
 
   /// Checks wether the application has more data to send.
   virtual bool has_more_data() = 0;

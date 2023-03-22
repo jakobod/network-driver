@@ -17,6 +17,7 @@
 
 #include "util/binary_serializer.hpp"
 #include "util/byte_buffer.hpp"
+#include "util/config.hpp"
 #include "util/error.hpp"
 
 #include "net_test.hpp"
@@ -26,7 +27,7 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
+  util::error init(socket_manager_factory_ptr, const util::config&) override {
     return util::none;
   }
 
@@ -72,7 +73,7 @@ public:
     // nop
   }
 
-  util::error init() override { return util::none; }
+  util::error init(const util::config&) override { return util::none; }
 
   event_result handle_read_event() override { return event_result::done; }
 
@@ -106,12 +107,12 @@ struct pollset_updater_test : public ::testing::Test, public dummy_multiplexer {
 
 TEST_F(pollset_updater_test, init) {
   pollset_updater updater{pipe_reader, this};
-  EXPECT_EQ(updater.init(), util::none);
+  EXPECT_EQ(updater.init(util::config{}), util::none);
 }
 
 TEST_F(pollset_updater_test, handle_shutdown) {
   pollset_updater updater{pipe_reader, this};
-  EXPECT_EQ(updater.init(), util::none);
+  EXPECT_EQ(updater.init(util::config{}), util::none);
   write_to_pipe(pollset_updater::shutdown_code);
   updater.handle_read_event();
   EXPECT_EQ(last_error, util::none);
@@ -120,7 +121,7 @@ TEST_F(pollset_updater_test, handle_shutdown) {
 
 TEST_F(pollset_updater_test, handle_add) {
   pollset_updater updater{pipe_reader, this};
-  EXPECT_EQ(updater.init(), util::none);
+  EXPECT_EQ(updater.init(util::config{}), util::none);
   auto mgr = util::make_intrusive<dummy_manager>(invalid_socket, this);
   mgr->ref();
   EXPECT_EQ(mgr->ref_count(), 2);
@@ -135,14 +136,14 @@ TEST_F(pollset_updater_test, handle_add) {
 
 TEST_F(pollset_updater_test, handle_write_event) {
   pollset_updater updater{pipe_reader, this};
-  EXPECT_EQ(updater.init(), util::none);
+  EXPECT_EQ(updater.init(util::config{}), util::none);
   EXPECT_EQ(updater.handle_write_event(), event_result::error);
   EXPECT_EQ(last_error.code(), util::error_code::runtime_error);
 }
 
 TEST_F(pollset_updater_test, handle_timeout) {
   pollset_updater updater{pipe_reader, this};
-  EXPECT_EQ(updater.init(), util::none);
+  EXPECT_EQ(updater.init(util::config{}), util::none);
   EXPECT_EQ(updater.handle_timeout(42), event_result::error);
   EXPECT_EQ(last_error.code(), util::error_code::runtime_error);
 }

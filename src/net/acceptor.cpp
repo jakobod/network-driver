@@ -28,7 +28,7 @@ acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx,
   LOG_TRACE();
 }
 
-util::error acceptor::init() {
+util::error acceptor::init(const util::config&) {
   LOG_TRACE();
   return util::none;
 }

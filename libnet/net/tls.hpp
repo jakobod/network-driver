@@ -51,7 +51,7 @@ public:
 
   // -- Upfacing interface (towards application) -------------------------------
 
-  util::error init() override {
+  util::error init(const util::config&) override {
     // Check the relevant ssl members
     if (!ssl_)
       return {util::error_code::openssl_error, "SSL object was not created"};
@@ -147,9 +147,7 @@ public:
   }
 
   /// Returns a reference to the send_buffer
-  util::byte_buffer& write_buffer() override {
-    return encrypt_buf_;
-  }
+  util::byte_buffer& write_buffer() override { return encrypt_buf_; }
 
   /// Enqueues data to the transport extension
   void enqueue(util::const_byte_span bytes) override {
@@ -162,9 +160,7 @@ public:
   }
 
   /// Registers the stack for write events
-  void register_writing() override {
-    parent_.register_writing();
-  }
+  void register_writing() override { parent_.register_writing(); }
 
   /// Sets a timeout in `duration` milliseconds with the id `timeout_id`
   uint64_t set_timeout_in(std::chrono::milliseconds duration) override {
@@ -178,9 +174,7 @@ public:
   }
 
   /// Checks wether this session is initialized (Handshake is done)
-  bool handshake_done() {
-    return SSL_is_init_finished(ssl_);
-  }
+  bool handshake_done() { return SSL_is_init_finished(ssl_); }
 
 private:
   util::error encrypt() {

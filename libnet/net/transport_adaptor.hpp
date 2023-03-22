@@ -9,6 +9,7 @@
 #pragma once
 
 #include "net/fwd.hpp"
+#include "util/fwd.hpp"
 
 #include "net/layer.hpp"
 #include "net/receive_policy.hpp"
@@ -28,7 +29,9 @@ public:
   explicit transport_adaptor(transport& parent, Ts&&... xs)
     : parent_{parent}, next_layer_{*this, std::forward<Ts>(xs)...} {}
 
-  util::error init() override { return next_layer_.init(); }
+  util::error init(const util::config& cfg) override {
+    return next_layer_.init(cfg);
+  }
 
   bool has_more_data() override { return next_layer_.has_more_data(); }
 

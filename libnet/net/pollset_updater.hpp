@@ -9,6 +9,7 @@
 #pragma once
 
 #include "net/fwd.hpp"
+#include "util/fwd.hpp"
 
 #include "net/socket_manager.hpp"
 
@@ -39,7 +40,7 @@ public:
   pollset_updater(pipe_socket read_handle, multiplexer* parent);
 
   /// Initializes the pollset updater.
-  util::error init() override;
+  util::error init(const util::config& cfg) override;
 
   // -- interface functions ----------------------------------------------------
 

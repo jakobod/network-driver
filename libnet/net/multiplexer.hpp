@@ -16,6 +16,7 @@
 #include "net/socket_manager.hpp"
 #include "net/tcp_stream_socket.hpp"
 
+#include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 
@@ -30,7 +31,7 @@ public:
 
   /// Initializes the multiplexer.
   virtual util::error
-  init(socket_manager_factory_ptr factory, uint16_t port, bool local)
+  init(socket_manager_factory_ptr factory, const util::config& cfg)
     = 0;
 
   /// Creates a thread that runs this multiplexer indefinately.

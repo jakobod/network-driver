@@ -14,6 +14,7 @@
 #include "net/stream_socket.hpp"
 
 #include "util/byte_span.hpp"
+#include "util/config.hpp"
 #include "util/error.hpp"
 
 #include "net_test.hpp"
@@ -28,7 +29,7 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
+  util::error init(socket_manager_factory_ptr, const util::config&) override {
     return util::none;
   }
 
@@ -77,7 +78,7 @@ struct dummy_application {
     // nop
   }
 
-  util::error init() {
+  util::error init(const util::config&) {
     parent_.configure_next_read(receive_policy::exactly(1024));
     return util::none;
   }
@@ -144,7 +145,7 @@ void write_all_data(net::stream_socket sock, util::const_byte_span data) {
 
 TEST_F(stream_transport_test, handle_read_event) {
   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), util::none);
+  ASSERT_EQ(mgr.init(util::config{}), util::none);
   std::thread writer([this] { write_all_data(sockets.second, data); });
   while (received_data.size() < data.size())
     ASSERT_EQ(mgr.handle_read_event(), event_result::ok);
@@ -158,7 +159,7 @@ TEST_F(stream_transport_test, handle_write_event) {
   size_t received = 0;
   util::byte_array<32768> buf;
   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), util::none);
+  ASSERT_EQ(mgr.init(util::config{}), util::none);
   auto read_some = [&]() {
     auto data = buf.data() + received;
     auto remaining = buf.size() - received;
@@ -169,7 +170,8 @@ TEST_F(stream_transport_test, handle_write_event) {
       FAIL() << "socket diconnected prematurely!" << std::endl;
     received += res;
   };
-  while (mgr.handle_write_event() == event_result::ok) read_some();
+  while (mgr.handle_write_event() == event_result::ok)
+    read_some();
   read_some();
   ASSERT_EQ(received, data.size());
   EXPECT_EQ(memcmp(data.data(), received_data.data(), received_data.size()), 0);
@@ -177,7 +179,7 @@ TEST_F(stream_transport_test, handle_write_event) {
 
 TEST_F(stream_transport_test, disconnect) {
   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data);
-  ASSERT_EQ(mgr.init(), util::none);
+  ASSERT_EQ(mgr.init(util::config{}), util::none);
   close(sockets.second);
   EXPECT_EQ(mgr.handle_read_event(), event_result::error);
 }

@@ -20,6 +20,8 @@ namespace util {
 
 class binary_deserializer;
 class binary_serializer;
+class cli_parser;
+class config;
 class error;
 class serialized_size;
 

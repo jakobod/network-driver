@@ -15,7 +15,7 @@
 
 using namespace std::string_literals;
 
-int main(int argc, const char** argv) {
+int main(int, const char**) {
   util::config cfg;
   try {
     cfg.parse("config.cfg");
@@ -23,9 +23,10 @@ int main(int argc, const char** argv) {
     LOG_ERROR(err.what());
   }
 
-  std::cout << cfg.get_or<std::string>("logger.file-name", "logfile.log")
-            << std::endl;
+  LOG_INIT(cfg);
 
-  std::cout << cfg.get_or<std::string>("logger.terminal-logging", "blubb")
-            << std::endl;
+  LOG_TRACE();
+  LOG_ERROR("error");
+  LOG_WARNING("warning");
+  LOG_DEBUG("debug");
 }
