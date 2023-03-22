@@ -14,6 +14,7 @@
 
 #include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
+#include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/logger.hpp"
 

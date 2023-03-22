@@ -30,7 +30,7 @@ constexpr const char* key4 = "key4";
 const std::array<std::pair<std::string, config::entry_type>, 4> sample_entries{
   std::make_pair(key1, "value1"s),
   std::make_pair(key2, true),
-  std::make_pair(key3, 123456789ll),
+  std::make_pair(key3, std::int64_t{123456789}),
   std::make_pair(key4, 1234.5678),
 };
 
@@ -50,7 +50,7 @@ config create_sample_config() {
   util::config cfg;
   cfg.add_config_entry(key1, "value1"s);
   cfg.add_config_entry(key2, true);
-  cfg.add_config_entry(key3, 123456789ll);
+  cfg.add_config_entry(key3, std::int64_t{123456789});
   cfg.add_config_entry(key4, 1234.5678);
   return cfg;
 }
@@ -81,7 +81,7 @@ TEST(config, get) {
   //
   EXPECT_EQ(str, "value1"s);
   EXPECT_EQ(boolean, true);
-  EXPECT_EQ(integer, 123456789ll);
+  EXPECT_EQ(integer, std::int64_t{123456789});
   EXPECT_EQ(floating, 1234.5678);
 
   // Check that the error cases are handled correctly
@@ -95,13 +95,13 @@ TEST(config, get_or) {
   // Check that the contained values are returned correctly
   EXPECT_EQ(cfg.get_or(key1, "other"s), "value1"s);
   EXPECT_TRUE(cfg.get_or(key2, false));
-  EXPECT_EQ(cfg.get_or(key3, 42ll), 123456789ll);
+  EXPECT_EQ(cfg.get_or(key3, std::int64_t{42}), std::int64_t{123456789});
   EXPECT_EQ(cfg.get_or(key4, 42.69), 1234.5678);
 
   // Check the fallback cases
   EXPECT_EQ(cfg.get_or("non_existent_key", "other"s), "other"s);
   EXPECT_FALSE(cfg.get_or("non_existent_key", false));
-  EXPECT_EQ(cfg.get_or("non_existent_key", 42ll), 42ll);
+  EXPECT_EQ(cfg.get_or("non_existent_key", std::int64_t{42}), std::int64_t{42});
   EXPECT_EQ(cfg.get_or("non_existent_key", 42.69), 42.69);
 }
 
@@ -133,6 +133,6 @@ TEST(config, parse) {
 
   EXPECT_EQ(*cfg.get<std::string>("key1"), "value1"s);
   EXPECT_TRUE(*cfg.get<bool>("test.key2"));
-  EXPECT_EQ(*cfg.get<std::int64_t>("test.key3"), 123456789ll);
+  EXPECT_EQ(*cfg.get<std::int64_t>("test.key3"), std::int64_t{123456789});
   EXPECT_EQ(*cfg.get<double>("test.key4"), 42.69);
 }
