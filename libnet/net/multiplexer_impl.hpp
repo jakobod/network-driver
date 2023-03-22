@@ -85,7 +85,7 @@ public:
 
   bool running() const override;
 
-  void set_thread_id();
+  void set_thread_id(std::thread::id tid = {}) noexcept;
 
   // -- members ----------------------------------------------------------------
 
@@ -173,6 +173,6 @@ private:
 };
 
 util::error_or<multiplexer_ptr>
-make_multiplexer(socket_manager_factory_ptr factory, std::uint16_t port = 0);
+make_multiplexer(socket_manager_factory_ptr factory, const util::config& cfg);
 
 } // namespace net

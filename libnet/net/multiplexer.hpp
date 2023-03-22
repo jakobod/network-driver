@@ -19,6 +19,7 @@
 #include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/error_or.hpp"
+#include "util/intrusive_ptr.hpp"
 
 #include <chrono>
 #include <string>
@@ -82,8 +83,8 @@ public:
     auto sock = make_connected_tcp_stream_socket(ep);
     if (auto err = util::get_error(sock))
       return *err;
-    auto mgr = std::make_shared<Manager>(std::get<tcp_stream_socket>(sock),
-                                         this, std::forward<Ts>(xs)...);
+    auto mgr = util::make_intrusive<Manager>(std::get<tcp_stream_socket>(sock),
+                                             this, std::forward<Ts>(xs)...);
     add(mgr, initial_op);
     return util::none;
   }

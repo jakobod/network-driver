@@ -42,6 +42,7 @@ multiplexer_impl::~multiplexer_impl() {
 util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
                                    const util::config& cfg) {
   LOG_TRACE();
+  set_thread_id(std::this_thread::get_id());
   cfg_ = std::addressof(cfg);
 #if defined(EPOLL_MPX)
   LOG_DEBUG("initializing epoll multiplexer");
@@ -75,6 +76,7 @@ util::error multiplexer_impl::init(socket_manager_factory_ptr factory,
   port_ = accept_socket_pair.second;
   add(util::make_intrusive<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
+  set_thread_id();
   return util::none;
 }
 
@@ -84,6 +86,7 @@ void multiplexer_impl::start() {
     running_ = true;
     mpx_thread_ = std::thread(&multiplexer_impl::run, this);
     mpx_thread_id_ = mpx_thread_.get_id();
+    LOG_DEBUG(NET_ARG(mpx_thread_id_));
   }
 }
 
@@ -130,8 +133,8 @@ bool multiplexer_impl::running() const {
   return mpx_thread_.joinable();
 }
 
-void multiplexer_impl::set_thread_id() {
-  mpx_thread_id_ = std::this_thread::get_id();
+void multiplexer_impl::set_thread_id(std::thread::id tid) noexcept {
+  mpx_thread_id_ = tid;
 }
 
 void multiplexer_impl::run() {
