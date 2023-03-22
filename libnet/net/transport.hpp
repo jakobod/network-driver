@@ -14,6 +14,8 @@
 
 #include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
+#include "util/error.hpp"
+#include "util/logger.hpp"
 
 namespace net {
 
@@ -22,6 +24,20 @@ class transport : public socket_manager {
 public:
   transport(socket handle, multiplexer* mpx) : socket_manager{handle, mpx} {
     // nop
+  }
+
+  util::error init(const util::config& cfg) override {
+    LOG_TRACE();
+    max_consecutive_fetches_ = cfg.get_or("transport.max-consecutive-fetches",
+                                          std::int64_t{10});
+    max_consecutive_reads_ = cfg.get_or("transport.max-consecutive-reads",
+                                        std::int64_t{20});
+    max_consecutive_writes_ = cfg.get_or("transport.max-consecutive-writes",
+                                         std::int64_t{20});
+    LOG_DEBUG(NET_ARG(max_consecutive_fetches_),
+              NET_ARG(max_consecutive_reads_),
+              NET_ARG(max_consecutive_writes_));
+    return util::none;
   }
 
   // -- public API -------------------------------------------------------------
@@ -33,13 +49,15 @@ public:
   util::byte_buffer& write_buffer() { return write_buffer_; }
 
   void enqueue(util::const_byte_span bytes) {
+    LOG_TRACE();
+    // TODO: copying the data is not very performant. Think of another solution
     write_buffer_.insert(write_buffer_.end(), bytes.begin(), bytes.end());
   }
 
 protected:
-  static constexpr const size_t max_consecutive_fetches = 10;
-  static constexpr const size_t max_consecutive_reads = 20;
-  static constexpr const size_t max_consecutive_writes = 20;
+  size_t max_consecutive_fetches_ = 10;
+  size_t max_consecutive_reads_ = 20;
+  size_t max_consecutive_writes_ = 20;
 
   size_t received_ = 0;
   size_t written_ = 0;

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "net/fwd.hpp"
+#include "util/fwd.hpp"
 
 #include "net/operation.hpp"
 #include "net/socket.hpp"
@@ -36,7 +37,7 @@ public:
   socket_manager(const socket_manager&) = delete;
 
   /// Initializes a socket_manager
-  virtual util::error init() = 0;
+  virtual util::error init(const util::config& cfg) = 0;
 
   // -- Assignment operators ---------------------------------------------------
 

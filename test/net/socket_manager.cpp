@@ -12,6 +12,7 @@
 #include "net/stream_socket.hpp"
 
 #include "util/byte_buffer.hpp"
+#include "util/config.hpp"
 #include "util/error.hpp"
 
 #include "net_test.hpp"
@@ -25,7 +26,7 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer {
-  util::error init(socket_manager_factory_ptr, uint16_t, bool) override {
+  util::error init(socket_manager_factory_ptr, const util::config&) override {
     return util::none;
   }
 
@@ -86,7 +87,7 @@ public:
     // nop
   }
 
-  util::error init() override { return util::none; }
+  util::error init(const util::config&) override { return util::none; }
 
   event_result handle_read_event() override { return event_result::done; }
 

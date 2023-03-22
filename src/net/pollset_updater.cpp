@@ -38,7 +38,7 @@ pollset_updater::pollset_updater(pipe_socket handle, multiplexer* mpx)
   LOG_TRACE();
 }
 
-util::error pollset_updater::init() {
+util::error pollset_updater::init(const util::config&) {
   LOG_TRACE();
   return util::none;
 }

@@ -15,6 +15,7 @@
 #include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"
 
+#include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/format.hpp"
 
@@ -59,11 +60,13 @@ struct dummy_transport : public transport {
     vars_.configured_policy = policy;
   }
 
-  util::error init() override {
+  util::error init(const util::config& cfg) override {
+    if (auto err = transport::init(cfg))
+      return err;
     if (!nonblocking(handle(), true))
       return {util::error_code::runtime_error,
               "Failed to set nonblocking on sock={0}", handle().id};
-    return next_layer_.init();
+    return next_layer_.init(cfg);
   }
 
   event_result handle_read_event() override {
@@ -76,7 +79,8 @@ struct dummy_transport : public transport {
       return !next_layer_.has_more_data() && write_buffer_.empty();
     };
     size_t i = 0;
-    while (next_layer_.has_more_data() && (++i <= max_consecutive_fetches))
+    while (next_layer_.has_more_data()
+           && (++i <= transport::max_consecutive_fetches_))
       next_layer_.produce();
     while (!write_buffer_.empty()) {
       auto res = write(handle<stream_socket>(), write_buffer_);
@@ -104,7 +108,7 @@ struct dummy_application {
     // nop
   }
 
-  util::error init() {
+  util::error init(const util::config&) {
     vars_.initialized = true;
     parent_.configure_next_read(receive_policy::exactly(1024));
     return util::none;
@@ -162,14 +166,14 @@ struct transport_adaptor_test : public testing::Test {
 
 TEST_F(transport_adaptor_test, init) {
   stack_type stack{sockets.first, nullptr, transport_vars_, application_vars_};
-  EXPECT_NO_ERROR(stack.init());
+  EXPECT_NO_ERROR(stack.init(util::config{}));
   EXPECT_TRUE(application_vars_.initialized);
   EXPECT_EQ(transport_vars_.configured_policy, receive_policy::exactly(1024));
 }
 
 TEST_F(transport_adaptor_test, handle_read_event) {
   stack_type stack{sockets.first, nullptr, transport_vars_, application_vars_};
-  EXPECT_NO_ERROR(stack.init());
+  EXPECT_NO_ERROR(stack.init(util::config{}));
   EXPECT_EQ(data.size(), write(sockets.second, data));
   while (application_vars_.received.size() < data.size())
     ASSERT_EQ(stack.handle_read_event(), event_result::ok);
@@ -180,7 +184,7 @@ TEST_F(transport_adaptor_test, handle_read_event) {
 
 TEST_F(transport_adaptor_test, handle_write_event) {
   stack_type stack{sockets.first, nullptr, transport_vars_, application_vars_};
-  EXPECT_NO_ERROR(stack.init());
+  EXPECT_NO_ERROR(stack.init(util::config{}));
   while (stack.handle_write_event() == event_result::ok)
     ;
   util::byte_array<1024> receive_buffer;
@@ -201,7 +205,7 @@ TEST_F(transport_adaptor_test, handle_write_event) {
 
 TEST_F(transport_adaptor_test, handle_timeout) {
   stack_type stack{sockets.first, nullptr, transport_vars_, application_vars_};
-  EXPECT_NO_ERROR(stack.init());
+  EXPECT_NO_ERROR(stack.init(util::config{}));
   EXPECT_EQ(stack.handle_timeout(42), event_result::ok);
   EXPECT_EQ(application_vars_.handled_timeout, 42);
 }

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "net/fwd.hpp"
+#include "util/fwd.hpp"
 
 #include "net/socket_manager.hpp"
 
@@ -22,7 +23,7 @@ public:
 
   ~acceptor() override = default;
 
-  util::error init() override;
+  util::error init(const util::config& cfg) override;
 
   // -- properties -------------------------------------------------------------
 

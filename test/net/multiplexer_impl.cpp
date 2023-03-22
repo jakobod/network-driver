@@ -44,7 +44,7 @@ struct dummy_socket_manager : public socket_manager {
     // nop
   }
 
-  util::error init() override { return util::none; }
+  util::error init(const util::config&) override { return util::none; }
 
   event_result handle_read_event() override {
     util::byte_array<1024> buf;
@@ -103,7 +103,7 @@ struct multiplexer_impl_test : public testing::Test {
     : factory(std::make_shared<dummy_factory>(handled_read_event,
                                               handled_write_event)) {
     mpx.set_thread_id();
-    EXPECT_EQ(mpx.init(factory, 0, true), util::none);
+    EXPECT_EQ(mpx.init(factory, util::config{}), util::none);
     default_num_socket_managers = mpx.num_socket_managers();
   }
 

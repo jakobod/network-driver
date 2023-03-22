@@ -7,11 +7,15 @@
  */
 
 #include "net_test.hpp"
+
+#include "util/config.hpp"
 #include "util/logger.hpp"
 
 int main(int argc, char** argv) {
   // Disables logging alltogether
-  LOG_INIT(true, "");
+  util::config cfg;
+  cfg.add_config_entry("logger.terminal-output", false);
+  LOG_INIT(cfg);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
