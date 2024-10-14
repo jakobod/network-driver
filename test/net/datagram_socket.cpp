@@ -6,7 +6,7 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/datagram_socket.hpp"
+#include "net/socket/datagram_socket.hpp"
 
 #include "util/byte_array.hpp"
 #include "util/error_or.hpp"

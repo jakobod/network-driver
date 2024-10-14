@@ -8,9 +8,13 @@
 
 #pragma once
 
-#include "net/socket.hpp"
+#include "net/socket/socket.hpp"
 
 #include "net/fwd.hpp"
+#include "util/fwd.hpp"
+
+#include <cstddef>
+#include <utility>
 
 namespace net {
 

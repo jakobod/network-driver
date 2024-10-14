@@ -13,8 +13,8 @@
 #include "net/ip/v4_endpoint.hpp"
 
 #include "net/operation.hpp"
+#include "net/socket/tcp_stream_socket.hpp"
 #include "net/socket_manager.hpp"
-#include "net/tcp_stream_socket.hpp"
 
 #include "util/config.hpp"
 #include "util/error.hpp"
@@ -22,7 +22,7 @@
 #include "util/intrusive_ptr.hpp"
 
 #include <chrono>
-#include <string>
+#include <cstdint>
 
 namespace net {
 
@@ -92,10 +92,10 @@ public:
   // -- members ----------------------------------------------------------------
 
   /// Returns the port the multiplexer is listening on.
-  uint16_t port() const noexcept { return port_; }
+  constexpr std::uint16_t port() const noexcept { return port_; }
 
 protected:
-  uint16_t port_ = 0;
+  std::uint16_t port_{0};
 };
 
 } // namespace net

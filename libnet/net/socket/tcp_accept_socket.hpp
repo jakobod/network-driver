@@ -11,7 +11,7 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#include "net/socket.hpp"
+#include "net/socket/socket.hpp"
 
 #include <cstdint>
 

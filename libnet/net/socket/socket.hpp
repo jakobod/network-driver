@@ -13,14 +13,15 @@
 
 #include "util/fwd.hpp"
 
+#include <cstddef>
+#include <string>
+
 namespace net {
 
 /// base class of the typed socket abstraction.
 struct socket {
   /// Default constructs a socket object
-  constexpr socket() noexcept : id(invalid_socket_id) {
-    // nop
-  }
+  constexpr socket() noexcept = default;
 
   /// Constructs a socket object from a socekt_id
   constexpr explicit socket(socket_id id) noexcept : id(id) {
@@ -31,13 +32,17 @@ struct socket {
   constexpr socket(const socket& other) noexcept = default;
 
   /// Copy assignment operator
-  socket& operator=(const socket& other) noexcept = default;
+  constexpr socket& operator=(const socket& other) noexcept = default;
 
   /// Comparison operator for equality of two sockets
-  bool operator==(const socket other) const { return id == other.id; }
+  constexpr bool operator==(const socket other) const noexcept {
+    return id == other.id;
+  }
 
   /// Comparison operator for inequality of two sockets
-  bool operator!=(const socket other) const { return id != other.id; }
+  constexpr bool operator!=(const socket other) const noexcept {
+    return id != other.id;
+  }
 
   /// contained socket_id of the socket
   socket_id id{invalid_socket_id};

@@ -10,7 +10,7 @@
 
 #include "net/fwd.hpp"
 
-#include "net/datagram_socket.hpp"
+#include "net/socket/datagram_socket.hpp"
 
 namespace net {
 

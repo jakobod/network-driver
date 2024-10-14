@@ -7,7 +7,7 @@
  */
 
 #include "net/socket_guard.hpp"
-#include "net/stream_socket.hpp"
+#include "net/socket/stream_socket.hpp"
 
 #include "util/byte_array.hpp"
 #include "util/error_or.hpp"

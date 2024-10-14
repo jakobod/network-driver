@@ -14,12 +14,12 @@ endif()
 # -- set useful CMake options --------------------------------------------------
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-add_compile_options(-Wall -Wextra -pedantic)
+add_compile_options(-Wall -Wextra -pedantic -fexperimental-library)
 
 message (STATUS "Build type ${CMAKE_BUILD_TYPE}")
 
@@ -48,23 +48,27 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 # New source files have to be added here
 set(LIB_NET_SOURCES
   src/net/acceptor.cpp
-  src/net/datagram_socket.cpp
   src/net/event_result.cpp
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
   src/net/multiplexer_impl.cpp
+  src/net/kqueue_multiplexer.cpp
   src/net/operation.cpp
-  src/net/pipe_socket.cpp
   src/net/pollset_updater.cpp
   src/net/socket_manager.cpp
-  src/net/socket.cpp
-  src/net/stream_socket.cpp
-  src/net/tcp_accept_socket.cpp
-  src/net/tcp_stream_socket.cpp
-  src/net/udp_datagram_socket.cpp
   src/net/uri.cpp
+  
   src/openssl/tls_context.cpp
   src/openssl/tls_session.cpp
+  
+  src/net/socket/datagram_socket.cpp
+  src/net/socket/pipe_socket.cpp
+  src/net/socket/socket.cpp
+  src/net/socket/stream_socket.cpp
+  src/net/socket/tcp_accept_socket.cpp
+  src/net/socket/tcp_stream_socket.cpp
+  src/net/socket/udp_datagram_socket.cpp
+
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
   src/util/cli_parser.cpp
@@ -117,7 +121,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/datagram_socket.cpp
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
-    test/net/multiplexer_impl.cpp
+    test/net/kqueue_multiplexer.cpp
     test/net/pollset_updater.cpp
     test/net/socket_guard.cpp
     test/net/socket_manager.cpp

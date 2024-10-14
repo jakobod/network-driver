@@ -12,7 +12,7 @@
 #include "util/fwd.hpp"
 
 #include "net/operation.hpp"
-#include "net/socket.hpp"
+#include "net/socket/socket.hpp"
 
 #include "util/intrusive_ptr.hpp"
 #include "util/ref_counted.hpp"

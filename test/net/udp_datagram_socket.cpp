@@ -6,7 +6,7 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/udp_datagram_socket.hpp"
+#include "net/socket/udp_datagram_socket.hpp"
 #include "net/socket_guard.hpp"
 
 #include "net/ip/v4_address.hpp"
@@ -31,7 +31,8 @@ constexpr const v4_address localhost{util::make_byte_array(127, 0, 0, 1)};
 struct udp_datagram_socket_test : public testing::Test {
   udp_datagram_socket_test() {
     std::uint8_t i = 0;
-    for (auto& v : data) v = std::byte{i++};
+    for (auto& v : data)
+      v = std::byte{i++};
   }
 
   util::byte_array<1024> data;

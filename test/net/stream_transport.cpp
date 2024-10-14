@@ -11,7 +11,7 @@
 
 #include "net/multiplexer.hpp"
 #include "net/receive_policy.hpp"
-#include "net/stream_socket.hpp"
+#include "net/socket/stream_socket.hpp"
 
 #include "util/byte_span.hpp"
 #include "util/config.hpp"

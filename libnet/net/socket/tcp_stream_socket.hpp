@@ -10,7 +10,7 @@
 
 #include "net/fwd.hpp"
 
-#include "net/stream_socket.hpp"
+#include "net/socket/stream_socket.hpp"
 
 namespace net {
 

@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <stack>
 #include <string_view>
 
 using dictionary = util::config::dictionary;
@@ -29,8 +30,9 @@ bool is_bool(const std::string_view value) {
 /// @param value  The string to check
 /// @returns true in case the string encodes a double value, false otherwise
 bool is_double(const std::string_view value) {
-  if (std::count(value.begin(), value.end(), '.') != 1)
+  if (std::count(value.begin(), value.end(), '.') != 1) {
     return false;
+  }
   return std::all_of(value.begin(), value.end(), [](const char c) {
     return (((c >= '0') && (c <= '9')) || (c == '.'));
   });
@@ -40,8 +42,9 @@ bool is_double(const std::string_view value) {
 /// @param value  The string to check
 /// @returns true in case the string encodes an integer value, false otherwise
 bool is_integer(const std::string_view value) {
-  if (std::count(value.begin(), value.end(), '.') != 0)
+  if (std::count(value.begin(), value.end(), '.') != 0) {
     return false;
+  }
   return std::all_of(value.begin(), value.end(),
                      [](const char c) { return ((c >= '0') && (c <= '9')); });
 }
@@ -53,20 +56,22 @@ bool is_integer(const std::string_view value) {
 void parse_line(const std::string& prefix, const std::string& line,
                 dictionary& dict) {
   const auto parts = util::split(line, '=');
-  if ((parts.size() != 2) || parts.front().empty() || parts.back().empty())
+  if ((parts.size() != 2) || parts.front().empty() || parts.back().empty()) {
     throw std::runtime_error{"Error while parsing config line=\"" + line
                              + "\""};
+  }
 
   const auto key = prefix + parts.front();
 
-  if (is_bool(parts.back()))
+  if (is_bool(parts.back())) {
     dict.emplace(key, (parts.back() == "true"));
-  else if (is_double(parts.back()))
+  } else if (is_double(parts.back())) {
     dict.emplace(key, std::stod(parts.back()));
-  else if (is_integer(parts.back()))
+  } else if (is_integer(parts.back())) {
     dict.emplace(key, std::stoll(parts.back()));
-  else
+  } else {
     dict.emplace(key, parts.back());
+  }
 }
 
 dictionary parse_file(const std::string& config_path) {
@@ -80,8 +85,9 @@ dictionary parse_file(const std::string& config_path) {
   while (std::getline(is, line)) {
     // Remove all space characters and skip the line if it is empty
     line = util::remove(line, ' ');
-    if (line.empty())
+    if (line.empty()) {
       continue;
+    }
 
     // Manage the scope
     if (line.find('{') != std::string::npos) {

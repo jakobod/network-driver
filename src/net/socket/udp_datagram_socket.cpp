@@ -6,7 +6,7 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/udp_datagram_socket.hpp"
+#include "net/socket/udp_datagram_socket.hpp"
 
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"

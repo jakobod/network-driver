@@ -11,9 +11,9 @@
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 #include "net/multiplexer.hpp"
+#include "net/socket/tcp_accept_socket.hpp"
+#include "net/socket/tcp_stream_socket.hpp"
 #include "net/socket_manager_factory.hpp"
-#include "net/tcp_accept_socket.hpp"
-#include "net/tcp_stream_socket.hpp"
 
 #include "util/config.hpp"
 #include "util/error.hpp"

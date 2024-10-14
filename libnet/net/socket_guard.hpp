@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "net/socket.hpp"
+#include "net/socket/socket.hpp"
 
 #include "meta/concepts.hpp"
 
@@ -18,45 +18,44 @@ template <meta::derived_from<socket> Socket>
 class socket_guard {
 public:
   /// Constructs a socket guard object from a given socket to manage.
-  explicit constexpr socket_guard(Socket sock) : sock_{sock} {
+  explicit constexpr socket_guard(Socket sock) noexcept : sock_{sock} {
     // nop
   }
 
   /// Default initializes a socket_guard object.
-  constexpr socket_guard() : socket_guard{invalid_socket} {
-    // nop
-  }
+  constexpr socket_guard() noexcept = default;
 
   /// closes a managed socket object on destruction.
   ~socket_guard() {
-    if (sock_ != invalid_socket)
+    if (sock_ != invalid_socket) {
       close(sock_);
+    }
   }
 
   /// Releases a managed socket object and gives up the ownership to the caller.
-  Socket release() {
-    auto ret = sock_;
+  Socket release() noexcept {
+    const auto ret = sock_;
     sock_.id = invalid_socket_id;
     return ret;
   }
 
   /// Returns the managed socket object without giving up ownership.
-  Socket get() { return sock_; }
+  Socket get() const noexcept { return sock_; }
 
   /// Returns the managed socket object without giving up ownership.
-  Socket operator*() { return sock_; }
+  Socket operator*() const noexcept { return sock_; }
 
   /// Returns the managed socket object without giving up ownership.
-  Socket* operator->() { return &sock_; }
+  Socket* operator->() noexcept { return &sock_; }
 
   /// Compares two socket_guard objects for equality.
-  bool operator==(const socket_guard<Socket>& other) {
+  bool operator==(const socket_guard<Socket>& other) const noexcept {
     return sock_ == other.sock_;
   }
 
 private:
   /// The managed socket object.
-  Socket sock_;
+  Socket sock_{invalid_socket};
 };
 
 /// Convenience function to create a socket_guard object without having to

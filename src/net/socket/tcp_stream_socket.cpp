@@ -6,7 +6,7 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/tcp_stream_socket.hpp"
+#include "net/socket/tcp_stream_socket.hpp"
 
 #include "net/ip/v4_endpoint.hpp"
 #include "net/socket_guard.hpp"

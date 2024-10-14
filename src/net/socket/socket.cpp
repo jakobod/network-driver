@@ -6,15 +6,17 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/socket.hpp"
+#include "net/socket/socket.hpp"
 
 #include "net/ip/v4_endpoint.hpp"
 
 #include "util/error.hpp"
 #include "util/logger.hpp"
 
+#include <cerrno>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 namespace net {
@@ -83,9 +85,9 @@ bool reuseaddr(socket sock, bool new_value) {
   LOG_DEBUG("reuseaddr on ", NET_ARG2("socket", sock.id), ", ",
             NET_ARG(new_value));
   int on = new_value ? 1 : 0;
-  auto res = setsockopt(sock.id, SOL_SOCKET, SO_REUSEADDR,
-                        reinterpret_cast<const void*>(&on),
-                        static_cast<unsigned>(sizeof(on)));
+  const auto res = setsockopt(sock.id, SOL_SOCKET, SO_REUSEADDR,
+                              reinterpret_cast<const void*>(&on),
+                              static_cast<unsigned>(sizeof(on)));
   return res == 0;
 }
 

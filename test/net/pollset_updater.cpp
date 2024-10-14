@@ -11,7 +11,7 @@
 #include "net/event_result.hpp"
 #include "net/multiplexer.hpp"
 #include "net/operation.hpp"
-#include "net/pipe_socket.hpp"
+#include "net/socket/pipe_socket.hpp"
 #include "net/socket_manager.hpp"
 #include "net/socket_manager_factory.hpp"
 

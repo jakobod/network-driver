@@ -12,7 +12,7 @@
 
 #include "net/event_result.hpp"
 #include "net/receive_policy.hpp"
-#include "net/stream_socket.hpp"
+#include "net/socket/stream_socket.hpp"
 #include "net/transport.hpp"
 
 #include "util/config.hpp"

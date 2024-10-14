@@ -1,6 +1,6 @@
 /**
  *  @author    Jakob Otto
- *  @file      multiplexer_impl.hpp
+ *  @file      kqueue_multiplexer.hpp
  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
  *             This file is part of the network-driver project, released under
  *             the GNU GPL3 License.
@@ -24,31 +24,19 @@
 #include <optional>
 #include <set>
 #include <span>
+#include <sys/event.h>
 #include <thread>
 #include <unordered_map>
-
-#if defined(__linux__)
-#  define EPOLL_MPX
-#  include <sys/epoll.h>
-#elif defined(__APPLE__)
-#  define KQUEUE_MPX
-#  include <sys/event.h>
-#endif
 
 namespace net {
 
 /// Implements a multiplexing backend for handling event multiplexing facilities
 /// such as epoll and kqueue.
-class multiplexer_impl : public multiplexer {
+class kqueue_multiplexer : public multiplexer {
   static constexpr std::size_t max_events = 32;
 
-#if defined(EPOLL_MPX)
-  using event_type = epoll_event;
-  using mpx_fd = int;
-#elif defined(KQUEUE_MPX)
   using event_type = struct kevent;
   using mpx_fd = int;
-#endif
 
   // Pollset types
   using pollset = std::array<event_type, max_events>;
@@ -64,9 +52,9 @@ class multiplexer_impl : public multiplexer {
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  multiplexer_impl() = default;
+  kqueue_multiplexer() = default;
 
-  ~multiplexer_impl() override;
+  ~kqueue_multiplexer() override;
 
   /// Initializes the multiplexer.
   util::error init(socket_manager_factory_ptr factory,
@@ -173,6 +161,7 @@ private:
 };
 
 util::error_or<multiplexer_ptr>
-make_multiplexer(socket_manager_factory_ptr factory, const util::config& cfg);
+make_kqueue_multiplexer(socket_manager_factory_ptr factory,
+                        const util::config& cfg);
 
 } // namespace net

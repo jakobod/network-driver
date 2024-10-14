@@ -6,13 +6,13 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/tcp_accept_socket.hpp"
+#include "net/socket/tcp_accept_socket.hpp"
 
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 
+#include "net/socket/tcp_stream_socket.hpp"
 #include "net/socket_guard.hpp"
-#include "net/tcp_stream_socket.hpp"
 
 #include "util/error.hpp"
 #include "util/error_or.hpp"

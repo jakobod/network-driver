@@ -42,6 +42,7 @@ set_log_level() {
     debug)                   level='3' ;;
     warning)                 level='2' ;;
     error)                   level='1' ;;
+    none)                   level='0' ;;
     *)
       echo "Invalid log level '$1'.  Try $0 --help to see available options."
       exit 1

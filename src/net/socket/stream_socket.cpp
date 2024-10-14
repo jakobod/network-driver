@@ -6,18 +6,29 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/stream_socket.hpp"
+#include "net/socket/stream_socket.hpp"
+
+#include "net/socket/socket.hpp"
+#include "net/socket_id.hpp"
 
 #include "util/error.hpp"
 #include "util/logger.hpp"
 
+#include "util/fwd.hpp"
+
 #include <array>
-#include <netinet/in.h>
+#include <cstddef>
 #include <utility>
 
-namespace net {
+#include <sys/socket.h>
+
+namespace {
 
 constexpr int no_sigpipe_io_flag = MSG_NOSIGNAL;
+
+}
+
+namespace net {
 
 util::error_or<stream_socket_pair> make_stream_socket_pair() {
   std::array<socket_id, 2> sockets;

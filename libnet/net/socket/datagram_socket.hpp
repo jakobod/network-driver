@@ -9,7 +9,7 @@
 #pragma once
 
 #include "net/fwd.hpp"
-#include "net/socket.hpp"
+#include "net/socket/socket.hpp"
 
 #include "util/fwd.hpp"
 
@@ -29,12 +29,14 @@ struct datagram_socket : socket {
 using datagram_socket_pair = std::pair<datagram_socket, datagram_socket>;
 
 /// Creates a datagram_socket
-util::error_or<datagram_socket_pair> make_connected_datagram_socket_pair();
+[[nodiscard]] util::error_or<datagram_socket_pair>
+make_connected_datagram_socket_pair();
 
 /// Receives packet from `x`.
-std::ptrdiff_t read(datagram_socket x, util::byte_span buf);
+[[nodiscard]] std::ptrdiff_t read(datagram_socket x, util::byte_span buf);
 
 /// Sends packet to `x`.
-std::ptrdiff_t write(datagram_socket x, util::const_byte_span buf);
+[[nodiscard]] std::ptrdiff_t write(datagram_socket x,
+                                   util::const_byte_span buf);
 
 } // namespace net

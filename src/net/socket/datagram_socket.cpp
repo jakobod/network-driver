@@ -6,17 +6,28 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/datagram_socket.hpp"
+#include "net/socket/datagram_socket.hpp"
+
+#include "net/socket/socket.hpp"
+#include "net/socket_id.hpp"
 
 #include "util/error.hpp"
-#include "util/error_or.hpp"
 #include "util/logger.hpp"
 
-#include <sys/socket.h>
+#include "util/fwd.hpp"
 
-namespace net {
+#include <array>
+#include <cstddef>
+#include <sys/socket.h>
+#include <utility>
+
+namespace {
 
 constexpr int no_sigpipe_io_flag = MSG_NOSIGNAL;
+
+}
+
+namespace net {
 
 util::error_or<datagram_socket_pair> make_connected_datagram_socket_pair() {
   LOG_TRACE();

@@ -6,7 +6,7 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/pipe_socket.hpp"
+#include "net/socket/pipe_socket.hpp"
 
 #include "util/error_or.hpp"
 #include "util/logger.hpp"
