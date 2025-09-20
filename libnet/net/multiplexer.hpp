@@ -9,31 +9,24 @@
 #pragma once
 
 #include "net/fwd.hpp"
+#include "util/fwd.hpp"
 
-#include "net/ip/v4_endpoint.hpp"
-
-#include "net/operation.hpp"
-#include "net/socket/tcp_stream_socket.hpp"
-#include "net/socket_manager.hpp"
-
-#include "util/config.hpp"
-#include "util/error.hpp"
-#include "util/error_or.hpp"
-#include "util/intrusive_ptr.hpp"
+#include "net/manager.hpp"
 
 #include <chrono>
-#include <cstdint>
 
 namespace net {
 
 class multiplexer {
 public:
-  virtual ~multiplexer() = default;
+  multiplexer() noexcept = default;
 
-  /// Initializes the multiplexer.
-  virtual util::error
-  init(socket_manager_factory_ptr factory, const util::config& cfg)
-    = 0;
+  multiplexer(const multiplexer&)            = delete;
+  multiplexer& operator=(const multiplexer&) = delete;
+  multiplexer(multiplexer&&)                 = delete;
+  multiplexer& operator=(multiplexer&&)      = delete;
+
+  // -- Interface functions ----------------------------------------------------
 
   /// Creates a thread that runs this multiplexer indefinately.
   virtual void start() = 0;
@@ -44,57 +37,24 @@ public:
   /// Joins with the multiplexer.
   virtual void join() = 0;
 
-  virtual bool running() const = 0;
+  virtual util::error add(sockets::tcp_stream_socket handle) = 0;
 
-  // -- Error Handling ---------------------------------------------------------
+  virtual util::error add(sockets::udp_datagram_socket handle) = 0;
 
-  /// Handles an error `err`.
-  virtual void handle_error(const util::error& err) = 0;
-
-  // -- Interface functions ----------------------------------------------------
-
-  /// The main multiplexing loop.
-  virtual util::error poll_once(bool blocking) = 0;
-
-  /// Adds a new fd to the multiplexer for operation `initial`.
-  /// @warning This function is *NOT* thread-safe.
-  virtual void add(socket_manager_ptr mgr, operation initial) = 0;
-
-  /// Enables an operation `op` for socket manager `mgr`.
-  /// @warning This function is *NOT* thread-safe.
-  virtual void enable(socket_manager_ptr mgr, operation op) = 0;
-
-  /// Disables an operation `op` for socket manager `mgr`.
-  /// If `mgr` is not registered for any operation after disabling it, it is
-  /// removed if `remove` is set.
-  /// @warning This function is *NOT* thread-safe.
-  virtual void disable(socket_manager_ptr mgr, operation op, bool remove) = 0;
-
-  /// Sets a timeout for socket_manager `mgr` at timepoint `when` and returns
-  /// the id.
-  /// @warning This function is *NOT* thread-safe.
-  virtual uint64_t set_timeout(socket_manager_ptr mgr,
-                               std::chrono::system_clock::time_point when)
+  virtual std::uint64_t
+  set_timeout(manager_ptr mgr, std::chrono::steady_clock::time_point tp)
     = 0;
 
-  template <class Manager, class... Ts>
-  util::error
-  tcp_connect(const ip::v4_endpoint& ep, operation initial_op, Ts&&... xs) {
-    auto sock = make_connected_tcp_stream_socket(ep);
-    if (auto err = util::get_error(sock))
-      return *err;
-    auto mgr = util::make_intrusive<Manager>(std::get<tcp_stream_socket>(sock),
-                                             this, std::forward<Ts>(xs)...);
-    add(mgr, initial_op);
-    return util::none;
-  }
+  // -- Implemented functions --------------------------------------------------
 
-  // -- members ----------------------------------------------------------------
+  bool running() const noexcept { return running_; }
 
-  /// Returns the port the multiplexer is listening on.
-  constexpr std::uint16_t port() const noexcept { return port_; }
+  std::uint16_t port() const noexcept { return port_; }
 
 protected:
+  ~multiplexer() = default;
+
+  bool running_{false};
   std::uint16_t port_{0};
 };
 

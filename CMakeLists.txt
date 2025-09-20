@@ -1,15 +1,10 @@
 # -- project setup -------------------------------------------------------------
 
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 project(lib_net CXX)
 
 include(FetchContent)
 include(GoogleTest)
-
-# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
-if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
-  cmake_policy(SET CMP0135 NEW)
-endif()
 
 # -- set useful CMake options --------------------------------------------------
 
@@ -19,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-add_compile_options(-Wall -Wextra -pedantic -fexperimental-library)
+add_compile_options(-Wall -Wextra -pedantic)
 
 message (STATUS "Build type ${CMAKE_BUILD_TYPE}")
 
@@ -32,7 +27,7 @@ if (LIB_NET_ENABLE_TESTS)
   # Googletest
   FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+    URL https://github.com/google/googletest/archive/refs/heads/main.zip
   )
   FetchContent_MakeAvailable(googletest)
 endif()
@@ -47,27 +42,21 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
-  src/net/acceptor.cpp
   src/net/event_result.cpp
+  src/net/manager.cpp
+  src/net/operation.cpp
+  src/net/uring_multiplexer.cpp
+
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
-  src/net/multiplexer_impl.cpp
-  src/net/kqueue_multiplexer.cpp
-  src/net/operation.cpp
-  src/net/pollset_updater.cpp
-  src/net/socket_manager.cpp
-  src/net/uri.cpp
-  
-  src/openssl/tls_context.cpp
-  src/openssl/tls_session.cpp
-  
-  src/net/socket/datagram_socket.cpp
-  src/net/socket/pipe_socket.cpp
-  src/net/socket/socket.cpp
-  src/net/socket/stream_socket.cpp
-  src/net/socket/tcp_accept_socket.cpp
-  src/net/socket/tcp_stream_socket.cpp
-  src/net/socket/udp_datagram_socket.cpp
+    
+  src/net/sockets/datagram_socket.cpp
+  src/net/sockets/pipe_socket.cpp
+  src/net/sockets/socket.cpp
+  src/net/sockets/stream_socket.cpp
+  src/net/sockets/tcp_accept_socket.cpp
+  src/net/sockets/tcp_stream_socket.cpp
+  src/net/sockets/udp_datagram_socket.cpp
 
   src/util/binary_deserializer.cpp
   src/util/binary_serializer.cpp
@@ -75,7 +64,6 @@ set(LIB_NET_SOURCES
   src/util/config.cpp
   src/util/error_code.cpp
   src/util/error.cpp
-  src/util/format.cpp
 )
 
 # -- Object for different targets ----------------------------------------------
@@ -98,6 +86,24 @@ else()
   message(STATUS "Logging disabled")
 endif()
 
+# -- assertion configuration ---------------------------------------------------
+
+if(LIB_NET_ENABLE_ASSERTIONS)
+  message(STATUS "Assertions enabled")
+  add_compile_definitions(NET_ENABLE_ASSERTIONS=${LIB_NET_ENABLE_ASSERTIONS})
+else()
+  message(STATUS "Assertions disabled")
+endif()
+
+# -- assertion configuration ---------------------------------------------------
+
+if(LIB_NET_)
+  message(STATUS "Assertions enabled")
+  add_compile_definitions(NET_ENABLE_ASSERTIONS=${LIB_NET_ENABLE_ASSERTIONS})
+else()
+  message(STATUS "Assertions disabled")
+endif()
+
 # -- main for playing with things ----------------------------------------------
 
 macro(add_target name)
@@ -108,6 +114,7 @@ macro(add_target name)
 endmacro()
 
 add_target(playground)
+target_link_libraries(playground PRIVATE net uring)
 
 # -- test setup ----------------------------------------------------------------
 
@@ -117,30 +124,21 @@ if (LIB_NET_ENABLE_TESTS)
   add_executable(
     lib_net_test
     test/net_test_main.cpp
-    test/net/acceptor.cpp
-    test/net/datagram_socket.cpp
+
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
-    test/net/kqueue_multiplexer.cpp
-    test/net/pollset_updater.cpp
-    test/net/socket_guard.cpp
-    test/net/socket_manager.cpp
-    test/net/stream_transport.cpp
-    test/net/tcp_socket.cpp
-    test/net/tls.cpp
-    test/net/transport_adaptor.cpp
-    test/net/udp_datagram_socket.cpp
-    test/net/uri.cpp
-    test/openssl/communication.cpp
+
+    test/net/sockets/socket_guard.cpp
+
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp
     test/util/config.cpp
-    test/util/format.cpp
     test/util/intrusive_ptr.cpp
     test/util/ref_counted.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
+    test/util/tokenizer.cpp
   )
 
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")

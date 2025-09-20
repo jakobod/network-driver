@@ -11,8 +11,8 @@
 #include "net/fwd.hpp"
 
 #include "util/error_code.hpp"
-#include "util/format.hpp"
 
+#include <format>
 #include <ostream>
 #include <string>
 
@@ -20,15 +20,20 @@ namespace util {
 
 class [[nodiscard]] error {
 public:
-  error(error_code code, std::string msg);
-
-  template <class... Arguments>
-  error(error_code code, std::string form, Arguments... args)
-    : error{code, format(std::move(form), std::move(args)...)} {
+  error(error_code code) : code_(code) {
     // nop
   }
 
-  error(error_code code);
+  error(error_code code, std::string msg) : code_{code}, msg_{std::move(msg)} {
+    // nop
+  }
+
+  template <class... Arguments>
+  error(error_code code, std::format_string<Arguments...> form,
+        Arguments... args)
+    : error{code, std::format(form, std::move(args)...)} {
+    // nop
+  }
 
   error() = default;
 
@@ -56,7 +61,7 @@ public:
 
 private:
   error_code code_{error_code::no_error};
-  std::string msg_;
+  std::string msg_{};
 };
 
 /// Error-constant for returning no-error.

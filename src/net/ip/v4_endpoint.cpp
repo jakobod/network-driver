@@ -10,7 +10,12 @@
 
 #include "util/error.hpp"
 #include "util/error_or.hpp"
-#include "util/format.hpp"
+
+#include <charconv>
+#include <ranges>
+#include <string_view>
+
+using namespace std::string_view_literals;
 
 namespace net::ip {
 
@@ -28,19 +33,27 @@ bool operator!=(const v4_endpoint& lhs, const v4_endpoint& rhs) {
 }
 
 std::string to_string(const v4_endpoint& ep) {
-  return util::format("{0}:{1}", to_string(ep.address()), ep.port());
+  return std::format("{}:{}", to_string(ep.address()), ep.port());
 }
 
 util::error_or<v4_endpoint> parse_v4_endpoint(const std::string& str) {
-  const auto parts = util::split(str, ':');
-  if (parts.size() != 2)
+  const auto separator_pos = str.find_first_of(':');
+  if (separator_pos == std::string::npos) {
     return util::error{util::error_code::parser_error,
                        "Parsing to v4_endpoint failed: needs address and port, "
                        "separated by ':'"};
-  auto maybe_addr = parse_v4_address(parts.front());
-  if (auto err = util::get_error(maybe_addr))
+  }
+  const auto maybe_addr = parse_v4_address(str.substr(0, separator_pos));
+  if (auto err = util::get_error(maybe_addr)) {
     return *err;
-  auto port = static_cast<std::uint16_t>(std::stoi(parts.back()));
+  }
+  const auto port_string = str.substr(separator_pos + 1);
+  std::uint16_t port = 0;
+  auto [_, ec] = std::from_chars(port_string.data(),
+                                 port_string.data() + port_string.size(), port);
+  if (ec != std::errc{}) {
+    return util::error{util::error_code::parser_error, "failed to parse port"};
+  }
   return v4_endpoint{std::get<v4_address>(maybe_addr), port};
 }
 

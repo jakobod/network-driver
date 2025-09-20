@@ -27,7 +27,7 @@ private:
 
 TEST(ref_counted_test, ref_counting) {
   bool deleted = false;
-  auto obj = new dummy_obj(deleted);
+  auto* obj = new dummy_obj(deleted);
   EXPECT_EQ(obj->ref_count(), 1);
   EXPECT_FALSE(deleted);
   obj->ref();

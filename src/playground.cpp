@@ -1,97 +1,205 @@
-/**
- *  @author    Jakob Otto
- *  @file      playground.cpp
- *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
- *             This file is part of the network-driver project, released under
- *             the GNU GPL3 License.
- */
+#include "net/uring_multiplexer.hpp"
 
-#include "meta/concepts.hpp"
+#include "net/application.hpp"
+#include "net/manager_factory.hpp"
+#include "net/receive_policy.hpp"
+#include "net/uring_manager_impl.hpp"
 
-#include "util/byte_array.hpp"
 #include "util/config.hpp"
 #include "util/error.hpp"
+#include "util/error_or.hpp"
+#include "util/intrusive_ptr.hpp"
 #include "util/logger.hpp"
 
-#include "net/event_result.hpp"
-#include "net/kqueue_multiplexer.hpp"
-#include "net/socket/stream_socket.hpp"
-#include "net/socket_manager.hpp"
-#include "net/socket_manager_factory.hpp"
+#include <iostream>
 
-#include <cstdlib>
-#include <string>
-
-using namespace std::string_literals;
+using namespace net;
 
 namespace {
 
-struct dummy_socket_manager : public net::socket_manager {
-  dummy_socket_manager(net::socket handle, net::multiplexer* parent)
-    : net::socket_manager(handle, parent) {
+struct mirror_application : public application {
+  mirror_application(manager* parent) : parent_{parent} {
     // nop
   }
 
-  util::error init(const util::config&) override { return util::none; }
+  ~mirror_application() override = default;
 
-  net::event_result handle_read_event() override {
-    register_writing();
-    num_bytes_ = net::read(handle<net::stream_socket>(), buf_);
-    return (num_bytes_ > 0) ? net::event_result::ok : net::event_result::error;
+  util::error init(const util::config&) override {
+    parent_->configure_next_read(receive_policy::up_to(2048));
+    parent_->start_reading();
+    return util::none;
   }
 
-  net::event_result handle_write_event() override {
-    const auto res = net::write(handle<net::stream_socket>(),
-                                {buf_.data(), num_bytes_});
-    if (res > 0) {
-      num_bytes_ -= res;
-    } else {
-      LOG_ERROR(net::last_socket_error_as_string());
-    }
-    return (num_bytes_ == 0) ? net::event_result::done : net::event_result::ok;
-  }
-
-  net::event_result handle_timeout(uint64_t) override {
-    return net::event_result::ok;
+  util::error consume(util::const_byte_span data) override {
+    auto& buf = parent_->write_buffer();
+    buf.insert(buf.end(), data.begin(), data.end());
+    parent_->start_writing();
+    return util::none;
   }
 
 private:
-  util::byte_array<1024> buf_;
-  std::size_t num_bytes_{0};
+  manager* parent_{nullptr};
 };
 
-struct manager_factory : public net::socket_manager_factory {
-  ~manager_factory() override = default;
-
-  net::socket_manager_ptr make(net::socket handle,
-                               net::multiplexer* mpx) override {
-    return util::make_intrusive<dummy_socket_manager>(handle, mpx);
+struct manager_factory_impl : public manager_factory {
+  uring_manager_ptr make_uring_manager(sockets::socket handle,
+                                       uring_multiplexer* mpx) override {
+    using manager_type = uring_manager_impl<mirror_application>;
+    auto mgr           = util::make_intrusive<manager_type>(handle, mpx);
+    return mgr;
   }
 };
 
 } // namespace
 
-int main(int, const char**) {
+int main(int, char**) {
   util::config cfg;
-  // try {
-  //   cfg.parse("config.cfg");
-  // } catch (const std::runtime_error& err) {
-  //   // LOG_ERROR(err.what());
-  // }
+  cfg.add_config_entry("logger.terminal-output", true);
   LOG_INIT(cfg);
-  auto factory = std::make_shared<manager_factory>();
-  auto res = net::make_kqueue_multiplexer(factory, cfg);
-  if (auto err = util::get_error(res)) {
-    LOG_ERROR("Failed to create multiplexer: ", *err);
+  LOG_DEBUG("Something");
+
+  uring_multiplexer mpx{std::make_unique<manager_factory_impl>()};
+  if (const auto err = mpx.init(cfg)) {
+    std::cout << err << std::endl;
     return EXIT_FAILURE;
   }
-  auto mpx = std::get<net::multiplexer_ptr>(res);
-  mpx->start();
 
-  // std::string dummy;
-  // std::getline(std::cin, dummy);
+  mpx.start();
+  mpx.join();
 
-  mpx->shutdown();
-  mpx->join();
   return EXIT_SUCCESS;
 }
+
+// constexpr int QUEUE_DEPTH = 256;
+
+// enum class op_type { ACCEPT, READ, WRITE, POLL };
+
+// struct conn_info {
+//   int fd                        = {};
+//   op_type type                  = {};
+//   std::array<char, 2048> buffer = {};
+// };
+
+// enum class manager_type {
+//   acceptor,
+// };
+
+// void register_read(io_uring* ring, int fd) {
+//   auto* read_info   = new conn_info{fd, op_type::READ};
+//   io_uring_sqe* sqe = io_uring_get_sqe(ring);
+//   io_uring_prep_recv(sqe, fd, read_info->buffer.data(),
+//                      read_info->buffer.size(), 0);
+//   io_uring_sqe_set_data(sqe, read_info);
+//   io_uring_submit(ring);
+// }
+
+// int main() {
+//   // 1. Setup listening socket
+//   const auto res = sockets::make_tcp_accept_socket(
+//     net::ip::v4_endpoint{net::ip::v4_address::any, 0});
+//   if (auto err = util::get_error(res)) {
+//     perror("socket");
+//     return 1;
+//   }
+
+//   const auto [accept_socket, port] =
+//   std::get<net::sockets::acceptor_pair>(res); sockets::socket_guard
+//   guard{accept_socket};
+
+//   // 2. Init io_uring
+//   io_uring ring{};
+//   if (io_uring_queue_init(QUEUE_DEPTH, &ring, 0) < 0) {
+//     perror("io_uring_queue_init");
+//     return 1;
+//   }
+
+//   // 3. Submit initial accept
+//   auto* sqe  = io_uring_get_sqe(&ring);
+//   auto* info = new conn_info{accept_socket.id, op_type::ACCEPT};
+//   io_uring_prep_accept(sqe, accept_socket.id, nullptr, nullptr, 0);
+//   io_uring_sqe_set_data(sqe, info);
+//   io_uring_submit(&ring);
+
+//   std::cout << "Server listening on port " << port
+//             << ", with fd=" << accept_socket.id << "...\n";
+
+//   // 4. Event loop
+//   while (true) {
+//     io_uring_cqe* cqe = nullptr;
+
+//     std::cout << "Waiting for incoming events\n";
+
+//     int ret = io_uring_wait_cqe(&ring, &cqe);
+//     if (ret < 0) {
+//       perror("io_uring_wait_cqe");
+//       break;
+//     }
+//     std::cout << "Got cqe!\n";
+
+//     auto* info = reinterpret_cast<conn_info*>(io_uring_cqe_get_data(cqe));
+//     int res    = cqe->res;
+//     io_uring_cqe_seen(&ring, cqe);
+
+//     if (!info) {
+//       continue;
+//     }
+
+//     std::cout << "Got some info!\n";
+
+//     switch (info->type) {
+//       case op_type::ACCEPT: {
+//         if (res > 0) {
+//           int client_fd = res;
+//           std::cout << "New client fd=" << client_fd << "\n";
+//           register_read(&ring, client_fd);
+//         }
+
+//         // Re-arm accept
+//         io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+//         io_uring_prep_accept(sqe, accept_socket.id, nullptr, nullptr, 0);
+//         io_uring_sqe_set_data(sqe, info);
+//         io_uring_submit(&ring);
+//         break;
+//       }
+
+//       case op_type::READ: {
+//         if (res > 0) {
+//           int n            = res;
+//           auto* write_info = new conn_info{info->fd, op_type::WRITE};
+//           memcpy(write_info->buffer.data(), info->buffer.data(), n);
+//           sqe = io_uring_get_sqe(&ring);
+//           io_uring_prep_send(sqe, info->fd, write_info->buffer.data(),
+//                              write_info->buffer.size(), 0);
+//           io_uring_sqe_set_data(sqe, write_info);
+
+//           // Rearm read
+//           sqe = io_uring_get_sqe(&ring);
+//           io_uring_prep_recv(sqe, info->fd, info->buffer.data(),
+//                              info->buffer.size(), 0);
+//           io_uring_sqe_set_data(sqe, info);
+//           io_uring_submit(&ring);
+//         } else {
+//           std::cout << "Client disconnected fd=" << info->fd << "\n";
+//           close(info->fd);
+//         }
+//         break;
+//       }
+
+//       case op_type::WRITE: {
+//         if (res > 0) {
+//           // Re-arm poll for next read
+//           auto* poll_info   = new conn_info{info->fd, op_type::POLL};
+//           io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+//           io_uring_prep_poll_add(sqe, info->fd, POLL_IN);
+//           io_uring_sqe_set_data(sqe, poll_info);
+//           io_uring_submit(&ring);
+//         }
+//         delete info;
+//         break;
+//       }
+//     }
+//   }
+
+//   io_uring_queue_exit(&ring);
+//   return 0;
+// }

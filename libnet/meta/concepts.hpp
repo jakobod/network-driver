@@ -79,11 +79,11 @@ concept resizable = requires(T t) { t.resize(std::declval<std::size_t>()); };
 /// Constrains a template to container types
 template <class T>
 concept container = requires(T t) {
-                      t.begin();
-                      t.end();
-                      t.data();
-                      t.size();
-                    };
+  t.begin();
+  t.end();
+  t.data();
+  t.size();
+};
 
 // -- Visitable concept --------------------------------------------------------
 

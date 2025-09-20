@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Switch to the source of this build directory.
+cd "/workspaces/network-driver"
+
+# Invoke the command to configure this build.
+./configure --build-type=Debug --enable-testing --enable-assertions --log-level=trace

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "net/socket_id.hpp"
+#include "net/sockets/socket_id.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -16,8 +16,8 @@
 namespace net {
 
 struct timeout_entry {
-  timeout_entry(socket_id handle, std::chrono::system_clock::time_point when,
-                uint64_t id)
+  timeout_entry(sockets::socket_id handle,
+                std::chrono::system_clock::time_point when, uint64_t id)
     : handle_{handle}, when_{when}, id_{id} {
     // nop
   }
@@ -35,7 +35,7 @@ struct timeout_entry {
            && (id_ == other.id_);
   }
 
-  const socket_id handle_;
+  const sockets::socket_id handle_;
   const std::chrono::system_clock::time_point when_;
   const uint64_t id_;
 };

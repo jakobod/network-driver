@@ -31,7 +31,7 @@ enum class error_code : std::uint8_t;
 
 // -- type aliases -------------------------------------------------------------
 
-using byte_span = std::span<std::byte>;
+using byte_span       = std::span<std::byte>;
 using const_byte_span = std::span<const std::byte>;
 
 // -- template types -----------------------------------------------------------

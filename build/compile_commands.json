@@ -1,0 +1,224 @@
+[
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/event_result.cpp.o -c /workspaces/network-driver/src/net/event_result.cpp",
+  "file": "/workspaces/network-driver/src/net/event_result.cpp",
+  "output": "CMakeFiles/net.dir/src/net/event_result.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/manager.cpp.o -c /workspaces/network-driver/src/net/manager.cpp",
+  "file": "/workspaces/network-driver/src/net/manager.cpp",
+  "output": "CMakeFiles/net.dir/src/net/manager.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/operation.cpp.o -c /workspaces/network-driver/src/net/operation.cpp",
+  "file": "/workspaces/network-driver/src/net/operation.cpp",
+  "output": "CMakeFiles/net.dir/src/net/operation.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o -c /workspaces/network-driver/src/net/uring_multiplexer.cpp",
+  "file": "/workspaces/network-driver/src/net/uring_multiplexer.cpp",
+  "output": "CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/ip/v4_address.cpp.o -c /workspaces/network-driver/src/net/ip/v4_address.cpp",
+  "file": "/workspaces/network-driver/src/net/ip/v4_address.cpp",
+  "output": "CMakeFiles/net.dir/src/net/ip/v4_address.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/ip/v4_endpoint.cpp.o -c /workspaces/network-driver/src/net/ip/v4_endpoint.cpp",
+  "file": "/workspaces/network-driver/src/net/ip/v4_endpoint.cpp",
+  "output": "CMakeFiles/net.dir/src/net/ip/v4_endpoint.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/sockets/datagram_socket.cpp.o -c /workspaces/network-driver/src/net/sockets/datagram_socket.cpp",
+  "file": "/workspaces/network-driver/src/net/sockets/datagram_socket.cpp",
+  "output": "CMakeFiles/net.dir/src/net/sockets/datagram_socket.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/sockets/pipe_socket.cpp.o -c /workspaces/network-driver/src/net/sockets/pipe_socket.cpp",
+  "file": "/workspaces/network-driver/src/net/sockets/pipe_socket.cpp",
+  "output": "CMakeFiles/net.dir/src/net/sockets/pipe_socket.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/sockets/socket.cpp.o -c /workspaces/network-driver/src/net/sockets/socket.cpp",
+  "file": "/workspaces/network-driver/src/net/sockets/socket.cpp",
+  "output": "CMakeFiles/net.dir/src/net/sockets/socket.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/sockets/stream_socket.cpp.o -c /workspaces/network-driver/src/net/sockets/stream_socket.cpp",
+  "file": "/workspaces/network-driver/src/net/sockets/stream_socket.cpp",
+  "output": "CMakeFiles/net.dir/src/net/sockets/stream_socket.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/sockets/tcp_accept_socket.cpp.o -c /workspaces/network-driver/src/net/sockets/tcp_accept_socket.cpp",
+  "file": "/workspaces/network-driver/src/net/sockets/tcp_accept_socket.cpp",
+  "output": "CMakeFiles/net.dir/src/net/sockets/tcp_accept_socket.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/sockets/tcp_stream_socket.cpp.o -c /workspaces/network-driver/src/net/sockets/tcp_stream_socket.cpp",
+  "file": "/workspaces/network-driver/src/net/sockets/tcp_stream_socket.cpp",
+  "output": "CMakeFiles/net.dir/src/net/sockets/tcp_stream_socket.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/net/sockets/udp_datagram_socket.cpp.o -c /workspaces/network-driver/src/net/sockets/udp_datagram_socket.cpp",
+  "file": "/workspaces/network-driver/src/net/sockets/udp_datagram_socket.cpp",
+  "output": "CMakeFiles/net.dir/src/net/sockets/udp_datagram_socket.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/util/binary_deserializer.cpp.o -c /workspaces/network-driver/src/util/binary_deserializer.cpp",
+  "file": "/workspaces/network-driver/src/util/binary_deserializer.cpp",
+  "output": "CMakeFiles/net.dir/src/util/binary_deserializer.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/util/binary_serializer.cpp.o -c /workspaces/network-driver/src/util/binary_serializer.cpp",
+  "file": "/workspaces/network-driver/src/util/binary_serializer.cpp",
+  "output": "CMakeFiles/net.dir/src/util/binary_serializer.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/util/cli_parser.cpp.o -c /workspaces/network-driver/src/util/cli_parser.cpp",
+  "file": "/workspaces/network-driver/src/util/cli_parser.cpp",
+  "output": "CMakeFiles/net.dir/src/util/cli_parser.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/util/config.cpp.o -c /workspaces/network-driver/src/util/config.cpp",
+  "file": "/workspaces/network-driver/src/util/config.cpp",
+  "output": "CMakeFiles/net.dir/src/util/config.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/util/error_code.cpp.o -c /workspaces/network-driver/src/util/error_code.cpp",
+  "file": "/workspaces/network-driver/src/util/error_code.cpp",
+  "output": "CMakeFiles/net.dir/src/util/error_code.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -fPIC -Wall -Wextra -pedantic -o CMakeFiles/net.dir/src/util/error.cpp.o -c /workspaces/network-driver/src/util/error.cpp",
+  "file": "/workspaces/network-driver/src/util/error.cpp",
+  "output": "CMakeFiles/net.dir/src/util/error.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/playground.dir/src/playground.cpp.o -c /workspaces/network-driver/src/playground.cpp",
+  "file": "/workspaces/network-driver/src/playground.cpp",
+  "output": "CMakeFiles/playground.dir/src/playground.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/net_test_main.cpp.o -c /workspaces/network-driver/test/net_test_main.cpp",
+  "file": "/workspaces/network-driver/test/net_test_main.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/net_test_main.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/net/ip/v4_address.cpp.o -c /workspaces/network-driver/test/net/ip/v4_address.cpp",
+  "file": "/workspaces/network-driver/test/net/ip/v4_address.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/net/ip/v4_address.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/net/ip/v4_endpoint.cpp.o -c /workspaces/network-driver/test/net/ip/v4_endpoint.cpp",
+  "file": "/workspaces/network-driver/test/net/ip/v4_endpoint.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/net/ip/v4_endpoint.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/net/sockets/socket_guard.cpp.o -c /workspaces/network-driver/test/net/sockets/socket_guard.cpp",
+  "file": "/workspaces/network-driver/test/net/sockets/socket_guard.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/net/sockets/socket_guard.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/binary_deserializer.cpp.o -c /workspaces/network-driver/test/util/binary_deserializer.cpp",
+  "file": "/workspaces/network-driver/test/util/binary_deserializer.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/binary_deserializer.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/binary_serializer.cpp.o -c /workspaces/network-driver/test/util/binary_serializer.cpp",
+  "file": "/workspaces/network-driver/test/util/binary_serializer.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/binary_serializer.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/cli_parser.cpp.o -c /workspaces/network-driver/test/util/cli_parser.cpp",
+  "file": "/workspaces/network-driver/test/util/cli_parser.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/cli_parser.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/config.cpp.o -c /workspaces/network-driver/test/util/config.cpp",
+  "file": "/workspaces/network-driver/test/util/config.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/config.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/intrusive_ptr.cpp.o -c /workspaces/network-driver/test/util/intrusive_ptr.cpp",
+  "file": "/workspaces/network-driver/test/util/intrusive_ptr.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/intrusive_ptr.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/ref_counted.cpp.o -c /workspaces/network-driver/test/util/ref_counted.cpp",
+  "file": "/workspaces/network-driver/test/util/ref_counted.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/ref_counted.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/scope_guard.cpp.o -c /workspaces/network-driver/test/util/scope_guard.cpp",
+  "file": "/workspaces/network-driver/test/util/scope_guard.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/scope_guard.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/serialized_size.cpp.o -c /workspaces/network-driver/test/util/serialized_size.cpp",
+  "file": "/workspaces/network-driver/test/util/serialized_size.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/serialized_size.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build",
+  "command": "/usr/bin/c++ -DCERT_DIRECTORY=\\\"/workspaces/network-driver/build/certs\\\" -DNET_ENABLE_ASSERTIONS=ON -DNET_LOG_LEVEL=4 -I/workspaces/network-driver/libnet -I/workspaces/network-driver/test -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=gnu++23 -Wall -Wextra -pedantic -o CMakeFiles/lib_net_test.dir/test/util/tokenizer.cpp.o -c /workspaces/network-driver/test/util/tokenizer.cpp",
+  "file": "/workspaces/network-driver/test/util/tokenizer.cpp",
+  "output": "CMakeFiles/lib_net_test.dir/test/util/tokenizer.cpp.o"
+},
+{
+  "directory": "/workspaces/network-driver/build/_deps/googletest-build/googlemock",
+  "command": "/usr/bin/c++  -I/workspaces/network-driver/build/_deps/googletest-src/googlemock/include -I/workspaces/network-driver/build/_deps/googletest-src/googlemock -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=c++23 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wall -Wextra -pedantic -o CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /workspaces/network-driver/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
+  "file": "/workspaces/network-driver/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
+  "output": "_deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o"
+},
+{
+  "directory": "/workspaces/network-driver/build/_deps/googletest-build/googlemock",
+  "command": "/usr/bin/c++  -isystem /workspaces/network-driver/build/_deps/googletest-src/googlemock/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googlemock -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=c++23 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wall -Wextra -pedantic -o CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /workspaces/network-driver/build/_deps/googletest-src/googlemock/src/gmock_main.cc",
+  "file": "/workspaces/network-driver/build/_deps/googletest-src/googlemock/src/gmock_main.cc",
+  "output": "_deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o"
+},
+{
+  "directory": "/workspaces/network-driver/build/_deps/googletest-build/googletest",
+  "command": "/usr/bin/c++  -I/workspaces/network-driver/build/_deps/googletest-src/googletest/include -I/workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=c++23 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wall -Wextra -pedantic -o CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /workspaces/network-driver/build/_deps/googletest-src/googletest/src/gtest-all.cc",
+  "file": "/workspaces/network-driver/build/_deps/googletest-src/googletest/src/gtest-all.cc",
+  "output": "_deps/googletest-build/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o"
+},
+{
+  "directory": "/workspaces/network-driver/build/_deps/googletest-build/googletest",
+  "command": "/usr/bin/c++  -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest/include -isystem /workspaces/network-driver/build/_deps/googletest-src/googletest -g -std=c++23 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wall -Wextra -pedantic -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /workspaces/network-driver/build/_deps/googletest-src/googletest/src/gtest_main.cc",
+  "file": "/workspaces/network-driver/build/_deps/googletest-src/googletest/src/gtest_main.cc",
+  "output": "_deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o"
+}
+]

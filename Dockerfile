@@ -3,7 +3,7 @@
 # Based on Ubuntu 20.04
 ############################################################
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 MAINTAINER Jakob Otto
 
 # Disable blocking user input prompt while updating
@@ -11,12 +11,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Berlin
 
 # Update image and install required packages
-RUN apt-get update && apt-get install -y apt-utils
+RUN apt update && apt install -y apt-utils
 
-RUN apt-get upgrade -y && apt-get autoremove
-RUN apt-get install -y \
-  gcc-10 \
-  g++-10 \
+RUN apt upgrade -y && apt autoremove
+RUN apt install -y \
+  gcc \
+  g++ \
   clang \
   git \
   cmake \
@@ -24,9 +24,11 @@ RUN apt-get install -y \
   libssl-dev \
   vim \
   clang-format \
-  gdb
+  gdb \
+  liburing-dev \
+  sudo
 
-# Add jenkins user
-RUN useradd -ms /bin/bash jenkins
-USER jenkins
-WORKDIR /home/jenkins
+# # Add jenkins user
+# RUN useradd -ms /bin/bash jenkins
+# USER jenkins
+# WORKDIR /home/jenkins

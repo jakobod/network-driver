@@ -14,15 +14,6 @@
 
 namespace util {
 
-error::error(error_code code, std::string msg)
-  : code_(code), msg_(std::move(msg)) {
-  // nop
-}
-
-error::error(error_code code) : code_(code) {
-  // nop
-}
-
 // -- boolean operators ------------------------------------------------------
 
 bool error::is_error() const noexcept {

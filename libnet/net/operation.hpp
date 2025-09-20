@@ -15,10 +15,13 @@ namespace net {
 
 /// Operation abstraction with same definition as epoll.
 enum class operation : std::uint32_t {
-  none = 0x00,
-  read = 0x01,
-  write = 0x02,
-  read_write = read | write,
+  none       = 0x00,
+  read       = 0x01 << 0,
+  write      = 0x01 << 1,
+  read_write = (read | write),
+  poll_read  = 0x01 << 2,
+  poll_write = 0x01 << 3,
+  accept     = 0x01 << 4,
 };
 
 /// @relates operation

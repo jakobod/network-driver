@@ -1,0 +1,5 @@
+if(EXISTS "/workspaces/network-driver/build/lib_net_test[1]_tests.cmake")
+  include("/workspaces/network-driver/build/lib_net_test[1]_tests.cmake")
+else()
+  add_test(lib_net_test_NOT_BUILT lib_net_test_NOT_BUILT)
+endif()

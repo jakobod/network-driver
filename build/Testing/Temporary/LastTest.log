@@ -1,0 +1,1771 @@
+Start testing: Sep 10 23:25 CEST
+----------------------------------------------------------
+1/68 Testing: v4_address_test.init
+1/68 Test: v4_address_test.init
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_address_test.init" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_address_test.init" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_address_test.init
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_address_test
+[ RUN      ] v4_address_test.init
+[       OK ] v4_address_test.init (0 ms)
+[----------] 1 test from v4_address_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_address_test.init" end time: Sep 10 23:25 CEST
+"v4_address_test.init" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/68 Testing: v4_address_test.toString
+2/68 Test: v4_address_test.toString
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_address_test.toString" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_address_test.toString" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_address_test.toString
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_address_test
+[ RUN      ] v4_address_test.toString
+[       OK ] v4_address_test.toString (0 ms)
+[----------] 1 test from v4_address_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_address_test.toString" end time: Sep 10 23:25 CEST
+"v4_address_test.toString" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/68 Testing: v4_address_test.parse
+3/68 Test: v4_address_test.parse
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_address_test.parse" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_address_test.parse" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_address_test.parse
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_address_test
+[ RUN      ] v4_address_test.parse
+[       OK ] v4_address_test.parse (0 ms)
+[----------] 1 test from v4_address_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_address_test.parse" end time: Sep 10 23:25 CEST
+"v4_address_test.parse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/68 Testing: v4_address_test.parsing_fails
+4/68 Test: v4_address_test.parsing_fails
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_address_test.parsing_fails" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_address_test.parsing_fails" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_address_test.parsing_fails
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_address_test
+[ RUN      ] v4_address_test.parsing_fails
+[       OK ] v4_address_test.parsing_fails (0 ms)
+[----------] 1 test from v4_address_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_address_test.parsing_fails" end time: Sep 10 23:25 CEST
+"v4_address_test.parsing_fails" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/68 Testing: v4_endpoint_test.parse
+5/68 Test: v4_endpoint_test.parse
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_endpoint_test.parse" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_endpoint_test.parse" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_endpoint_test.parse
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_endpoint_test
+[ RUN      ] v4_endpoint_test.parse
+[       OK ] v4_endpoint_test.parse (0 ms)
+[----------] 1 test from v4_endpoint_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_endpoint_test.parse" end time: Sep 10 23:25 CEST
+"v4_endpoint_test.parse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/68 Testing: v4_endpoint_test.to_string
+6/68 Test: v4_endpoint_test.to_string
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_endpoint_test.to_string" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_endpoint_test.to_string" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_endpoint_test.to_string
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_endpoint_test
+[ RUN      ] v4_endpoint_test.to_string
+[       OK ] v4_endpoint_test.to_string (0 ms)
+[----------] 1 test from v4_endpoint_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_endpoint_test.to_string" end time: Sep 10 23:25 CEST
+"v4_endpoint_test.to_string" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/68 Testing: v4_endpoint_test.from_sockaddr
+7/68 Test: v4_endpoint_test.from_sockaddr
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_endpoint_test.from_sockaddr" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_endpoint_test.from_sockaddr" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_endpoint_test.from_sockaddr
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_endpoint_test
+[ RUN      ] v4_endpoint_test.from_sockaddr
+[       OK ] v4_endpoint_test.from_sockaddr (0 ms)
+[----------] 1 test from v4_endpoint_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_endpoint_test.from_sockaddr" end time: Sep 10 23:25 CEST
+"v4_endpoint_test.from_sockaddr" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/68 Testing: v4_endpoint_test.to_sockaddr
+8/68 Test: v4_endpoint_test.to_sockaddr
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=v4_endpoint_test.to_sockaddr" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"v4_endpoint_test.to_sockaddr" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = v4_endpoint_test.to_sockaddr
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from v4_endpoint_test
+[ RUN      ] v4_endpoint_test.to_sockaddr
+[       OK ] v4_endpoint_test.to_sockaddr (0 ms)
+[----------] 1 test from v4_endpoint_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"v4_endpoint_test.to_sockaddr" end time: Sep 10 23:25 CEST
+"v4_endpoint_test.to_sockaddr" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/68 Testing: socket_guard_test.close
+9/68 Test: socket_guard_test.close
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=socket_guard_test.close" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"socket_guard_test.close" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = socket_guard_test.close
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from socket_guard_test
+[ RUN      ] socket_guard_test.close
+[       OK ] socket_guard_test.close (0 ms)
+[----------] 1 test from socket_guard_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"socket_guard_test.close" end time: Sep 10 23:25 CEST
+"socket_guard_test.close" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/68 Testing: socket_guard_test.release
+10/68 Test: socket_guard_test.release
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=socket_guard_test.release" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"socket_guard_test.release" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = socket_guard_test.release
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from socket_guard_test
+[ RUN      ] socket_guard_test.release
+[       OK ] socket_guard_test.release (0 ms)
+[----------] 1 test from socket_guard_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"socket_guard_test.release" end time: Sep 10 23:25 CEST
+"socket_guard_test.release" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/68 Testing: binary_deserializer.empty_call
+11/68 Test: binary_deserializer.empty_call
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.empty_call" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.empty_call" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.empty_call
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.empty_call
+[       OK ] binary_deserializer.empty_call (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.empty_call" end time: Sep 10 23:25 CEST
+"binary_deserializer.empty_call" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/68 Testing: binary_deserializer.integer
+12/68 Test: binary_deserializer.integer
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.integer" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.integer" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.integer
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.integer
+[       OK ] binary_deserializer.integer (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.integer" end time: Sep 10 23:25 CEST
+"binary_deserializer.integer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/68 Testing: binary_deserializer.byte
+13/68 Test: binary_deserializer.byte
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.byte" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.byte" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.byte
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.byte
+[       OK ] binary_deserializer.byte (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.byte" end time: Sep 10 23:25 CEST
+"binary_deserializer.byte" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/68 Testing: binary_deserializer.floats
+14/68 Test: binary_deserializer.floats
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.floats" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.floats" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.floats
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.floats
+[       OK ] binary_deserializer.floats (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.floats" end time: Sep 10 23:25 CEST
+"binary_deserializer.floats" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/68 Testing: binary_deserializer.string
+15/68 Test: binary_deserializer.string
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.string" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.string" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.string
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.string
+[       OK ] binary_deserializer.string (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.string" end time: Sep 10 23:25 CEST
+"binary_deserializer.string" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/68 Testing: binary_deserializer.pair
+16/68 Test: binary_deserializer.pair
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.pair" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.pair" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.pair
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.pair
+[       OK ] binary_deserializer.pair (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.pair" end time: Sep 10 23:25 CEST
+"binary_deserializer.pair" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/68 Testing: binary_deserializer.tuple
+17/68 Test: binary_deserializer.tuple
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.tuple" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.tuple" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.tuple
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.tuple
+[       OK ] binary_deserializer.tuple (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.tuple" end time: Sep 10 23:25 CEST
+"binary_deserializer.tuple" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/68 Testing: binary_deserializer.visit
+18/68 Test: binary_deserializer.visit
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.visit" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.visit" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.visit
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.visit
+[       OK ] binary_deserializer.visit (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.visit" end time: Sep 10 23:25 CEST
+"binary_deserializer.visit" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/68 Testing: binary_deserializer.vector
+19/68 Test: binary_deserializer.vector
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_deserializer.vector" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_deserializer.vector" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_deserializer.vector
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_deserializer
+[ RUN      ] binary_deserializer.vector
+[       OK ] binary_deserializer.vector (0 ms)
+[----------] 1 test from binary_deserializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_deserializer.vector" end time: Sep 10 23:25 CEST
+"binary_deserializer.vector" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/68 Testing: binary_serializer.empty_call
+20/68 Test: binary_serializer.empty_call
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.empty_call" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.empty_call" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.empty_call
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.empty_call
+[       OK ] binary_serializer.empty_call (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.empty_call" end time: Sep 10 23:25 CEST
+"binary_serializer.empty_call" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/68 Testing: binary_serializer.integer
+21/68 Test: binary_serializer.integer
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.integer" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.integer" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.integer
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.integer
+[       OK ] binary_serializer.integer (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.integer" end time: Sep 10 23:25 CEST
+"binary_serializer.integer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/68 Testing: binary_serializer.byte
+22/68 Test: binary_serializer.byte
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.byte" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.byte" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.byte
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.byte
+[       OK ] binary_serializer.byte (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.byte" end time: Sep 10 23:25 CEST
+"binary_serializer.byte" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/68 Testing: binary_serializer.floats
+23/68 Test: binary_serializer.floats
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.floats" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.floats" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.floats
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.floats
+[       OK ] binary_serializer.floats (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.floats" end time: Sep 10 23:25 CEST
+"binary_serializer.floats" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/68 Testing: binary_serializer.string
+24/68 Test: binary_serializer.string
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.string" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.string" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.string
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.string
+[       OK ] binary_serializer.string (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.string" end time: Sep 10 23:25 CEST
+"binary_serializer.string" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/68 Testing: binary_serializer.pair
+25/68 Test: binary_serializer.pair
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.pair" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.pair" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.pair
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.pair
+[       OK ] binary_serializer.pair (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.pair" end time: Sep 10 23:25 CEST
+"binary_serializer.pair" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/68 Testing: binary_serializer.tuple
+26/68 Test: binary_serializer.tuple
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.tuple" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.tuple" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.tuple
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.tuple
+[       OK ] binary_serializer.tuple (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.tuple" end time: Sep 10 23:25 CEST
+"binary_serializer.tuple" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/68 Testing: binary_serializer.visit
+27/68 Test: binary_serializer.visit
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.visit" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.visit" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.visit
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.visit
+[       OK ] binary_serializer.visit (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.visit" end time: Sep 10 23:25 CEST
+"binary_serializer.visit" time elapsed: 00:00:00
+----------------------------------------------------------
+
+28/68 Testing: binary_serializer.c_style_array
+28/68 Test: binary_serializer.c_style_array
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.c_style_array" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.c_style_array" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.c_style_array
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.c_style_array
+[       OK ] binary_serializer.c_style_array (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.c_style_array" end time: Sep 10 23:25 CEST
+"binary_serializer.c_style_array" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/68 Testing: binary_serializer.vector
+29/68 Test: binary_serializer.vector
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=binary_serializer.vector" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"binary_serializer.vector" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = binary_serializer.vector
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from binary_serializer
+[ RUN      ] binary_serializer.vector
+[       OK ] binary_serializer.vector (0 ms)
+[----------] 1 test from binary_serializer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"binary_serializer.vector" end time: Sep 10 23:25 CEST
+"binary_serializer.vector" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/68 Testing: cli_parser.register_option
+30/68 Test: cli_parser.register_option
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=cli_parser.register_option" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"cli_parser.register_option" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = cli_parser.register_option
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from cli_parser
+[ RUN      ] cli_parser.register_option
+[       OK ] cli_parser.register_option (0 ms)
+[----------] 1 test from cli_parser (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cli_parser.register_option" end time: Sep 10 23:25 CEST
+"cli_parser.register_option" time elapsed: 00:00:00
+----------------------------------------------------------
+
+31/68 Testing: cli_parser.parse_longform_options
+31/68 Test: cli_parser.parse_longform_options
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=cli_parser.parse_longform_options" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"cli_parser.parse_longform_options" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = cli_parser.parse_longform_options
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from cli_parser
+[ RUN      ] cli_parser.parse_longform_options
+[       OK ] cli_parser.parse_longform_options (0 ms)
+[----------] 1 test from cli_parser (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cli_parser.parse_longform_options" end time: Sep 10 23:25 CEST
+"cli_parser.parse_longform_options" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/68 Testing: cli_parser.parse_shortform_options
+32/68 Test: cli_parser.parse_shortform_options
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=cli_parser.parse_shortform_options" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"cli_parser.parse_shortform_options" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = cli_parser.parse_shortform_options
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from cli_parser
+[ RUN      ] cli_parser.parse_shortform_options
+[       OK ] cli_parser.parse_shortform_options (0 ms)
+[----------] 1 test from cli_parser (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cli_parser.parse_shortform_options" end time: Sep 10 23:25 CEST
+"cli_parser.parse_shortform_options" time elapsed: 00:00:00
+----------------------------------------------------------
+
+33/68 Testing: cli_parser.option_value_conversion
+33/68 Test: cli_parser.option_value_conversion
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=cli_parser.option_value_conversion" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"cli_parser.option_value_conversion" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = cli_parser.option_value_conversion
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from cli_parser
+[ RUN      ] cli_parser.option_value_conversion
+[       OK ] cli_parser.option_value_conversion (0 ms)
+[----------] 1 test from cli_parser (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cli_parser.option_value_conversion" end time: Sep 10 23:25 CEST
+"cli_parser.option_value_conversion" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/68 Testing: config.get
+34/68 Test: config.get
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=config.get" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"config.get" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = config.get
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from config
+[ RUN      ] config.get
+[       OK ] config.get (0 ms)
+[----------] 1 test from config (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"config.get" end time: Sep 10 23:25 CEST
+"config.get" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/68 Testing: config.get_or
+35/68 Test: config.get_or
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=config.get_or" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"config.get_or" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = config.get_or
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from config
+[ RUN      ] config.get_or
+[       OK ] config.get_or (0 ms)
+[----------] 1 test from config (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"config.get_or" end time: Sep 10 23:25 CEST
+"config.get_or" time elapsed: 00:00:00
+----------------------------------------------------------
+
+36/68 Testing: config.has_entry
+36/68 Test: config.has_entry
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=config.has_entry" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"config.has_entry" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = config.has_entry
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from config
+[ RUN      ] config.has_entry
+[       OK ] config.has_entry (0 ms)
+[----------] 1 test from config (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"config.has_entry" end time: Sep 10 23:25 CEST
+"config.has_entry" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/68 Testing: intrusive_ptr_test.delete_called_on_destruction
+37/68 Test: intrusive_ptr_test.delete_called_on_destruction
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=intrusive_ptr_test.delete_called_on_destruction" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"intrusive_ptr_test.delete_called_on_destruction" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = intrusive_ptr_test.delete_called_on_destruction
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from intrusive_ptr_test
+[ RUN      ] intrusive_ptr_test.delete_called_on_destruction
+[       OK ] intrusive_ptr_test.delete_called_on_destruction (0 ms)
+[----------] 1 test from intrusive_ptr_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"intrusive_ptr_test.delete_called_on_destruction" end time: Sep 10 23:25 CEST
+"intrusive_ptr_test.delete_called_on_destruction" time elapsed: 00:00:00
+----------------------------------------------------------
+
+38/68 Testing: intrusive_ptr_test.delete_called_on_reset
+38/68 Test: intrusive_ptr_test.delete_called_on_reset
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=intrusive_ptr_test.delete_called_on_reset" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"intrusive_ptr_test.delete_called_on_reset" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = intrusive_ptr_test.delete_called_on_reset
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from intrusive_ptr_test
+[ RUN      ] intrusive_ptr_test.delete_called_on_reset
+[       OK ] intrusive_ptr_test.delete_called_on_reset (0 ms)
+[----------] 1 test from intrusive_ptr_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"intrusive_ptr_test.delete_called_on_reset" end time: Sep 10 23:25 CEST
+"intrusive_ptr_test.delete_called_on_reset" time elapsed: 00:00:00
+----------------------------------------------------------
+
+39/68 Testing: intrusive_ptr_test.copy_ptr
+39/68 Test: intrusive_ptr_test.copy_ptr
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=intrusive_ptr_test.copy_ptr" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"intrusive_ptr_test.copy_ptr" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = intrusive_ptr_test.copy_ptr
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from intrusive_ptr_test
+[ RUN      ] intrusive_ptr_test.copy_ptr
+[       OK ] intrusive_ptr_test.copy_ptr (0 ms)
+[----------] 1 test from intrusive_ptr_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"intrusive_ptr_test.copy_ptr" end time: Sep 10 23:25 CEST
+"intrusive_ptr_test.copy_ptr" time elapsed: 00:00:00
+----------------------------------------------------------
+
+40/68 Testing: intrusive_ptr_test.move_ptr
+40/68 Test: intrusive_ptr_test.move_ptr
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=intrusive_ptr_test.move_ptr" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"intrusive_ptr_test.move_ptr" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = intrusive_ptr_test.move_ptr
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from intrusive_ptr_test
+[ RUN      ] intrusive_ptr_test.move_ptr
+[       OK ] intrusive_ptr_test.move_ptr (0 ms)
+[----------] 1 test from intrusive_ptr_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"intrusive_ptr_test.move_ptr" end time: Sep 10 23:25 CEST
+"intrusive_ptr_test.move_ptr" time elapsed: 00:00:00
+----------------------------------------------------------
+
+41/68 Testing: intrusive_ptr_test.release
+41/68 Test: intrusive_ptr_test.release
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=intrusive_ptr_test.release" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"intrusive_ptr_test.release" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = intrusive_ptr_test.release
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from intrusive_ptr_test
+[ RUN      ] intrusive_ptr_test.release
+[       OK ] intrusive_ptr_test.release (0 ms)
+[----------] 1 test from intrusive_ptr_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"intrusive_ptr_test.release" end time: Sep 10 23:25 CEST
+"intrusive_ptr_test.release" time elapsed: 00:00:00
+----------------------------------------------------------
+
+42/68 Testing: ref_counted_test.ref_counting
+42/68 Test: ref_counted_test.ref_counting
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=ref_counted_test.ref_counting" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"ref_counted_test.ref_counting" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = ref_counted_test.ref_counting
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ref_counted_test
+[ RUN      ] ref_counted_test.ref_counting
+[       OK ] ref_counted_test.ref_counting (0 ms)
+[----------] 1 test from ref_counted_test (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"ref_counted_test.ref_counting" end time: Sep 10 23:25 CEST
+"ref_counted_test.ref_counting" time elapsed: 00:00:00
+----------------------------------------------------------
+
+43/68 Testing: scope_guard.func_executed
+43/68 Test: scope_guard.func_executed
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=scope_guard.func_executed" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"scope_guard.func_executed" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = scope_guard.func_executed
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from scope_guard
+[ RUN      ] scope_guard.func_executed
+[       OK ] scope_guard.func_executed (0 ms)
+[----------] 1 test from scope_guard (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"scope_guard.func_executed" end time: Sep 10 23:25 CEST
+"scope_guard.func_executed" time elapsed: 00:00:00
+----------------------------------------------------------
+
+44/68 Testing: scope_guard.func_not_executed
+44/68 Test: scope_guard.func_not_executed
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=scope_guard.func_not_executed" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"scope_guard.func_not_executed" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = scope_guard.func_not_executed
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from scope_guard
+[ RUN      ] scope_guard.func_not_executed
+[       OK ] scope_guard.func_not_executed (0 ms)
+[----------] 1 test from scope_guard (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"scope_guard.func_not_executed" end time: Sep 10 23:25 CEST
+"scope_guard.func_not_executed" time elapsed: 00:00:00
+----------------------------------------------------------
+
+45/68 Testing: scope_guard.reset
+45/68 Test: scope_guard.reset
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=scope_guard.reset" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"scope_guard.reset" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = scope_guard.reset
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from scope_guard
+[ RUN      ] scope_guard.reset
+[       OK ] scope_guard.reset (0 ms)
+[----------] 1 test from scope_guard (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"scope_guard.reset" end time: Sep 10 23:25 CEST
+"scope_guard.reset" time elapsed: 00:00:00
+----------------------------------------------------------
+
+46/68 Testing: serialized_size.empty_call
+46/68 Test: serialized_size.empty_call
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.empty_call" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.empty_call" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.empty_call
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.empty_call
+[       OK ] serialized_size.empty_call (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.empty_call" end time: Sep 10 23:25 CEST
+"serialized_size.empty_call" time elapsed: 00:00:00
+----------------------------------------------------------
+
+47/68 Testing: serialized_size.integral_types
+47/68 Test: serialized_size.integral_types
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.integral_types" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.integral_types" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.integral_types
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.integral_types
+[       OK ] serialized_size.integral_types (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.integral_types" end time: Sep 10 23:25 CEST
+"serialized_size.integral_types" time elapsed: 00:00:00
+----------------------------------------------------------
+
+48/68 Testing: serialized_size.byte
+48/68 Test: serialized_size.byte
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.byte" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.byte" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.byte
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.byte
+[       OK ] serialized_size.byte (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.byte" end time: Sep 10 23:25 CEST
+"serialized_size.byte" time elapsed: 00:00:00
+----------------------------------------------------------
+
+49/68 Testing: serialized_size.enum
+49/68 Test: serialized_size.enum
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.enum" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.enum" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.enum
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.enum
+[       OK ] serialized_size.enum (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.enum" end time: Sep 10 23:25 CEST
+"serialized_size.enum" time elapsed: 00:00:00
+----------------------------------------------------------
+
+50/68 Testing: serialized_size.strings
+50/68 Test: serialized_size.strings
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.strings" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.strings" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.strings
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.strings
+[       OK ] serialized_size.strings (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.strings" end time: Sep 10 23:25 CEST
+"serialized_size.strings" time elapsed: 00:00:00
+----------------------------------------------------------
+
+51/68 Testing: serialized_size.mixed_types
+51/68 Test: serialized_size.mixed_types
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.mixed_types" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.mixed_types" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.mixed_types
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.mixed_types
+[       OK ] serialized_size.mixed_types (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.mixed_types" end time: Sep 10 23:25 CEST
+"serialized_size.mixed_types" time elapsed: 00:00:00
+----------------------------------------------------------
+
+52/68 Testing: serialized_size.pair
+52/68 Test: serialized_size.pair
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.pair" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.pair" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.pair
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.pair
+[       OK ] serialized_size.pair (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.pair" end time: Sep 10 23:25 CEST
+"serialized_size.pair" time elapsed: 00:00:00
+----------------------------------------------------------
+
+53/68 Testing: serialized_size.tuple
+53/68 Test: serialized_size.tuple
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.tuple" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.tuple" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.tuple
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.tuple
+[       OK ] serialized_size.tuple (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.tuple" end time: Sep 10 23:25 CEST
+"serialized_size.tuple" time elapsed: 00:00:00
+----------------------------------------------------------
+
+54/68 Testing: serialized_size.visit
+54/68 Test: serialized_size.visit
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.visit" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.visit" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.visit
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.visit
+[       OK ] serialized_size.visit (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.visit" end time: Sep 10 23:25 CEST
+"serialized_size.visit" time elapsed: 00:00:00
+----------------------------------------------------------
+
+55/68 Testing: serialized_size.c_style_array
+55/68 Test: serialized_size.c_style_array
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.c_style_array" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.c_style_array" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.c_style_array
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.c_style_array
+[       OK ] serialized_size.c_style_array (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.c_style_array" end time: Sep 10 23:25 CEST
+"serialized_size.c_style_array" time elapsed: 00:00:00
+----------------------------------------------------------
+
+56/68 Testing: serialized_size.integral_container
+56/68 Test: serialized_size.integral_container
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.integral_container" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.integral_container" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.integral_container
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.integral_container
+[       OK ] serialized_size.integral_container (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.integral_container" end time: Sep 10 23:25 CEST
+"serialized_size.integral_container" time elapsed: 00:00:00
+----------------------------------------------------------
+
+57/68 Testing: serialized_size.float_container
+57/68 Test: serialized_size.float_container
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.float_container" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.float_container" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.float_container
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.float_container
+[       OK ] serialized_size.float_container (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.float_container" end time: Sep 10 23:25 CEST
+"serialized_size.float_container" time elapsed: 00:00:00
+----------------------------------------------------------
+
+58/68 Testing: serialized_size.double_container
+58/68 Test: serialized_size.double_container
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.double_container" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.double_container" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.double_container
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.double_container
+[       OK ] serialized_size.double_container (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.double_container" end time: Sep 10 23:25 CEST
+"serialized_size.double_container" time elapsed: 00:00:00
+----------------------------------------------------------
+
+59/68 Testing: serialized_size.enum_container
+59/68 Test: serialized_size.enum_container
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.enum_container" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.enum_container" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.enum_container
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.enum_container
+[       OK ] serialized_size.enum_container (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.enum_container" end time: Sep 10 23:25 CEST
+"serialized_size.enum_container" time elapsed: 00:00:00
+----------------------------------------------------------
+
+60/68 Testing: serialized_size.string_container
+60/68 Test: serialized_size.string_container
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.string_container" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.string_container" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.string_container
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.string_container
+[       OK ] serialized_size.string_container (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.string_container" end time: Sep 10 23:25 CEST
+"serialized_size.string_container" time elapsed: 00:00:00
+----------------------------------------------------------
+
+61/68 Testing: serialized_size.visitable_container
+61/68 Test: serialized_size.visitable_container
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=serialized_size.visitable_container" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"serialized_size.visitable_container" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = serialized_size.visitable_container
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from serialized_size
+[ RUN      ] serialized_size.visitable_container
+[       OK ] serialized_size.visitable_container (0 ms)
+[----------] 1 test from serialized_size (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"serialized_size.visitable_container" end time: Sep 10 23:25 CEST
+"serialized_size.visitable_container" time elapsed: 00:00:00
+----------------------------------------------------------
+
+62/68 Testing: tokenizer.match_until_whitespace
+62/68 Test: tokenizer.match_until_whitespace
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=tokenizer.match_until_whitespace" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"tokenizer.match_until_whitespace" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = tokenizer.match_until_whitespace
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from tokenizer
+[ RUN      ] tokenizer.match_until_whitespace
+[       OK ] tokenizer.match_until_whitespace (0 ms)
+[----------] 1 test from tokenizer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"tokenizer.match_until_whitespace" end time: Sep 10 23:25 CEST
+"tokenizer.match_until_whitespace" time elapsed: 00:00:00
+----------------------------------------------------------
+
+63/68 Testing: tokenizer.match_single_char
+63/68 Test: tokenizer.match_single_char
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=tokenizer.match_single_char" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"tokenizer.match_single_char" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = tokenizer.match_single_char
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from tokenizer
+[ RUN      ] tokenizer.match_single_char
+[       OK ] tokenizer.match_single_char (0 ms)
+[----------] 1 test from tokenizer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"tokenizer.match_single_char" end time: Sep 10 23:25 CEST
+"tokenizer.match_single_char" time elapsed: 00:00:00
+----------------------------------------------------------
+
+64/68 Testing: tokenizer.match_string
+64/68 Test: tokenizer.match_string
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=tokenizer.match_string" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"tokenizer.match_string" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = tokenizer.match_string
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from tokenizer
+[ RUN      ] tokenizer.match_string
+[       OK ] tokenizer.match_string (0 ms)
+[----------] 1 test from tokenizer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"tokenizer.match_string" end time: Sep 10 23:25 CEST
+"tokenizer.match_string" time elapsed: 00:00:00
+----------------------------------------------------------
+
+65/68 Testing: tokenizer.match_integer
+65/68 Test: tokenizer.match_integer
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=tokenizer.match_integer" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"tokenizer.match_integer" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = tokenizer.match_integer
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from tokenizer
+[ RUN      ] tokenizer.match_integer
+[       OK ] tokenizer.match_integer (0 ms)
+[----------] 1 test from tokenizer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"tokenizer.match_integer" end time: Sep 10 23:25 CEST
+"tokenizer.match_integer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+66/68 Testing: tokenizer.match_float
+66/68 Test: tokenizer.match_float
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=tokenizer.match_float" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"tokenizer.match_float" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = tokenizer.match_float
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from tokenizer
+[ RUN      ] tokenizer.match_float
+[       OK ] tokenizer.match_float (0 ms)
+[----------] 1 test from tokenizer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"tokenizer.match_float" end time: Sep 10 23:25 CEST
+"tokenizer.match_float" time elapsed: 00:00:00
+----------------------------------------------------------
+
+67/68 Testing: tokenizer.tokenize_file
+67/68 Test: tokenizer.tokenize_file
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=tokenizer.tokenize_file" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"tokenizer.tokenize_file" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = tokenizer.tokenize_file
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from tokenizer
+[ RUN      ] tokenizer.tokenize_file
+[       OK ] tokenizer.tokenize_file (0 ms)
+[----------] 1 test from tokenizer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"tokenizer.tokenize_file" end time: Sep 10 23:25 CEST
+"tokenizer.tokenize_file" time elapsed: 00:00:00
+----------------------------------------------------------
+
+68/68 Testing: tokenizer.parse_tokens
+68/68 Test: tokenizer.parse_tokens
+Command: "/workspaces/network-driver/build/lib_net_test" "--gtest_filter=tokenizer.parse_tokens" "--gtest_also_run_disabled_tests"
+Directory: /workspaces/network-driver/build
+"tokenizer.parse_tokens" start time: Sep 10 23:25 CEST
+Output:
+----------------------------------------------------------
+Note: Google Test filter = tokenizer.parse_tokens
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from tokenizer
+[ RUN      ] tokenizer.parse_tokens
+[       OK ] tokenizer.parse_tokens (0 ms)
+[----------] 1 test from tokenizer (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"tokenizer.parse_tokens" end time: Sep 10 23:25 CEST
+"tokenizer.parse_tokens" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Sep 10 23:25 CEST

@@ -37,7 +37,7 @@ public:
   // -- constructors, destructors, and assignment operators --------------------
 
   /// Constructs a pollset updater
-  pollset_updater(pipe_socket read_handle, multiplexer* parent);
+  pollset_updater(sockets::pipe_socket read_handle, multiplexer* parent);
 
   /// Initializes the pollset updater.
   util::error init(const util::config& cfg) override;

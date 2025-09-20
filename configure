@@ -28,6 +28,7 @@ set_build_flag() {
   FlagName=''
   case "$1" in
     testing)                 FlagName='LIB_NET_ENABLE_TESTS' ;;
+    assertions)              FlagName='LIB_NET_ENABLE_ASSERTIONS' ;;
     *)
       echo "Invalid flag '$1'.  Try $0 --help to see available options."
       exit 1
@@ -42,7 +43,7 @@ set_log_level() {
     debug)                   level='3' ;;
     warning)                 level='2' ;;
     error)                   level='1' ;;
-    none)                   level='0' ;;
+    none)                    level='0' ;;
     *)
       echo "Invalid log level '$1'.  Try $0 --help to see available options."
       exit 1

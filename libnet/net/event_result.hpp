@@ -9,7 +9,8 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
+#include <iostream>
+#include <string_view>
 
 namespace net {
 
@@ -20,6 +21,19 @@ enum class event_result : std::uint8_t {
   error,
 };
 
-std::string to_string(event_result op);
+static constexpr std::string_view to_string(event_result op) noexcept {
+  switch (op) {
+    case event_result::ok:
+      return "event_result::ok";
+    case event_result::done:
+      return "event_result::done";
+    case event_result::error:
+      return "event_result::error";
+    default:
+      return "event_result::unknown";
+  }
+}
+
+std::ostream& operator<<(std::ostream& os, event_result op);
 
 } // namespace net

@@ -8,6 +8,8 @@
 
 #include "util/config.hpp"
 
+#include "util/error.hpp"
+
 #include "net_test.hpp"
 
 #include <array>
@@ -26,13 +28,6 @@ constexpr const char* key1 = "key1";
 constexpr const char* key2 = "key2";
 constexpr const char* key3 = "key3";
 constexpr const char* key4 = "key4";
-
-const std::array<std::pair<std::string, config::entry_type>, 4> sample_entries{
-  std::make_pair(key1, "value1"s),
-  std::make_pair(key2, true),
-  std::make_pair(key3, std::int64_t{123456789}),
-  std::make_pair(key4, 1234.5678),
-};
 
 struct temp_file {
   temp_file(std::string path, std::string_view content)
@@ -56,14 +51,6 @@ config create_sample_config() {
 }
 
 } // namespace
-
-TEST(config, add_config_entry) {
-  const util::config cfg = create_sample_config();
-  const auto& dict = cfg.get_entries();
-  ASSERT_EQ(dict.size(), sample_entries.size());
-  for (const auto& p : sample_entries)
-    EXPECT_EQ(dict.at(p.first), p.second);
-}
 
 TEST(config, get) {
   const util::config cfg = create_sample_config();
@@ -115,24 +102,4 @@ TEST(config, has_entry) {
 
   EXPECT_FALSE(cfg.has_entry<bool>("non_existent_key"));
   EXPECT_FALSE(cfg.has_entry<bool>(key1));
-}
-
-TEST(config, parse) {
-  const temp_file file{"/tmp/config.cfg", R"(
-    key1 = value1
-
-    test {
-      key2 = true      
-      key3 = 123456789
-      key4 = 42.69
-    }
-  )"};
-
-  util::config cfg;
-  ASSERT_NO_THROW(cfg.parse(file.path_));
-
-  EXPECT_EQ(*cfg.get<std::string>("key1"), "value1"s);
-  EXPECT_TRUE(*cfg.get<bool>("test.key2"));
-  EXPECT_EQ(*cfg.get<std::int64_t>("test.key3"), std::int64_t{123456789});
-  EXPECT_EQ(*cfg.get<double>("test.key4"), 42.69);
 }

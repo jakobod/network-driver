@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/playground.dir/src/playground.cpp.o -o playground  libnet.a libnet.a -luring /usr/lib/aarch64-linux-gnu/libssl.so /usr/lib/aarch64-linux-gnu/libcrypto.so 

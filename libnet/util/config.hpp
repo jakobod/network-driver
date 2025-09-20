@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "util/fwd.hpp"
+
 #include "meta/concepts.hpp"
 
 #include <cstdint>
@@ -32,9 +34,8 @@ public:
   /// @brief Constructs an empty config instance
   config() = default;
 
-  /// @brief Constructs a config instance from a config file
-  /// @param config_path  Path to the config file
-  config(const std::string& config_path);
+  /// @brief Destructs an empty config instance
+  ~config() = default;
 
   /// @brief Copy constructs a config instance from another instance
   /// @param other  The instance to copy
@@ -54,7 +55,8 @@ public:
 
   /// @brief Parses a given config file and adds the values to this instance
   /// @param config_path  Path to the config file
-  void parse(const std::string& config_path);
+  /// @returns util::none in case of success, the error otherwise
+  util::error parse(std::string_view config_path);
 
   /// @brief Adds a single entry to the config
   /// @tparam Entry  Type of the entry
@@ -73,8 +75,9 @@ public:
   ///          is equal to `T`, false otherwise
   template <meta::one_of<bool, std::int64_t, double, std::string> T>
   bool has_entry(const key_type& key) const {
-    if (!config_values_.contains(key))
+    if (!config_values_.contains(key)) {
       return false;
+    }
     return std::holds_alternative<T>(config_values_.at(key));
   }
 
@@ -95,13 +98,12 @@ public:
   /// @returns The entry value if it exists and has type `T`, the fallback
   ///          otherwise
   template <meta::one_of<bool, std::int64_t, double, std::string> T>
-  const T& get_or(const key_type& key, const T& fallback) const {
-    if (auto ptr = try_get<T>(key))
+  T get_or(const key_type& key, const T& fallback) const {
+    if (auto ptr = try_get<T>(key)) {
       return *ptr;
+    }
     return fallback;
   }
-
-  const dictionary& get_entries() const noexcept;
 
 private:
   /// @brief Tries to retrieve a config entry from the config
@@ -111,16 +113,18 @@ private:
   ///          entry does not have type T or does not exist
   template <class T>
   const T* try_get(const key_type& key) const {
-    if (!config_values_.contains(key))
+    if (!config_values_.contains(key)) {
       return nullptr;
+    }
     const auto& value = config_values_.at(key);
-    if (std::holds_alternative<T>(value))
+    if (std::holds_alternative<T>(value)) {
       return std::addressof(std::get<T>(value));
+    }
     return nullptr;
   }
 
   /// @brief The dictionary containing the config_values
-  dictionary config_values_;
+  dictionary config_values_{};
 };
 
 } // namespace util

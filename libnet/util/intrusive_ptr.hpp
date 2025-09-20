@@ -45,15 +45,17 @@ public:
   }
 
   ~intrusive_ptr() {
-    if (ptr_)
+    if (ptr_) {
       ptr_->deref();
+    }
   }
 
   // -- Modifiers --------------------------------------------------------------
 
   void reset(T* new_ptr = nullptr, bool add_ref = true) noexcept {
-    if (ptr_)
+    if (ptr_) {
       ptr_->deref();
+    }
     set_ptr(new_ptr, add_ref);
   }
 
@@ -61,8 +63,9 @@ public:
 
   T* release() noexcept {
     auto result = ptr_;
-    if (ptr_)
+    if (ptr_) {
       ptr_ = nullptr;
+    }
     return result;
   }
 
@@ -94,8 +97,9 @@ public:
 private:
   void set_ptr(T* raw_ptr, bool add_ref) noexcept {
     ptr_ = raw_ptr;
-    if (ptr_ && add_ref)
+    if (ptr_ && add_ref) {
       ptr_->ref();
+    }
   }
 
   T* ptr_;

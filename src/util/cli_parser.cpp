@@ -8,8 +8,6 @@
 
 #include "util/cli_parser.hpp"
 
-#include "util/format.hpp"
-
 #include <compare>
 #include <iostream>
 #include <span>
@@ -26,9 +24,10 @@ option::option(std::string id, std::string longform, char shortform,
     longform_{std::move(longform)},
     shortform_{shortform},
     has_value_{has_value} {
-  if ((longform_ == no_longform) && (shortform_ == no_shortform))
+  if ((longform_ == no_longform) && (shortform_ == no_shortform)) {
     throw std::runtime_error("No long or shortform option set for option \""
                              + id_ + "\"");
+  }
 }
 
 bool option::operator==(const option& other) const noexcept {
@@ -59,8 +58,9 @@ bool option::operator>(const option& other) const noexcept {
 
 cli_parser& cli_parser::register_option(option opt) {
   auto [it, success] = options_.emplace(std::move(opt));
-  if (!success)
+  if (!success) {
     throw std::runtime_error("Option already contained");
+  }
   return *this;
 }
 
@@ -71,10 +71,11 @@ void cli_parser::parse(arg_span args) {
   for (args = args.subspan(1); !args.empty(); args = args.subspan(1)) {
     const std::string_view opt{args.front()};
     // Check wether this is a short/longform option and strip the dashes
-    if (opt.starts_with("--"))
+    if (opt.starts_with("--")) {
       parse_longform_opt(opt.substr(2));
-    else if (opt.starts_with("-"))
+    } else if (opt.starts_with("-")) {
       args = parse_shortform_opt(opt.substr(1), args);
+    }
   }
 }
 
@@ -109,17 +110,20 @@ void cli_parser::parse_longform_opt(std::string_view longform) {
                                 [longform](const option& opt) {
                                   return longform.starts_with(opt.longform_);
                                 });
-  if (pos == options_.end())
+  if (pos == options_.end()) {
     return;
+  }
   parsed_.emplace(pos->id_, string_list{});
 
   if (pos->has_value_) {
-    auto parts = util::split(std::string{longform}, '=');
-    if (parts.size() != 2)
+    const auto separator_pos = longform.find('=');
+    const auto arg_value = longform.substr(separator_pos + 1);
+    if ((separator_pos == std::string_view::npos) || arg_value.empty()) {
       throw std::runtime_error(
         "Missing an expected argument for longform option \""s
         + std::string(longform) + "\"");
-    parsed_.at(pos->id_).emplace_back(std::move(parts.back()));
+    }
+    parsed_.at(pos->id_).emplace_back(arg_value);
   }
 }
 
@@ -129,8 +133,9 @@ cli_parser::arg_span cli_parser::parse_shortform_opt(std::string_view opt,
   for (auto c = opt.front(); !opt.empty();
        opt = opt.substr(1), c = opt.front()) {
     const auto pos = std::find(options_.begin(), options_.end(), c);
-    if (pos == options_.end())
+    if (pos == options_.end()) {
       return args;
+    }
     parsed_.emplace(pos->id_, string_list{});
 
     if (pos->has_value_) {
@@ -140,9 +145,10 @@ cli_parser::arg_span cli_parser::parse_shortform_opt(std::string_view opt,
       } else if (opt.size() == 1) {
         // an argument may have been specified with whitespace (-o option)
         args = args.subspan(1);
-        if (args.empty() || std::string_view{args.front()}.starts_with("-"))
+        if (args.empty() || std::string_view{args.front()}.starts_with("-")) {
           throw std::runtime_error(
             "Missing an expected argument for shortform option'"s + c + "'");
+        }
         parsed_.at(pos->id_).emplace_back(args.front());
       }
     }

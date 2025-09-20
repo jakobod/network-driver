@@ -7,8 +7,9 @@
  */
 
 #include "net/operation.hpp"
-#include "util/format.hpp"
 
+#include <format>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -18,14 +19,30 @@ std::string to_string(operation op) {
   auto contains = [](operation mask, operation what) -> bool {
     return (mask & what) == what;
   };
-  if (op == operation::none)
+  if (op == operation::none) {
     return "operation::[none]";
+  }
   std::vector<std::string> parts;
-  if (contains(op, operation::read))
+  if (contains(op, operation::read)) {
     parts.emplace_back("read");
-  if (contains(op, operation::write))
+  }
+  if (contains(op, operation::write)) {
     parts.emplace_back("write");
-  return util::format("operation::[{0}]", util::join(parts, '|'));
+  }
+  if (contains(op, operation::poll_read)) {
+    parts.emplace_back("poll_read");
+  }
+  if (contains(op, operation::poll_write)) {
+    parts.emplace_back("poll_write");
+  }
+  if (contains(op, operation::accept)) {
+    parts.emplace_back("accept");
+  }
+
+  const auto result = std::accumulate(
+    std::next(parts.begin()), parts.end(), parts[0],
+    [&](const std::string& a, const std::string& b) { return a + '|' + b; });
+  return std::format("operation::[{}]", result);
 }
 
 std::ostream& operator<<(std::ostream& os, operation op) {
