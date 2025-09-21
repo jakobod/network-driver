@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>8</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>760</x>
+      <y>432</y>
+      <w>264</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>epoll_multiplexer_impl
+--
++ start(): void
++ stop(): void
++ join(): void
++ running(): bool
++ add(tcp_stream_socket): util::error
++ add(udp_datagram_socket): util::error
+--
+managers_: std::vector&lt;poll_manager_ptr&gt;</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>144</x>
+      <y>424</y>
+      <w>256</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>uring_multiplexer_impl
+--
++ start(): void
++ stop(): void
++ join(): void
++ running(): bool
++ add(tcp_stream_socket): util::error
++ add(udp_datagram_socket): util::error
+--
+managers_: std::vector&lt;uring_manager_ptr&gt;</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>272</x>
+      <y>192</y>
+      <w>504</w>
+      <h>184</h>
+    </coordinates>
+    <panel_attributes>/multiplexer_impl/
+--
+/+ start(): void/
+/+ stop(): void/
+/+ join(): void/
+/+ add(tcp_stream_socket): util::error/
+/+ add(udp_datagram_socket): util::error/
+/+ add(udp_datagram_socket): util::error/
+/+ set_timeout(manager_ptr, std::chrono::steady_clock::time_point): std::uint64_t/
+--
++ port(): uint16_t
++ running(): bool
+--
+- port_: uint16_t
+- running_: bool
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>264</x>
+      <y>368</y>
+      <w>264</w>
+      <h>72</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>310.0;10.0;310.0;50.0;10.0;50.0;10.0;70.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>504</x>
+      <y>368</y>
+      <w>408</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;50.0;490.0;50.0;490.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>392</x>
+      <y>576</y>
+      <w>304</w>
+      <h>176</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;Socket&gt;&gt;
+manager
+--
++ manager(Socket, multiplexer*)
+--
++ configure_read(): void
++ start_writing(): void
+/+ handle_timeout(std::uint64_t timeout_id)/
+--
++ handle(): Socket
++ get_write_buffer(): util::byte_buffer&amp;
+--
+# read_buffer_: util::byte_buffer
+# write_buffer_: util::byte_buffer
+- handle_: socket
+- mpx_: multiplexer*
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>152</x>
+      <y>824</y>
+      <w>256</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>uring_manager
+--
+/+handle_read_cqe(const cqe&amp;): event_result/
+/+handle_write_cqe(const cqe&amp;): event_result/</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>296</x>
+      <y>744</y>
+      <w>264</w>
+      <h>96</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>310.0;10.0;310.0;50.0;10.0;50.0;10.0;100.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>768</x>
+      <y>808</y>
+      <w>256</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>poll_manager
+--
+/+handle_read(): event_result/
+/+handle_write(): event_result/</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>536</x>
+      <y>744</y>
+      <w>344</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;50.0;410.0;50.0;410.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>264</x>
+      <y>536</y>
+      <w>24</w>
+      <h>304</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;360.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>888</x>
+      <y>544</y>
+      <w>24</w>
+      <h>280</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;330.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>448</x>
+      <y>1168</y>
+      <w>168</w>
+      <h>72</h>
+    </coordinates>
+    <panel_attributes>Application
+--
+/+ consume(): event_result/
+// /+ produce(): event_result/
+# mgr(): manager*
+--
+- mgr_: manager*</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>120</x>
+      <y>1048</y>
+      <w>432</w>
+      <h>136</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>520.0;150.0;520.0;80.0;10.0;80.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>528</x>
+      <y>1024</y>
+      <w>384</w>
+      <h>160</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;180.0;10.0;110.0;460.0;110.0;460.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>560</x>
+      <y>744</y>
+      <w>24</w>
+      <h>440</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;530.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>0</x>
+      <y>960</y>
+      <w>256</w>
+      <h>96</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;ApplicationType&gt;&gt;
+uring_stream_manager_impl
+--
++ handle_read_completion(const cqe&amp;): event_result
++ handle_write_completion(const cqe&amp;): event_result
++ handle_timeout(std::uint64_t timeout_id): event_result
+--
+- application_: ApplicationType</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>112</x>
+      <y>872</y>
+      <w>176</w>
+      <h>104</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>200.0;10.0;200.0;60.0;10.0;60.0;10.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>768</x>
+      <y>936</y>
+      <w>256</w>
+      <h>96</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;ApplicationType&gt;&gt;
+poll_manager_impl
+--
++ handle_read(): event_result
++ handle_write(): event_result
++ handle_timeout(std::uint64_t timeout_id): event_result
+--
+- application_: ApplicationType</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>888</x>
+      <y>856</y>
+      <w>24</w>
+      <h>96</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;100.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>280</x>
+      <y>960</y>
+      <w>256</w>
+      <h>96</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;ApplicationType&gt;&gt;
+uring_datagram_manager_impl
+--
++ handle_read_completion(const cqe&amp;): event_result
++ handle_write_completion(const cqe&amp;): event_result
++ handle_timeout(std::uint64_t timeout_id): event_result
+--
+- application_: ApplicationType</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>264</x>
+      <y>872</y>
+      <w>160</w>
+      <h>104</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;60.0;180.0;60.0;180.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>400</x>
+      <y>1048</y>
+      <w>152</w>
+      <h>136</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>170.0;150.0;170.0;80.0;10.0;80.0;10.0;10.0</additional_attributes>
+  </element>
+</diagram>

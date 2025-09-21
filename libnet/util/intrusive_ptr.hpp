@@ -19,11 +19,9 @@ class intrusive_ptr {
 public:
   // -- Constructors -----------------------------------------------------------
 
-  constexpr intrusive_ptr() noexcept : ptr_(nullptr) {
-    // nop
-  }
+  constexpr intrusive_ptr() noexcept = default;
 
-  constexpr intrusive_ptr(std::nullptr_t) noexcept : intrusive_ptr() {
+  constexpr intrusive_ptr(std::nullptr_t) noexcept {
     // nop
   }
 
@@ -31,17 +29,14 @@ public:
     set_ptr(raw_ptr, add_ref);
   }
 
-  intrusive_ptr(intrusive_ptr&& other) noexcept : ptr_(other.release()) {
+  template <meta::convertible_to<T> U>
+  intrusive_ptr(intrusive_ptr<U>&& other) noexcept : ptr_(other.release()) {
     // nop
-  }
-
-  intrusive_ptr(const intrusive_ptr& other) noexcept {
-    set_ptr(other.get(), true);
   }
 
   template <meta::convertible_to<T> U>
-  intrusive_ptr(intrusive_ptr<U> other) noexcept : ptr_(other.release()) {
-    // nop
+  intrusive_ptr(const intrusive_ptr<U>& other) noexcept {
+    set_ptr(other.ptr_, true);
   }
 
   ~intrusive_ptr() {
@@ -74,13 +69,15 @@ public:
     return *this;
   }
 
-  intrusive_ptr& operator=(intrusive_ptr&& other) noexcept {
-    swap(other);
+  template <meta::convertible_to<T> U>
+  intrusive_ptr& operator=(const intrusive_ptr<U>& other) noexcept {
+    reset(other.ptr_);
     return *this;
   }
 
-  intrusive_ptr& operator=(const intrusive_ptr& other) noexcept {
-    reset(other.ptr_);
+  template <meta::convertible_to<T> U>
+  intrusive_ptr& operator=(intrusive_ptr<U>&& other) noexcept {
+    reset(other.release(), false);
     return *this;
   }
 
@@ -102,7 +99,7 @@ private:
     }
   }
 
-  T* ptr_;
+  T* ptr_{nullptr};
 };
 
 // -- Convenience functions to create intrusive_ptrs ---------------------------

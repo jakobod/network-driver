@@ -35,7 +35,7 @@ make_udp_datagram_socket(std::uint16_t port) {
   }
   LOG_DEBUG("Created new socket with ", NET_ARG2("id", sock.id));
   auto guard = make_socket_guard(sock);
-  if (auto err = bind(sock, v4_endpoint{v4_address::any, htons(port)})) {
+  if (auto err = bind(sock, v4_endpoint{v4_address::any, port})) {
     return err;
   }
   auto res = port_of(*guard);

@@ -121,7 +121,7 @@ private:
   }
 
   void enqueue_write_sqe() {
-    if ((network_buffer_.empty()) && !write_buffer_.empty()) {
+    if ((network_buffer_.size() - written_) == 0 && !write_buffer_.empty()) {
       // We got more data to write, swap buffers and update the view!
       network_buffer_.clear();
       written_ = 0;

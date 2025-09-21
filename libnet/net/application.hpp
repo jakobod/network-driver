@@ -23,6 +23,8 @@ struct application {
 
   virtual util::error consume(util::const_byte_span data) = 0;
 
+  virtual void handle_timeout(std::uint64_t timeout_id) = 0;
+
   manager* mgr() noexcept { return mgr_; }
 
 private:

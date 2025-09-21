@@ -12,6 +12,7 @@
 #include "net/manager.hpp"
 #include "net/manager_factory.hpp"
 #include "net/operation.hpp"
+#include "net/stream_uring_acceptor.hpp"
 
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
@@ -36,7 +37,7 @@
 
 namespace {
 
-constexpr std::uint32_t default_uring_queue_depth = 512;
+constexpr std::uint32_t default_uring_queue_depth = 2048;
 
 } // namespace
 
@@ -54,8 +55,8 @@ uring_multiplexer::~uring_multiplexer() {
 }
 
 util::error uring_multiplexer::init(const util::config& cfg) {
-  LOG_DEBUG("initializing uring_multiplexer");
   LOG_TRACE();
+  LOG_DEBUG("initializing uring_multiplexer");
   cfg_ = std::addressof(cfg);
 
   const auto queue_depth = cfg_->get_or<std::int64_t>(
@@ -78,12 +79,9 @@ util::error uring_multiplexer::init(const util::config& cfg) {
     return *err;
   }
   const auto [accept_socket, port] = std::get<sockets::acceptor_pair>(res);
-  accept_socket_                   = accept_socket;
   port_                            = port;
   LOG_DEBUG("listening on ", NET_ARG2("port", port_));
-
-  enqueue_accept();
-  return util::none;
+  return add(accept_socket);
 }
 
 void uring_multiplexer::start() {
@@ -96,7 +94,6 @@ void uring_multiplexer::start() {
 
 void uring_multiplexer::shutdown() {
   LOG_TRACE();
-  LOG_DEBUG("multiplexer shutting down");
   // TODO
 
   // auto it = managers_.begin();
@@ -134,40 +131,50 @@ void uring_multiplexer::run() {
 
 // -- Error handling -----------------------------------------------------------
 
+util::error uring_multiplexer::add(sockets::tcp_accept_socket handle) {
+  LOG_TRACE();
+  LOG_DEBUG("Adding tcp_accept_socket with ", NET_ARG2("id", handle.id));
+  auto mgr = manager_factory_->make_uring_manager(handle, this);
+  ASSERT(mgr != nullptr, "Factory returned nullptr");
+  return add(std::move(mgr));
+}
+
 util::error uring_multiplexer::add(sockets::tcp_stream_socket handle) {
   LOG_TRACE();
-  // LOG_DEBUG("Adding socket_manager with ", NET_ARG2("id", mgr->handle().id),
-  //           " for ", NET_ARG(initial));
+  LOG_DEBUG("Adding tcp_stream_socket with ", NET_ARG2("id", handle.id));
   auto mgr = manager_factory_->make_uring_manager(handle, this);
-  if (const auto err = mgr->init(*cfg_)) {
-    return err;
-  }
-  managers_.emplace(handle.id, std::move(mgr));
-  return util::none;
+  ASSERT(mgr != nullptr, "Factory returned nullptr");
+  return add(std::move(mgr));
 }
 
 util::error uring_multiplexer::add(sockets::udp_datagram_socket handle) {
   LOG_TRACE();
-  // LOG_DEBUG("Adding socket_manager with ", NET_ARG2("id", mgr->handle().id),
-  //           " for ", NET_ARG(initial));
-  std::ignore = handle;
+  LOG_DEBUG("Adding udp_datagram_socket with ", NET_ARG2("id", handle.id));
+  auto mgr = manager_factory_->make_uring_manager(handle, this);
+  ASSERT(mgr != nullptr, "Factory returned nullptr");
+  return add(std::move(mgr));
+}
 
-  // auto* read_info   = new uring_entry{initial, mgr.get()};
-  // io_uring_sqe* sqe = io_uring_get_sqe(&uring_handle_);
-  // auto& read_buffer = mgr->read_buffer();
-  // io_uring_prep_recv(sqe, mgr->handle, read_info->buffer.data(),
-  //                    read_info->buffer.size(), 0);
-  // io_uring_sqe_set_data(sqe, read_info);
-  // io_uring_submit(&uring_handle_);
-  // mgr.release();
+util::error uring_multiplexer::add(uring_manager_ptr mgr) {
+  auto* mgr_ptr = mgr.get();
+  managers_.emplace(mgr->handle().id, std::move(mgr));
+  if (const auto err = mgr_ptr->init(*cfg_)) {
+    return err;
+  }
   return util::none;
 }
 
 std::uint64_t
-uring_multiplexer::set_timeout(manager_ptr,
-                               std::chrono::steady_clock::time_point) {
-  DEBUG_ONLY_ASSERT(false, "not implemented yet");
-  return 0;
+uring_multiplexer::set_timeout(manager_ptr mgr,
+                               std::chrono::steady_clock::time_point when) {
+  LOG_TRACE();
+  LOG_DEBUG("Setting timeout ", current_timeout_id_, " on ",
+            NET_ARG2("mgr", mgr->handle().id));
+  timeouts_.emplace(mgr->handle().id, when, current_timeout_id_);
+  current_timeout_ = (current_timeout_ != std::nullopt)
+                       ? std::min(when, *current_timeout_)
+                       : when;
+  return current_timeout_id_++;
 }
 
 void uring_multiplexer::del(sockets::socket handle) {
@@ -197,41 +204,110 @@ uring_multiplexer::del(manager_map::iterator it) {
   return new_it;
 }
 
-void uring_multiplexer::enqueue_accept() {
-  auto* sqe  = io_uring_get_sqe(&uring_handle_);
-  auto* data = new uring_entry{operation::accept, nullptr};
-  io_uring_prep_accept(sqe, accept_socket_.id, nullptr, nullptr, 0);
+void uring_multiplexer::enqueue_accept(uring_manager_ptr mgr) {
+  LOG_TRACE();
+  LOG_DEBUG("Enqueuing accept_sqe for mgr with ",
+            NET_ARG2("id", mgr->handle().id));
+  auto* sqe = io_uring_get_sqe(&uring_handle_);
+  io_uring_prep_accept(sqe, mgr->handle().id, nullptr, nullptr, 0);
+  auto* data = new uring_entry{operation::accept, std::move(mgr)};
   io_uring_sqe_set_data(sqe, data);
-  io_uring_submit(&uring_handle_);
+  if (const auto res = io_uring_submit(&uring_handle_); res < 0) {
+    LOG_ERROR("Failed to submit sqe to uring ",
+              NET_ARG2("error", std::strerror(-res)));
+  }
 }
 
-void uring_multiplexer::enqueue_read(uring_manager_ptr mgr,
+void uring_multiplexer::enqueue_recv(uring_manager_ptr mgr,
                                      util::byte_span receive_buffer) {
+  LOG_TRACE();
+  LOG_DEBUG("Enqueueing mgr for recv ", NET_ARG2("handle", mgr->handle().id),
+            " ", NET_ARG2("num_bytes_to_read", receive_buffer.size()));
   auto* sqe = io_uring_get_sqe(&uring_handle_);
   io_uring_prep_recv(sqe, mgr->handle().id, receive_buffer.data(),
                      receive_buffer.size(), 0);
-  auto* read_info = new uring_entry{operation::read, mgr};
+  auto* read_info = new uring_entry{operation::read, std::move(mgr)};
   io_uring_sqe_set_data(sqe, read_info);
-  io_uring_submit(&uring_handle_);
+  if (const auto res = io_uring_submit(&uring_handle_); res < 0) {
+    LOG_ERROR("Failed to submit sqe to uring ",
+              NET_ARG2("error", std::strerror(-res)));
+  }
+}
+
+void uring_multiplexer::enqueue_recvmsg(uring_manager_ptr mgr,
+                                        util::byte_span receive_buffer) {
+  // LOG_TRACE();
+  // LOG_DEBUG("Enqueueing mgr for recvmsg ", NET_ARG2("handle",
+  // mgr->handle().id),
+  //           " ", NET_ARG2("num_bytes_to_read", receive_buffer.size()));
+  // auto* sqe = io_uring_get_sqe(&uring_handle_);
+  // iovec iov{.iov_base = receive_buffer.data(),
+  //           .iov_len  = receive_buffer.size()};
+  // struct sockaddr_storage src;
+  // struct msghdr msg {};
+  // msg.msg_name    = &src;
+  // msg.msg_namelen = sizeof(src);
+  // msg.msg_iov     = &iov;
+  // msg.msg_iovlen  = 1;
+
+  // io_uring_prep_recvmsg(sqe, udp_fd, &msg, 0);
+  // io_uring_sqe_set_data(sqe, &msg); // optional, to find buffer later
+  // io_uring_submit(&ring);
+  // if (const auto res = io_uring_submit(&uring_handle_); res < 0) {
+  //   LOG_ERROR("Failed to submit sqe to uring ",
+  //             NET_ARG2("error", std::strerror(-res)));
+  // }
 }
 
 void uring_multiplexer::enqueue_write(uring_manager_ptr mgr,
                                       util::const_byte_span write_buffer) {
+  LOG_TRACE();
+  LOG_DEBUG("Enqueueing mgr for writing ", NET_ARG2("handle", mgr->handle().id),
+            " ", NET_ARG2("num_bytes_to_write", write_buffer.size()));
   auto* sqe = io_uring_get_sqe(&uring_handle_);
   io_uring_prep_write(sqe, mgr->handle().id, write_buffer.data(),
                       write_buffer.size(), 0);
-  auto* read_info = new uring_entry{operation::write, mgr};
+  auto* read_info = new uring_entry{operation::write, std::move(mgr)};
   io_uring_sqe_set_data(sqe, read_info);
-  io_uring_submit(&uring_handle_);
+  if (const auto res = io_uring_submit(&uring_handle_); res < 0) {
+    LOG_ERROR("Failed to submit sqe to uring ",
+              NET_ARG2("error", std::strerror(-res)));
+  }
 }
 
-util::error uring_multiplexer::poll_once(bool) {
+util::error uring_multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   LOG_TRACE();
 
+  // TODO: This is a bug. multiple threads will use the same timespec
+  static const auto timeout = [&]() -> __kernel_timespec* {
+    static __kernel_timespec ts;
+    if (!blocking) {
+      // Nonblocking
+      ts.tv_sec  = 0;
+      ts.tv_nsec = 0;
+      return &ts;
+    }
+
+    if (!current_timeout_) {
+      return nullptr; // Indefinite blocking
+    }
+
+    // Timed wait until a deadline
+    using namespace std::chrono;
+    auto now        = steady_clock::now();
+    auto deadline   = *current_timeout_;
+    const auto diff = (deadline > now) ? deadline - now
+                                       : steady_clock::duration{0};
+
+    ts.tv_sec  = duration_cast<seconds>(diff).count();
+    ts.tv_nsec = duration_cast<nanoseconds>(diff % seconds(1)).count();
+    return &ts;
+  };
+
   io_uring_cqe* cqe = nullptr;
   LOG_DEBUG("Waiting for handled events");
-  const auto ret = io_uring_wait_cqe(&uring_handle_, &cqe);
+  const auto ret = io_uring_wait_cqe_timeout(&uring_handle_, &cqe, timeout());
   if (ret < 0) {
     LOG_ERROR("io_uring_wait_cqe failed");
     return util::error{util::error_code::socket_operation_failed,
@@ -240,26 +316,20 @@ util::error uring_multiplexer::poll_once(bool) {
 
   if (auto* entry
       = reinterpret_cast<uring_entry*>(io_uring_cqe_get_data(cqe))) {
-    auto [op, mgr] = *entry;
-    delete entry; // TODO: this can be made prettier?
-
+    const auto& [op, mgr]    = *entry;
     auto handle_event_result = [this](operation op, event_result res,
-                                      const manager_ptr& mgr) {
-      std::ignore = op;
-      LOG_DEBUG("Handling event_result from mgr handler ", NET_ARG(op),
-                NET_ARG(res), NET_ARG2("handle", mgr->handle().id));
+                                      const uring_manager_ptr& mgr) {
+      LOG_DEBUG("Handling event_result from mgr handler ", NET_ARG(op), " ",
+                NET_ARG(res), " ", NET_ARG2("handle", mgr->handle().id));
       if ((res == event_result::error) || (res == event_result::done)) {
         del(mgr->handle());
       }
     };
 
     switch (op) {
-      case operation::accept: {
-        sockets::tcp_stream_socket accepted_socket{cqe->res};
-        std::ignore = add(accepted_socket); // TODO
-        enqueue_accept();
+      case operation::accept:
+        mgr->handle_read_completion(cqe);
         break;
-      }
 
       case operation::read: {
         const auto res = mgr->handle_read_completion(cqe);
@@ -277,6 +347,7 @@ util::error uring_multiplexer::poll_once(bool) {
         DEBUG_ONLY_ASSERT(false, "Unhandled operation type");
         break;
     }
+    delete entry;
     io_uring_cqe_seen(&uring_handle_, cqe);
   }
 

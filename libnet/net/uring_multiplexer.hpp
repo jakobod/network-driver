@@ -26,6 +26,7 @@
 #include <chrono>
 #include <cstdint>
 #include <liburing.h>
+#include <set>
 #include <thread>
 #include <unordered_map>
 
@@ -39,8 +40,12 @@ class uring_multiplexer : public multiplexer {
 
   struct uring_entry {
     operation op{operation::none};
-    uring_manager_ptr mgr_;
+    uring_manager_ptr mgr;
   };
+
+  using timeout_entry_set = std::set<timeout_entry>;
+  using optional_timepoint
+    = std::optional<std::chrono::steady_clock::time_point>;
 
 public:
   // -- constructors, destructors ----------------------------------------------
@@ -63,6 +68,8 @@ public:
   /// Joins with the multiplexer.
   void join() override;
 
+  util::error add(sockets::tcp_accept_socket handle) override;
+
   util::error add(sockets::tcp_stream_socket handle) override;
 
   util::error add(sockets::udp_datagram_socket handle) override;
@@ -76,13 +83,17 @@ public:
 
   // -- Interface functions ----------------------------------------------------
 
-  void enqueue_accept();
+  void enqueue_accept(uring_manager_ptr mgr);
 
-  void enqueue_read(uring_manager_ptr mgr, util::byte_span receive_buffer);
+  void enqueue_recv(uring_manager_ptr mgr, util::byte_span receive_buffer);
+
+  void enqueue_recvmsg(uring_manager_ptr mgr, util::byte_span receive_buffer);
 
   void enqueue_write(uring_manager_ptr mgr, util::const_byte_span write_buffer);
 
 private:
+  util::error add(uring_manager_ptr mgr);
+
   /// The main multiplexer loop.
   void run();
 
@@ -106,6 +117,9 @@ private:
 
   const util::config* cfg_ = nullptr;
 
+  timeout_entry_set timeouts_;
+  std::uint64_t current_timeout_id_{0};
+  optional_timepoint current_timeout_{std::nullopt};
   sockets::tcp_accept_socket accept_socket_;
 };
 

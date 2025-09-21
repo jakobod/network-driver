@@ -255,10 +255,13 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
   /usr/include/c++/13/bits/stl_iterator.h \
   /usr/include/c++/13/bits/stl_iterator_base_funcs.h \
   /usr/include/c++/13/bits/stl_iterator_base_types.h \
+  /usr/include/c++/13/bits/stl_multiset.h \
   /usr/include/c++/13/bits/stl_pair.h \
   /usr/include/c++/13/bits/stl_raw_storage_iter.h \
   /usr/include/c++/13/bits/stl_relops.h \
+  /usr/include/c++/13/bits/stl_set.h \
   /usr/include/c++/13/bits/stl_tempbuf.h \
+  /usr/include/c++/13/bits/stl_tree.h \
   /usr/include/c++/13/bits/stl_uninitialized.h \
   /usr/include/c++/13/bits/stl_vector.h \
   /usr/include/c++/13/bits/streambuf.tcc \
@@ -285,6 +288,7 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
   /usr/include/c++/13/cstdint \
   /usr/include/c++/13/cstdio \
   /usr/include/c++/13/cstdlib \
+  /usr/include/c++/13/cstring \
   /usr/include/c++/13/ctime \
   /usr/include/c++/13/cwchar \
   /usr/include/c++/13/cwctype \
@@ -318,6 +322,7 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
   /usr/include/c++/13/pstl/pstl_config.h \
   /usr/include/c++/13/ratio \
   /usr/include/c++/13/semaphore \
+  /usr/include/c++/13/set \
   /usr/include/c++/13/span \
   /usr/include/c++/13/sstream \
   /usr/include/c++/13/stdexcept \
@@ -372,6 +377,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
   /usr/include/stdint.h \
   /usr/include/stdio.h \
   /usr/include/stdlib.h \
+  /usr/include/string.h \
+  /usr/include/strings.h \
   /usr/include/syscall.h \
   /usr/include/time.h \
   /usr/include/unistd.h \
@@ -385,6 +392,7 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
   /usr/lib/gcc/aarch64-linux-gnu/13/include/syslimits.h \
   /workspaces/network-driver/libnet/meta/concepts.hpp \
   /workspaces/network-driver/libnet/net/application.hpp \
+  /workspaces/network-driver/libnet/net/datagram_uring_manager.hpp \
   /workspaces/network-driver/libnet/net/event_result.hpp \
   /workspaces/network-driver/libnet/net/fwd.hpp \
   /workspaces/network-driver/libnet/net/ip/fwd.hpp \
@@ -396,11 +404,14 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
   /workspaces/network-driver/libnet/net/sockets/datagram_socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/socket_id.hpp \
+  /workspaces/network-driver/libnet/net/sockets/stream_socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/tcp_accept_socket.hpp \
+  /workspaces/network-driver/libnet/net/sockets/tcp_stream_socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/udp_datagram_socket.hpp \
+  /workspaces/network-driver/libnet/net/stream_uring_acceptor.hpp \
+  /workspaces/network-driver/libnet/net/stream_uring_manager.hpp \
   /workspaces/network-driver/libnet/net/timeout_entry.hpp \
   /workspaces/network-driver/libnet/net/uring_manager.hpp \
-  /workspaces/network-driver/libnet/net/uring_manager_impl.hpp \
   /workspaces/network-driver/libnet/net/uring_multiplexer.hpp \
   /workspaces/network-driver/libnet/util/assert.hpp \
   /workspaces/network-driver/libnet/util/byte_buffer.hpp \
@@ -425,13 +436,17 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 
 /workspaces/network-driver/libnet/util/byte_buffer.hpp:
 
-/workspaces/network-driver/libnet/net/uring_manager_impl.hpp:
+/workspaces/network-driver/libnet/net/stream_uring_acceptor.hpp:
 
 /workspaces/network-driver/libnet/net/sockets/udp_datagram_socket.hpp:
+
+/workspaces/network-driver/libnet/net/sockets/tcp_stream_socket.hpp:
 
 /workspaces/network-driver/libnet/util/error_code.hpp:
 
 /workspaces/network-driver/libnet/net/sockets/tcp_accept_socket.hpp:
+
+/workspaces/network-driver/libnet/net/sockets/stream_socket.hpp:
 
 /workspaces/network-driver/libnet/net/sockets/socket.hpp:
 
@@ -452,6 +467,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 /usr/include/unistd.h:
 
 /usr/include/syscall.h:
+
+/usr/include/string.h:
 
 /usr/include/stdlib.h:
 
@@ -552,6 +569,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 /usr/include/c++/13/cwctype:
 
 /usr/include/c++/13/ctime:
+
+/usr/include/c++/13/cstring:
 
 /usr/include/c++/13/cstdlib:
 
@@ -711,6 +730,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 
 /usr/include/aarch64-linux-gnu/bits/types/wint_t.h:
 
+/usr/include/strings.h:
+
 /usr/include/signal.h:
 
 /usr/include/c++/13/iomanip:
@@ -728,6 +749,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 /usr/include/aarch64-linux-gnu/bits/stdio_lim.h:
 
 /usr/include/aarch64-linux-gnu/bits/stdint-least.h:
+
+/workspaces/network-driver/libnet/net/stream_uring_manager.hpp:
 
 /usr/include/aarch64-linux-gnu/bits/statx.h:
 
@@ -989,6 +1012,10 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 
 /usr/include/aarch64-linux-gnu/bits/types/__locale_t.h:
 
+/usr/include/c++/13/bits/stl_relops.h:
+
+/usr/include/aarch64-linux-gnu/bits/locale.h:
+
 /usr/lib/gcc/aarch64-linux-gnu/13/include/stdarg.h:
 
 /usr/include/c++/13/bits/exception.h:
@@ -1020,6 +1047,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 /usr/include/aarch64-linux-gnu/c++/13/bits/os_defines.h:
 
 /usr/include/c++/13/bits/range_access.h:
+
+/workspaces/network-driver/libnet/net/datagram_uring_manager.hpp:
 
 /usr/include/linux/fs.h:
 
@@ -1076,6 +1105,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 /usr/include/asm-generic/socket.h:
 
 /workspaces/network-driver/libnet/util/logger.hpp:
+
+/usr/include/c++/13/bits/stl_set.h:
 
 /usr/include/c++/13/bits/ostream_insert.h:
 
@@ -1139,6 +1170,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 
 /usr/include/c++/13/bits/chrono_io.h:
 
+/usr/include/c++/13/bits/stl_tree.h:
+
 /usr/include/c++/13/bits/codecvt.h:
 
 /usr/include/c++/13/bits/cpp_type_traits.h:
@@ -1152,6 +1185,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 /usr/include/c++/13/bits/enable_special_members.h:
 
 /usr/include/c++/13/bits/erase_if.h:
+
+/usr/include/c++/13/set:
 
 /usr/include/c++/13/bits/shared_ptr_atomic.h:
 
@@ -1211,6 +1246,8 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 
 /usr/include/c++/13/bits/std_abs.h:
 
+/usr/include/c++/13/bits/stl_multiset.h:
+
 /usr/include/c++/13/bits/predefined_ops.h:
 
 /usr/include/asm-generic/int-ll64.h:
@@ -1234,7 +1271,3 @@ CMakeFiles/playground.dir/src/playground.cpp.o: /workspaces/network-driver/src/p
 /usr/include/c++/13/bits/stl_algobase.h:
 
 /usr/include/c++/13/bits/stl_raw_storage_iter.h:
-
-/usr/include/aarch64-linux-gnu/bits/locale.h:
-
-/usr/include/c++/13/bits/stl_relops.h:

@@ -3767,10 +3767,13 @@ CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o: /workspaces/network-driver/s
   /usr/include/c++/13/bits/stl_iterator.h \
   /usr/include/c++/13/bits/stl_iterator_base_funcs.h \
   /usr/include/c++/13/bits/stl_iterator_base_types.h \
+  /usr/include/c++/13/bits/stl_multiset.h \
   /usr/include/c++/13/bits/stl_pair.h \
   /usr/include/c++/13/bits/stl_raw_storage_iter.h \
   /usr/include/c++/13/bits/stl_relops.h \
+  /usr/include/c++/13/bits/stl_set.h \
   /usr/include/c++/13/bits/stl_tempbuf.h \
+  /usr/include/c++/13/bits/stl_tree.h \
   /usr/include/c++/13/bits/stl_uninitialized.h \
   /usr/include/c++/13/bits/stl_vector.h \
   /usr/include/c++/13/bits/streambuf.tcc \
@@ -3797,6 +3800,7 @@ CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o: /workspaces/network-driver/s
   /usr/include/c++/13/cstdint \
   /usr/include/c++/13/cstdio \
   /usr/include/c++/13/cstdlib \
+  /usr/include/c++/13/cstring \
   /usr/include/c++/13/ctime \
   /usr/include/c++/13/cwchar \
   /usr/include/c++/13/cwctype \
@@ -3831,6 +3835,7 @@ CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o: /workspaces/network-driver/s
   /usr/include/c++/13/pstl/pstl_config.h \
   /usr/include/c++/13/ratio \
   /usr/include/c++/13/semaphore \
+  /usr/include/c++/13/set \
   /usr/include/c++/13/span \
   /usr/include/c++/13/sstream \
   /usr/include/c++/13/stdexcept \
@@ -3887,6 +3892,8 @@ CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o: /workspaces/network-driver/s
   /usr/include/stdint.h \
   /usr/include/stdio.h \
   /usr/include/stdlib.h \
+  /usr/include/string.h \
+  /usr/include/strings.h \
   /usr/include/syscall.h \
   /usr/include/time.h \
   /usr/include/unistd.h \
@@ -3908,6 +3915,7 @@ CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o: /workspaces/network-driver/s
   /workspaces/network-driver/libnet/net/manager_factory.hpp \
   /workspaces/network-driver/libnet/net/multiplexer.hpp \
   /workspaces/network-driver/libnet/net/operation.hpp \
+  /workspaces/network-driver/libnet/net/receive_policy.hpp \
   /workspaces/network-driver/libnet/net/sockets/datagram_socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/socket_id.hpp \
@@ -3915,6 +3923,7 @@ CMakeFiles/net.dir/src/net/uring_multiplexer.cpp.o: /workspaces/network-driver/s
   /workspaces/network-driver/libnet/net/sockets/tcp_accept_socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/tcp_stream_socket.hpp \
   /workspaces/network-driver/libnet/net/sockets/udp_datagram_socket.hpp \
+  /workspaces/network-driver/libnet/net/stream_uring_acceptor.hpp \
   /workspaces/network-driver/libnet/net/timeout_entry.hpp \
   /workspaces/network-driver/libnet/net/uring_manager.hpp \
   /workspaces/network-driver/libnet/net/uring_multiplexer.hpp \
@@ -5460,19 +5469,17 @@ CMakeFiles/net.dir/src/util/error_code.cpp.o: /workspaces/network-driver/src/uti
 
 /workspaces/network-driver/libnet/util/cli_parser.hpp:
 
-/usr/include/c++/13/bits/stl_multiset.h:
-
 /usr/include/c++/13/bits/stl_multimap.h:
 
 /workspaces/network-driver/libnet/util/binary_deserializer.hpp:
 
-/usr/include/string.h:
-
-/usr/include/c++/13/cstring:
+/workspaces/network-driver/libnet/net/stream_uring_acceptor.hpp:
 
 /workspaces/network-driver/libnet/net/manager_factory.hpp:
 
 /usr/lib/gcc/aarch64-linux-gnu/13/include/stdbool.h:
+
+/usr/include/string.h:
 
 /usr/include/semaphore.h:
 
@@ -5499,6 +5506,10 @@ CMakeFiles/net.dir/src/util/error_code.cpp.o: /workspaces/network-driver/src/uti
 /usr/include/c++/13/semaphore:
 
 /usr/include/c++/13/pstl/glue_algorithm_defs.h:
+
+/usr/include/c++/13/cstring:
+
+/usr/include/c++/13/bits/stl_multiset.h:
 
 /usr/include/c++/13/bits/semaphore_base.h:
 

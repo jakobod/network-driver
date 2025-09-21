@@ -37,6 +37,8 @@ public:
   /// Joins with the multiplexer.
   virtual void join() = 0;
 
+  virtual util::error add(sockets::tcp_accept_socket handle) = 0;
+
   virtual util::error add(sockets::tcp_stream_socket handle) = 0;
 
   virtual util::error add(sockets::udp_datagram_socket handle) = 0;

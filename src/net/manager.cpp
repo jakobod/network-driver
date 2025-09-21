@@ -48,12 +48,6 @@ manager& manager::operator=(manager&& other) noexcept {
 
 // -- properties -------------------------------------------------------------
 
-void manager::configure_next_read(receive_policy policy) noexcept {
-  received_ = 0;
-  read_buffer_.resize(policy.max_size);
-  min_read_size_ = policy.min_size;
-}
-
 util::byte_buffer& manager::write_buffer() noexcept {
   return write_buffer_;
 }

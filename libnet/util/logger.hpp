@@ -36,12 +36,12 @@ class logger {
   static constexpr const std::string_view config_terminal_output_option
     = "logger.terminal-output";
   /// Escape sequences for formatting the logging output
-  static constexpr const std::string_view reset_formatting = "\033[0m";
-  static constexpr const std::string_view reset_bold = "\033[22m";
-  static constexpr const std::string_view trace_formatting = "\033[1;34m";
-  static constexpr const std::string_view debug_formatting = "\033[1;32m";
+  static constexpr const std::string_view reset_formatting   = "\033[0m";
+  static constexpr const std::string_view reset_bold         = "\033[22m";
+  static constexpr const std::string_view trace_formatting   = "\033[1;34m";
+  static constexpr const std::string_view debug_formatting   = "\033[1;32m";
   static constexpr const std::string_view warning_formatting = "\033[1;33m";
-  static constexpr const std::string_view error_formatting = "\033[1;31m";
+  static constexpr const std::string_view error_formatting   = "\033[1;31m";
 
 public:
   template <class T>
@@ -74,8 +74,13 @@ public:
   }
 
   template <class... Ts>
-  void log_trace(std::string_view func_name, const Ts&... ts) {
-    log(trace_formatting, "[TRACE]  ", func_name, ts...);
+  void log_entry(std::string_view func_name, const Ts&... ts) {
+    log(trace_formatting, "[ENTRY]  ", func_name, ts...);
+  }
+
+  template <class... Ts>
+  void log_exit(std::string_view func_name, const Ts&... ts) {
+    log(trace_formatting, "[EXIT]  ", func_name, ts...);
   }
 
   template <class... Ts>
@@ -112,13 +117,15 @@ private:
   template <class... Ts>
   void log(std::string_view formatting, std::string_view level,
            std::string_view func_name, const Ts&... ts) {
-    if (terminal_logging_)
+    if (terminal_logging_) {
       std::cout << concatenate(indent_, formatting, level, " ", func_name,
                                " - ", reset_bold, ts..., reset_formatting,
                                '\n');
-    if (log_file_.is_open())
+    }
+    if (log_file_.is_open()) {
       log_file_ << concatenate(indent_, level, " ", func_name, " - ", ts...,
                                '\n');
+    }
   }
 
   bool terminal_logging_ = false;
@@ -138,11 +145,11 @@ private:
 /// Macro for tracing runtime paths, prints entry and exit messages
 #  if NET_LOG_LEVEL >= NET_LOG_LEVEL_TRACE
 #    define LOG_TRACE()                                                        \
-      util::logger::instance().log_trace(__PRETTY_FUNCTION__, ">>> ENTRY");    \
+      util::logger::instance().log_entry(__PRETTY_FUNCTION__);                 \
       util::logger::instance().increase_indent();                              \
       const util::scope_guard guard{[func_name = __PRETTY_FUNCTION__] {        \
         util::logger::instance().decrease_indent();                            \
-        util::logger::instance().log_trace(func_name, "<<< EXIT");             \
+        util::logger::instance().log_exit(func_name);                          \
       }};
 #  endif
 

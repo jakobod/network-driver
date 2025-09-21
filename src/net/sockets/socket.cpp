@@ -97,4 +97,14 @@ bool reuseaddr(socket sock, bool new_value) noexcept {
   return res == 0;
 }
 
+std::size_t mtu(socket handle) noexcept {
+  int mtu;
+  socklen_t len = sizeof(mtu);
+  if (getsockopt(handle.id, IPPROTO_IP, IP_MTU, &mtu, &len) < 0) {
+    LOG_ERROR("Failed to retrieve MTU for ", NET_ARG2("handle", handle.id));
+    return util::error{};
+  }
+  return mtu;
+}
+
 } // namespace net::sockets

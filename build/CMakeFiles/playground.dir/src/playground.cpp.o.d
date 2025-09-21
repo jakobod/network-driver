@@ -310,7 +310,12 @@ CMakeFiles/playground.dir/src/playground.cpp.o: \
  /usr/include/linux/ioctl.h /usr/include/aarch64-linux-gnu/asm/ioctl.h \
  /usr/include/asm-generic/ioctl.h /usr/include/linux/fscrypt.h \
  /usr/include/linux/mount.h /usr/include/liburing/io_uring_version.h \
- /usr/include/liburing/barrier.h /usr/include/c++/13/thread \
+ /usr/include/liburing/barrier.h /usr/include/c++/13/set \
+ /usr/include/c++/13/bits/stl_tree.h \
+ /usr/include/c++/13/bits/node_handle.h \
+ /usr/include/c++/13/bits/stl_set.h \
+ /usr/include/c++/13/bits/stl_multiset.h \
+ /usr/include/c++/13/bits/erase_if.h /usr/include/c++/13/thread \
  /usr/include/c++/13/stop_token /usr/include/c++/13/bits/std_thread.h \
  /usr/include/c++/13/semaphore /usr/include/c++/13/bits/semaphore_base.h \
  /usr/include/c++/13/bits/atomic_timed_wait.h \
@@ -320,14 +325,11 @@ CMakeFiles/playground.dir/src/playground.cpp.o: \
  /usr/include/c++/13/bits/unordered_map.h \
  /usr/include/c++/13/bits/hashtable.h \
  /usr/include/c++/13/bits/hashtable_policy.h \
- /usr/include/c++/13/bits/node_handle.h \
- /usr/include/c++/13/bits/erase_if.h \
  /workspaces/network-driver/libnet/net/application.hpp \
- /workspaces/network-driver/libnet/net/manager_factory.hpp \
- /workspaces/network-driver/libnet/net/receive_policy.hpp \
- /workspaces/network-driver/libnet/net/uring_manager_impl.hpp \
+ /workspaces/network-driver/libnet/net/datagram_uring_manager.hpp \
  /workspaces/network-driver/libnet/net/event_result.hpp \
  /usr/include/c++/13/iostream \
+ /workspaces/network-driver/libnet/net/receive_policy.hpp \
  /workspaces/network-driver/libnet/util/assert.hpp \
  /workspaces/network-driver/libnet/util/error.hpp \
  /workspaces/network-driver/libnet/util/error_code.hpp \
@@ -338,4 +340,10 @@ CMakeFiles/playground.dir/src/playground.cpp.o: \
  /usr/include/aarch64-linux-gnu/c++/13/bits/basic_file.h \
  /usr/include/aarch64-linux-gnu/c++/13/bits/c++io.h \
  /usr/include/c++/13/bits/fstream.tcc \
+ /workspaces/network-driver/libnet/net/manager_factory.hpp \
+ /workspaces/network-driver/libnet/net/stream_uring_acceptor.hpp \
+ /workspaces/network-driver/libnet/net/sockets/tcp_stream_socket.hpp \
+ /workspaces/network-driver/libnet/net/sockets/stream_socket.hpp \
+ /usr/include/c++/13/cstring /usr/include/string.h /usr/include/strings.h \
+ /workspaces/network-driver/libnet/net/stream_uring_manager.hpp \
  /workspaces/network-driver/libnet/util/error_or.hpp

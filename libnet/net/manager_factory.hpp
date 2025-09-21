@@ -20,7 +20,16 @@ public:
   virtual ~manager_factory() = default;
 
   virtual uring_manager_ptr
-  make_uring_manager(sockets::socket handle, uring_multiplexer* mpx)
+  make_uring_manager(sockets::tcp_accept_socket handle, uring_multiplexer* mpx)
+    = 0;
+
+  virtual uring_manager_ptr
+  make_uring_manager(sockets::tcp_stream_socket handle, uring_multiplexer* mpx)
+    = 0;
+
+  virtual uring_manager_ptr
+  make_uring_manager(sockets::udp_datagram_socket handle,
+                     uring_multiplexer* mpx)
     = 0;
 };
 

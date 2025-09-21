@@ -24,8 +24,6 @@ public:
   /// Destructs a socket manager object
   ~uring_manager() override = default;
 
-  virtual util::error init(const util::config& cfg) = 0;
-
   virtual event_result handle_read_completion(const io_uring_cqe* cqe) = 0;
 
   virtual event_result handle_write_completion(const io_uring_cqe* cqe) = 0;

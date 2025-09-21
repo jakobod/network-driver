@@ -1,9 +1,11 @@
 #include "net/uring_multiplexer.hpp"
 
 #include "net/application.hpp"
+#include "net/datagram_uring_manager.hpp"
 #include "net/manager_factory.hpp"
 #include "net/receive_policy.hpp"
-#include "net/uring_manager_impl.hpp"
+#include "net/stream_uring_acceptor.hpp"
+#include "net/stream_uring_manager.hpp"
 
 #include "util/config.hpp"
 #include "util/error.hpp"
@@ -18,23 +20,29 @@ using namespace net;
 namespace {
 
 struct mirror_application : public application {
-  mirror_application(manager* parent) : parent_{parent} {
-    // nop
-  }
+  mirror_application(manager* parent) : parent_{parent} { LOG_TRACE(); }
 
-  ~mirror_application() override = default;
+  ~mirror_application() override { LOG_TRACE(); }
 
   util::error init(const util::config&) override {
+    LOG_TRACE();
     parent_->configure_next_read(receive_policy::up_to(2048));
     parent_->start_reading();
     return util::none;
   }
 
   util::error consume(util::const_byte_span data) override {
+    LOG_TRACE();
     auto& buf = parent_->write_buffer();
     buf.insert(buf.end(), data.begin(), data.end());
     parent_->start_writing();
+    parent_->configure_next_read(receive_policy::up_to(2048));
     return util::none;
+  }
+
+  void handle_timeout(std::uint64_t) override {
+    LOG_TRACE();
+    // nop
   }
 
 private:
@@ -42,9 +50,23 @@ private:
 };
 
 struct manager_factory_impl : public manager_factory {
-  uring_manager_ptr make_uring_manager(sockets::socket handle,
+  uring_manager_ptr make_uring_manager(sockets::tcp_accept_socket handle,
                                        uring_multiplexer* mpx) override {
-    using manager_type = uring_manager_impl<mirror_application>;
+    using manager_type = stream_uring_acceptor;
+    auto mgr           = util::make_intrusive<manager_type>(handle, mpx);
+    return mgr;
+  }
+
+  uring_manager_ptr make_uring_manager(sockets::tcp_stream_socket handle,
+                                       uring_multiplexer* mpx) override {
+    using manager_type = stream_uring_manager<mirror_application>;
+    auto mgr           = util::make_intrusive<manager_type>(handle, mpx);
+    return mgr;
+  }
+
+  uring_manager_ptr make_uring_manager(sockets::udp_datagram_socket handle,
+                                       uring_multiplexer* mpx) override {
+    using manager_type = datagram_uring_manager<mirror_application>;
     auto mgr           = util::make_intrusive<manager_type>(handle, mpx);
     return mgr;
   }
@@ -61,6 +83,19 @@ int main(int, char**) {
   uring_multiplexer mpx{std::make_unique<manager_factory_impl>()};
   if (const auto err = mpx.init(cfg)) {
     std::cout << err << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  auto maybe_datagram_socket_pair = sockets::make_udp_datagram_socket(1117);
+  if (auto err = util::get_error(maybe_datagram_socket_pair)) {
+    LOG_ERROR("Failed to create datagram socket: ", NET_ARG(err));
+    return EXIT_FAILURE;
+  }
+  auto [datagram_socket, port]
+    = std::get<sockets::udp_datagram_socket_result>(maybe_datagram_socket_pair);
+  LOG_DEBUG("Datagram socket listening on ", NET_ARG(port));
+  if (auto err = mpx.add(datagram_socket)) {
+    LOG_ERROR("Failed to add datagram socket: ", NET_ARG(err));
     return EXIT_FAILURE;
   }
 

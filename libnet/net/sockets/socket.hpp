@@ -28,12 +28,6 @@ struct socket {
     // nop
   }
 
-  constexpr ~socket() noexcept                              = default;
-  constexpr socket(const socket& other) noexcept            = default;
-  constexpr socket& operator=(const socket& other) noexcept = default;
-  constexpr socket(socket&& other) noexcept                 = default;
-  constexpr socket& operator=(socket&& other) noexcept      = default;
-
   constexpr std::strong_ordering operator<=>(const socket& other) const noexcept
     = default;
 
@@ -101,5 +95,7 @@ util::error_or<uint16_t> port_of(socket x) noexcept;
 /// @param[in] x  The socket to set reuseaddr on
 /// @param[in] enable  Whether to enable reuseaddr
 bool reuseaddr(socket x, bool enable) noexcept;
+
+std::size_t mtu(socket handle) noexcept;
 
 } // namespace net::sockets

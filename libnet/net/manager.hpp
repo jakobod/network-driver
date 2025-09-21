@@ -45,6 +45,8 @@ public:
   /// Move assignment operator
   manager& operator=(manager&& other) noexcept;
 
+  virtual util::error init(const util::config& cfg) = 0;
+
   // -- properties -------------------------------------------------------------
 
   /// Returns a ptr to the multiplexer
@@ -88,7 +90,7 @@ public:
 
   // Operation registration ----------------------------------------------------
 
-  void configure_next_read(receive_policy policy) noexcept;
+  virtual void configure_next_read(receive_policy policy) = 0;
 
   virtual void start_reading() = 0;
 
