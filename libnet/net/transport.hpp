@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "net/socket_manager.hpp"
-
 #include "net/fwd.hpp"
+
+#include "net/manager_base.hpp"
 
 #include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
@@ -21,9 +21,9 @@
 namespace net {
 
 /// Implements a generic transport for use as pointer in the stack.
-class transport : public socket_manager {
+class transport : public manager_base {
 public:
-  transport(socket handle, multiplexer* mpx) : socket_manager{handle, mpx} {
+  transport(socket handle, multiplexer_base* mpx) : manager_base{handle, mpx} {
     // nop
   }
 

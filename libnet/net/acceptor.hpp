@@ -11,30 +11,30 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#include "net/socket_manager.hpp"
+#include "net/manager_base.hpp"
+#include "net/multiplexer_base.hpp"
+
+#include <functional>
 
 namespace net {
 
 /// Manages the lifetime of a socket.
-class acceptor : public socket_manager {
+class acceptor : public manager_base {
 public:
-  acceptor(tcp_accept_socket handle, multiplexer* mpx,
-           socket_manager_factory_ptr factory);
+  using factory_type
+    = std::function<manager_base_ptr(net::socket, multiplexer_base*)>;
 
-  ~acceptor() override = default;
+  acceptor(tcp_accept_socket handle, multiplexer_base* mpx,
+           factory_type factory);
 
-  util::error init(const util::config& cfg) override;
+  virtual ~acceptor() = default;
 
   // -- properties -------------------------------------------------------------
 
   event_result handle_read_event() override;
 
-  event_result handle_write_event() override;
-
-  event_result handle_timeout(uint64_t timeout_id) override;
-
 private:
-  socket_manager_factory_ptr factory_;
+  factory_type factory_;
 };
 
 } // namespace net

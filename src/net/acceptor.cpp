@@ -9,31 +9,20 @@
 #include "net/acceptor.hpp"
 
 #include "net/event_result.hpp"
-#include "net/multiplexer.hpp"
+
 #include "net/socket/tcp_accept_socket.hpp"
-#include "net/socket_manager_factory.hpp"
+#include "net/socket/tcp_stream_socket.hpp"
 
 #include "util/error.hpp"
-#include "util/error_code.hpp"
 #include "util/logger.hpp"
-
-#include <iostream>
-#include <memory>
 
 namespace net {
 
-acceptor::acceptor(tcp_accept_socket handle, multiplexer* mpx,
-                   socket_manager_factory_ptr factory)
-  : socket_manager(handle, mpx), factory_(std::move(factory)) {
+acceptor::acceptor(tcp_accept_socket handle, multiplexer_base* mpx,
+                   factory_type factory)
+  : manager_base(handle, mpx), factory_(std::move(factory)) {
   LOG_TRACE();
 }
-
-util::error acceptor::init(const util::config&) {
-  LOG_TRACE();
-  return util::none;
-}
-
-// -- properties -------------------------------------------------------------
 
 event_result acceptor::handle_read_event() {
   auto hdl = handle<tcp_accept_socket>();
@@ -54,24 +43,9 @@ event_result acceptor::handle_read_event() {
        last_socket_error_as_string()});
     return event_result::ok;
   }
-  auto mgr = factory_->make(accepted, mpx());
+  auto mgr = factory_(accepted, mpx());
   mpx()->add(std::move(mgr), operation::read);
   return event_result::ok;
-}
-
-event_result acceptor::handle_write_event() {
-  LOG_ERROR("Should not be registered for write_events");
-  mpx()->handle_error({util::error_code::runtime_error,
-                       "[acceptor::handle_write_event()] acceptor should not "
-                       "be registered for writing"});
-  return event_result::error;
-}
-
-event_result acceptor::handle_timeout(uint64_t) {
-  LOG_ERROR("Should not be registered for timeouts");
-  mpx()->handle_error({util::error_code::runtime_error,
-                       "[acceptor::handle_timeout()] not implemented!"});
-  return event_result::error;
 }
 
 } // namespace net

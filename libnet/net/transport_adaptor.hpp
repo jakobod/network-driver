@@ -56,23 +56,21 @@ public:
   /// Enqueues data to the transport extension
   void enqueue(util::const_byte_span bytes) override { parent_.enqueue(bytes); }
 
-  /// Called when an error occurs
-  void handle_error(const util::error& err) override {
-    parent_.handle_error(err);
+  /// Registers the stack for write events
+  void register_writing() override {
+    // parent_.register_writing();
   }
 
-  /// Registers the stack for write events
-  void register_writing() override { parent_.register_writing(); }
-
   /// Sets a timeout in `duration` milliseconds with the id `timeout_id`
-  uint64_t set_timeout_in(std::chrono::milliseconds duration) override {
-    return parent_.set_timeout_in(duration);
+  uint64_t set_timeout_in(std::chrono::milliseconds) override {
+    return 0;
+    // return parent_.set_timeout_in(duration);
   }
 
   /// Sets a timeout at timepoint `point` with the id `timeout_id`
-  uint64_t
-  set_timeout_at(std::chrono::system_clock::time_point point) override {
-    return parent_.set_timeout_at(point);
+  uint64_t set_timeout_at(std::chrono::system_clock::time_point) override {
+    return 0;
+    // return parent_.set_timeout_at(point);
   }
 
   /// Returns a reference to the following layer

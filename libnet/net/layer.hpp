@@ -46,9 +46,6 @@ struct layer {
   /// Enqueues data to the transport extension
   virtual void enqueue(util::const_byte_span bytes) = 0;
 
-  /// Called when an error occurs
-  virtual void handle_error(const util::error& err) = 0;
-
   /// Registers the stack for write events
   virtual void register_writing() = 0;
 

@@ -1,6 +1,6 @@
 /**
  *  @author    Jakob Otto
- *  @file      kqueue_multiplexer.hpp
+ *  @file      multiplexer_impl.hpp
  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
  *             This file is part of the network-driver project, released under
  *             the GNU GPL3 License.
@@ -11,9 +11,13 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#include "net/multiplexer.hpp"
-#include "net/socket/pipe_socket.hpp"
+#include "net/acceptor.hpp"
+#include "net/multiplexer_base.hpp"
 #include "net/timeout_entry.hpp"
+
+#include "net/kqueue/manager.hpp"
+
+#include "net/socket/pipe_socket.hpp"
 
 #include "util/binary_serializer.hpp"
 #include "util/byte_buffer.hpp"
@@ -27,12 +31,16 @@
 #include <sys/event.h>
 #include <thread>
 #include <unordered_map>
+#include <variant>
+#include <vector>
 
-namespace net {
+namespace net::kqueue {
 
 /// Implements a multiplexing backend for handling event multiplexing facilities
 /// such as epoll and kqueue.
-class kqueue_multiplexer : public multiplexer {
+class multiplexer : public multiplexer_base {
+  friend class manager;
+
   static constexpr std::size_t max_events = 32;
 
   using event_type = struct kevent;
@@ -42,7 +50,7 @@ class kqueue_multiplexer : public multiplexer {
   using pollset = std::array<event_type, max_events>;
   using update_list = std::vector<event_type>;
   using event_span = std::span<event_type>;
-  using manager_map = std::unordered_map<socket_id, socket_manager_ptr>;
+  using manager_map = std::unordered_map<socket_id, manager_base_ptr>;
 
   // Timeout handling types
   using optional_timepoint
@@ -52,56 +60,55 @@ class kqueue_multiplexer : public multiplexer {
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  kqueue_multiplexer() = default;
+  multiplexer() = default;
 
-  ~kqueue_multiplexer() override;
+  virtual ~multiplexer();
 
   /// Initializes the multiplexer.
-  util::error init(socket_manager_factory_ptr factory,
-                   const util::config& cfg) override;
+  util::error init(acceptor::factory_type factory, const util::config& cfg);
 
   // -- Thread functions -------------------------------------------------------
 
   /// Creates a thread that runs this multiplexer indefinately.
-  void start() override;
+  void start();
 
   /// Shuts the multiplexer down!
   void shutdown() override;
 
   /// Joins with the multiplexer.
-  void join() override;
+  void join();
 
-  bool running() const override;
+  bool is_running() const noexcept;
 
   void set_thread_id(std::thread::id tid = {}) noexcept;
 
   // -- members ----------------------------------------------------------------
 
-  std::uint16_t num_socket_managers() const { return managers_.size(); }
-
-  // -- Error Handling ---------------------------------------------------------
-
-  void handle_error(const util::error& err) override;
+  std::uint16_t num_socket_managers() const noexcept {
+    return managers_.size();
+  }
 
   // -- Interface functions ----------------------------------------------------
 
-  /// Adds a new fd to the multiplexer for operation `initial`.
-  void add(socket_manager_ptr mgr, operation initial) override;
+  void add(manager_base_ptr mgr, operation initial) override;
 
   /// Enables an operation `op` for socket manager `mgr`.
-  void enable(socket_manager_ptr, operation op) override;
+  void enable(manager_base& mgr, operation op);
 
   /// Disables an operation `op` for socket manager `mgr`.
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
-  void disable(socket_manager_ptr mgr, operation op, bool remove) override;
+  void disable(manager_base& mgr, operation op, bool remove);
 
-  std::uint64_t
-  set_timeout(socket_manager_ptr mgr,
-              std::chrono::system_clock::time_point when) override;
+  std::uint64_t set_timeout(manager_ptr mgr,
+                            std::chrono::system_clock::time_point when);
 
   /// Main multiplexing loop.
-  util::error poll_once(bool blocking) override;
+  util::error poll_once(bool blocking);
+
+  // -- Error handling ---------------------------------------------------------
+
+  void handle_error(const util::error& err) override;
 
 private:
   /// Notifies all socket managers about timeouts that have expired.
@@ -133,7 +140,7 @@ private:
   }
 
   bool is_multiplexer_thread() {
-    return std::this_thread::get_id() == mpx_thread_id_;
+    return (std::this_thread::get_id() == mpx_thread_id_);
   }
 
   // pipe for synchronous access to mpx
@@ -158,10 +165,13 @@ private:
   std::thread::id mpx_thread_id_;
 
   const util::config* cfg_ = nullptr;
+
+  std::uint16_t port_{0};
 };
 
-util::error_or<multiplexer_ptr>
-make_kqueue_multiplexer(socket_manager_factory_ptr factory,
-                        const util::config& cfg);
+using multiplexer_ptr = std::shared_ptr<multiplexer>;
 
-} // namespace net
+util::error_or<multiplexer_ptr> make_multiplexer(acceptor::factory_type factory,
+                                                 const util::config& cfg);
+
+} // namespace net::kqueue

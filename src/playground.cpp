@@ -11,13 +11,15 @@
 #include "util/byte_array.hpp"
 #include "util/config.hpp"
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 #include "util/logger.hpp"
 
-#include "net/event_result.hpp"
-#include "net/kqueue_multiplexer.hpp"
+#include "net/kqueue/manager.hpp"
+#include "net/kqueue/multiplexer.hpp"
+
 #include "net/socket/stream_socket.hpp"
-#include "net/socket_manager.hpp"
-#include "net/socket_manager_factory.hpp"
+
+#include "net/event_result.hpp"
 
 #include <cstdlib>
 #include <string>
@@ -26,9 +28,9 @@ using namespace std::string_literals;
 
 namespace {
 
-struct dummy_socket_manager : public net::socket_manager {
-  dummy_socket_manager(net::socket handle, net::multiplexer* parent)
-    : net::socket_manager(handle, parent) {
+struct dummy_manager : public net::kqueue::manager {
+  dummy_manager(net::socket handle, net::multiplexer_base* mpx)
+    : net::kqueue::manager(handle, mpx) {
     // nop
   }
 
@@ -60,15 +62,6 @@ private:
   std::size_t num_bytes_{0};
 };
 
-struct manager_factory : public net::socket_manager_factory {
-  ~manager_factory() override = default;
-
-  net::socket_manager_ptr make(net::socket handle,
-                               net::multiplexer* mpx) override {
-    return util::make_intrusive<dummy_socket_manager>(handle, mpx);
-  }
-};
-
 } // namespace
 
 int main(int, const char**) {
@@ -79,13 +72,15 @@ int main(int, const char**) {
   //   // LOG_ERROR(err.what());
   // }
   LOG_INIT(cfg);
-  auto factory = std::make_shared<manager_factory>();
-  auto res = net::make_kqueue_multiplexer(factory, cfg);
-  if (auto err = util::get_error(res)) {
+  auto factory = [](net::socket handle, net::multiplexer_base* mpx) {
+    return util::make_intrusive<dummy_manager>(handle, mpx);
+  };
+  auto res = net::kqueue::make_multiplexer(std::move(factory), cfg);
+  if ([[maybe_unused]] auto err = util::get_error(res)) {
     LOG_ERROR("Failed to create multiplexer: ", *err);
     return EXIT_FAILURE;
   }
-  auto mpx = std::get<net::multiplexer_ptr>(res);
+  auto mpx = std::get<net::kqueue::multiplexer_ptr>(res);
   mpx->start();
 
   // std::string dummy;

@@ -29,19 +29,21 @@ template <class NextLayer>
 class stream_transport : public transport {
 public:
   template <class... Ts>
-  stream_transport(stream_socket handle, multiplexer* mpx, Ts&&... xs)
+  stream_transport(stream_socket handle, multiplexer_base* mpx, Ts&&... xs)
     : transport(handle, mpx), next_layer_(*this, std::forward<Ts>(xs)...) {
     LOG_DEBUG("Creating stream_transport with ", NET_ARG2("id", handle.id));
   }
 
   util::error init(const util::config& cfg) override {
     LOG_DEBUG("init stream_transport with ", NET_ARG2("socket", handle().id));
-    if (auto err = transport::init(cfg))
+    if (auto err = transport::init(cfg)) {
       return err;
-    if (!nonblocking(handle(), true))
+    }
+    if (!nonblocking(handle(), true)) {
       return {util::error_code::runtime_error,
               util::format("Failed to set nonblocking on sock={0}",
                            handle().id)};
+    }
     return next_layer_.init(cfg);
   }
 
@@ -61,18 +63,19 @@ public:
         if (received_ >= min_read_size_) {
           if (next_layer_.consume(
                 util::const_byte_span{read_buffer_.data(), received_})
-              == event_result::error)
+              == event_result::error) {
             return event_result::error;
-          else
+          } else {
             received_ = 0; // Data should be consumed completely
+          }
         }
       } else if (read_res == 0) {
         return event_result::error;
       } else if (read_res < 0) {
         if (!last_socket_error_is_temporary()) {
-          handle_error(util::error(util::error_code::socket_operation_failed,
-                                   "[socket_manager.read()] "
-                                     + last_socket_error_as_string()));
+          mpx()->handle_error(util::error(
+            util::error_code::socket_operation_failed,
+            "[socket_manager.read()] " + last_socket_error_as_string()));
           return event_result::error;
         }
         return event_result::ok;
@@ -90,13 +93,16 @@ public:
     auto fetch = [&]() {
       for (size_t i = 0; next_layer_.has_more_data()
                          && (i < transport::max_consecutive_fetches_);
-           ++i)
+           ++i) {
         next_layer_.produce();
+      }
       return !write_buffer_.empty();
     };
-    if (write_buffer_.empty())
-      if (!fetch())
+    if (write_buffer_.empty()) {
+      if (!fetch()) {
         return event_result::done;
+      }
+    }
     for (size_t i = 0; i < transport::max_consecutive_writes_; ++i) {
       auto write_res = write(handle<stream_socket>(), write_buffer_);
       if (write_res > 0) {
@@ -104,16 +110,19 @@ public:
                   NET_ARG2("socket", handle().id));
         write_buffer_.erase(write_buffer_.begin(),
                             write_buffer_.begin() + write_res);
-        if (write_buffer_.empty())
-          if (!fetch())
+        if (write_buffer_.empty()) {
+          if (!fetch()) {
             return event_result::done;
+          }
+        }
       } else {
         if (last_socket_error_is_temporary()) {
           return event_result::ok;
         } else {
-          handle_error({util::error_code::socket_operation_failed,
-                        util::format("[stream::write()] errno = {0}: {1}",
-                                     errno, last_socket_error_as_string())});
+          mpx()->handle_error(
+            {util::error_code::socket_operation_failed,
+             util::format("[stream::write()] errno = {0}: {1}", errno,
+                          last_socket_error_as_string())});
           return event_result::error;
         }
       }
@@ -121,9 +130,9 @@ public:
     return done_writing() ? event_result::done : event_result::ok;
   }
 
-  event_result handle_timeout(uint64_t id) override {
-    return next_layer_.handle_timeout(id);
-  }
+  // event_result handle_timeout(uint64_t id) override {
+  //   return next_layer_.handle_timeout(id);
+  // }
 
   // -- public API -------------------------------------------------------------
 
@@ -131,8 +140,9 @@ public:
   void configure_next_read(receive_policy policy) override {
     received_ = 0;
     min_read_size_ = policy.min_size;
-    if (read_buffer_.size() != policy.max_size)
+    if (read_buffer_.size() != policy.max_size) {
       read_buffer_.resize(policy.max_size);
+    }
     LOG_DEBUG("Configuring next read on ", NET_ARG2("socket", handle().id),
               ": ", NET_ARG(min_read_size_), ", ",
               NET_ARG2("max_read_size_", policy.max_size));

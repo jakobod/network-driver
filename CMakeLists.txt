@@ -48,15 +48,17 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 # New source files have to be added here
 set(LIB_NET_SOURCES
   src/net/acceptor.cpp
-  src/net/event_result.cpp
-  src/net/ip/v4_address.cpp
-  src/net/ip/v4_endpoint.cpp
-  src/net/multiplexer_impl.cpp
-  src/net/kqueue_multiplexer.cpp
+  src/net/event_result.cpp 
+  src/net/manager_base.cpp
   src/net/operation.cpp
   src/net/pollset_updater.cpp
-  src/net/socket_manager.cpp
   src/net/uri.cpp
+
+  src/net/ip/v4_address.cpp
+  src/net/ip/v4_endpoint.cpp
+  
+  src/net/kqueue/multiplexer.cpp
+  src/net/kqueue/manager.cpp
   
   src/openssl/tls_context.cpp
   src/openssl/tls_session.cpp
@@ -120,19 +122,21 @@ if (LIB_NET_ENABLE_TESTS)
     test/net_test_main.cpp
     test/net/acceptor.cpp
     test/net/datagram_socket.cpp
-    test/net/ip/v4_address.cpp
-    test/net/ip/v4_endpoint.cpp
-    test/net/kqueue_multiplexer.cpp
+    test/net/manager_base.cpp
     test/net/pollset_updater.cpp
     test/net/socket_guard.cpp
-    test/net/socket_manager.cpp
     test/net/stream_transport.cpp
     test/net/tcp_socket.cpp
-    # test/net/tls.cpp
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    # test/openssl/communication.cpp
+
+    test/net/ip/v4_address.cpp
+    test/net/ip/v4_endpoint.cpp
+
+    # test/net/kqueue/multiplexer.cpp
+    
+
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp
@@ -142,6 +146,9 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/ref_counted.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
+
+    # test/net/tls.cpp
+    # test/openssl/communication.cpp
   )
 
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")

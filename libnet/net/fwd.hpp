@@ -25,13 +25,11 @@ namespace net {
 
 // -- classes ------------------------------------------------------------------
 
-class acceptor;
-class multiplexer_impl;
-class multiplexer;
+class manager_base;
+class multiplexer_base;
 class pollset_updater;
-class socket_manager_factory;
-class socket_manager;
 class uri;
+class acceptor;
 
 // -- structs ------------------------------------------------------------------
 
@@ -57,8 +55,7 @@ enum class operation : std::uint32_t;
 using acceptor_pair = std::pair<tcp_accept_socket, std::uint16_t>;
 using datagram_socket_pair = std::pair<datagram_socket, datagram_socket>;
 using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
-using multiplexer_ptr = std::shared_ptr<multiplexer>;
-using socket_manager_factory_ptr = std::shared_ptr<socket_manager_factory>;
+// using multiplexer_ptr = std::shared_ptr<multiplexer>;
 
 // -- template types -----------------------------------------------------------
 
@@ -68,3 +65,8 @@ template <class NextLayer>
 class transport_adaptor;
 
 } // namespace net
+
+namespace net::kqueue {
+class multiplexer;
+class manager;
+} // namespace net::kqueue

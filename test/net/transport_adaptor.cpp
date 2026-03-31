@@ -12,11 +12,12 @@
 #include "net/stream_transport.hpp"
 #include "net/transport.hpp"
 
-#include "net/multiplexer.hpp"
+#include "net/multiplexer_base.hpp"
 #include "net/receive_policy.hpp"
 
 #include "util/config.hpp"
 #include "util/error.hpp"
+#include "util/error_or.hpp"
 #include "util/format.hpp"
 
 #include "net_test.hpp"
@@ -47,8 +48,8 @@ struct application_vars {
 template <class NextLayer>
 struct dummy_transport : public transport {
   template <class... Ts>
-  dummy_transport(net::socket handle, multiplexer* mpx, transport_vars& vars,
-                  Ts&&... xs)
+  dummy_transport(net::socket handle, multiplexer_base* mpx,
+                  transport_vars& vars, Ts&&... xs)
     : transport(handle, mpx),
       next_layer_(*this, std::forward<Ts>(xs)...),
       vars_{vars} {
@@ -61,11 +62,13 @@ struct dummy_transport : public transport {
   }
 
   util::error init(const util::config& cfg) override {
-    if (auto err = transport::init(cfg))
+    if (auto err = transport::init(cfg)) {
       return err;
-    if (!nonblocking(handle(), true))
+    }
+    if (!nonblocking(handle(), true)) {
       return {util::error_code::runtime_error,
               "Failed to set nonblocking on sock={0}", handle().id};
+    }
     return next_layer_.init(cfg);
   }
 
@@ -80,8 +83,9 @@ struct dummy_transport : public transport {
     };
     size_t i = 0;
     while (next_layer_.has_more_data()
-           && (++i <= transport::max_consecutive_fetches_))
+           && (++i <= transport::max_consecutive_fetches_)) {
       next_layer_.produce();
+    }
     while (!write_buffer_.empty()) {
       auto res = write(handle<stream_socket>(), write_buffer_);
       EXPECT_GT(res, 0);
@@ -90,9 +94,9 @@ struct dummy_transport : public transport {
     return done_writing() ? event_result::done : event_result::ok;
   }
 
-  event_result handle_timeout(uint64_t id) override {
-    return next_layer_.handle_timeout(id);
-  }
+  // event_result handle_timeout(uint64_t id) override {
+  //   return next_layer_.handle_timeout(id);
+  // }
 
 private:
   NextLayer next_layer_;
@@ -115,8 +119,9 @@ struct dummy_application {
   }
 
   event_result produce() {
-    if (vars_.data.empty())
+    if (vars_.data.empty()) {
       return event_result::done;
+    }
     parent_.enqueue(vars_.data);
     vars_.data = vars_.data.subspan(vars_.data.size());
     return event_result::ok;
@@ -148,8 +153,9 @@ struct transport_adaptor_test : public testing::Test {
     sockets = std::get<stream_socket_pair>(maybe_sockets);
 
     uint8_t b = 0;
-    for (auto& val : data)
+    for (auto& val : data) {
       val = std::byte{b++};
+    }
 
     transport_vars_.data = util::const_byte_span{data};
     application_vars_.data = util::const_byte_span{data};
@@ -175,8 +181,9 @@ TEST_F(transport_adaptor_test, handle_read_event) {
   stack_type stack{sockets.first, nullptr, transport_vars_, application_vars_};
   EXPECT_NO_ERROR(stack.init(util::config{}));
   EXPECT_EQ(data.size(), write(sockets.second, data));
-  while (application_vars_.received.size() < data.size())
+  while (application_vars_.received.size() < data.size()) {
     ASSERT_EQ(stack.handle_read_event(), event_result::ok);
+  }
   EXPECT_EQ(data.size(), application_vars_.received.size());
   EXPECT_TRUE(
     std::equal(data.begin(), data.end(), application_vars_.received.begin()));
@@ -191,21 +198,23 @@ TEST_F(transport_adaptor_test, handle_write_event) {
   util::byte_span free_space{receive_buffer};
   auto read_some = [&]() {
     auto res = read(sockets.second, free_space);
-    if (res < 0)
+    if (res < 0) {
       ASSERT_TRUE(last_socket_error_is_temporary());
-    else if (res == 0)
+    } else if (res == 0) {
       FAIL() << "socket diconnected prematurely!" << std::endl;
+    }
     free_space = free_space.subspan(res);
   };
   size_t rounds = 0;
-  while (!free_space.empty() && (++rounds < 20))
+  while (!free_space.empty() && (++rounds < 20)) {
     read_some();
+  }
   EXPECT_TRUE(std::equal(data.begin(), data.end(), receive_buffer.begin()));
 }
 
-TEST_F(transport_adaptor_test, handle_timeout) {
-  stack_type stack{sockets.first, nullptr, transport_vars_, application_vars_};
-  EXPECT_NO_ERROR(stack.init(util::config{}));
-  EXPECT_EQ(stack.handle_timeout(42), event_result::ok);
-  EXPECT_EQ(application_vars_.handled_timeout, 42);
-}
+// TEST_F(transport_adaptor_test, handle_timeout) {
+//   stack_type stack{sockets.first, nullptr, transport_vars_,
+//   application_vars_}; EXPECT_NO_ERROR(stack.init(util::config{}));
+//   EXPECT_EQ(stack.handle_timeout(42), event_result::ok);
+//   EXPECT_EQ(application_vars_.handled_timeout, 42);
+// }
