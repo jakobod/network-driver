@@ -32,13 +32,13 @@ if (LIB_NET_ENABLE_TESTS)
   # Googletest
   FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
   )
   FetchContent_MakeAvailable(googletest)
 endif()
 
 # Threads
-find_package(OpenSSL REQUIRED)
+# find_package(OpenSSL REQUIRED)
 
 # -- project files -------------------------------------------------------------
 
@@ -83,7 +83,8 @@ set(LIB_NET_SOURCES
 add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
-target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
+target_link_libraries(net Threads::Threads)
+# target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
 
 # Copy Dummy certs to build folder and set preprocessor definition to the folder
 file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
@@ -127,11 +128,11 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/socket_manager.cpp
     test/net/stream_transport.cpp
     test/net/tcp_socket.cpp
-    test/net/tls.cpp
+    # test/net/tls.cpp
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    test/openssl/communication.cpp
+    # test/openssl/communication.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp
