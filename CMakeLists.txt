@@ -50,6 +50,7 @@ set(LIB_NET_SOURCES
   src/net/acceptor.cpp
   src/net/event_result.cpp 
   src/net/manager_base.cpp
+  src/net/multiplexer_base.cpp
   src/net/operation.cpp
   src/net/pollset_updater.cpp
   src/net/uri.cpp
@@ -128,6 +129,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/acceptor.cpp
     test/net/datagram_socket.cpp
     test/net/manager_base.cpp
+    test/net/multiplexer.cpp
     test/net/pollset_updater.cpp
     test/net/socket_guard.cpp
     test/net/stream_transport.cpp
@@ -152,13 +154,6 @@ if (LIB_NET_ENABLE_TESTS)
     # test/net/tls.cpp
     # test/openssl/communication.cpp
   )
-
-  # Platform-specific event multiplexer tests
-  if(APPLE)
-    target_sources(lib_net_test PRIVATE test/net/kqueue/multiplexer.cpp)
-  elseif(UNIX)
-    target_sources(lib_net_test PRIVATE test/net/epoll/multiplexer.cpp)
-  endif()
 
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/test")

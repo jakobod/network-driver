@@ -14,6 +14,6 @@ namespace net {
 using socket_id = int;
 
 /// Denotes the invalid socket id
-static constexpr const socket_id invalid_socket_id = -1;
+static constexpr socket_id invalid_socket_id = -1;
 
 } // namespace net

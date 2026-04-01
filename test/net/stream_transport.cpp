@@ -7,9 +7,7 @@
  */
 
 #include "net/stream_transport.hpp"
-#include "net/transport.hpp"
 
-#include "net/multiplexer_base.hpp"
 #include "net/receive_policy.hpp"
 #include "net/socket/stream_socket.hpp"
 
@@ -18,6 +16,7 @@
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 
+#include "multiplexer_mock.hpp"
 #include "net_test.hpp"
 
 #include <algorithm>
@@ -28,29 +27,6 @@
 using namespace net;
 
 namespace {
-
-struct dummy_multiplexer : public multiplexer_base {
-  void handle_error(const util::error& err) override {
-    FAIL() << "There should be no errors! " << err << std::endl;
-  }
-
-  void add(manager_base_ptr, operation) override {
-    // nop
-  }
-
-  void shutdown() override {
-    // nop
-  }
-
-  void enable(manager_base&, operation) override {
-    // nop
-  }
-
-  uint64_t set_timeout(manager_base_ptr,
-                       std::chrono::steady_clock::time_point) override {
-    return 0;
-  }
-};
 
 struct dummy_application {
   dummy_application(transport& parent, util::const_byte_span data,
@@ -105,7 +81,7 @@ struct stream_transport_test : public testing::Test {
   }
 
   stream_socket_pair sockets;
-  dummy_multiplexer mpx;
+  multiplexer_mock mpx;
   util::byte_array<32768> data;
 
   util::byte_buffer received_data;

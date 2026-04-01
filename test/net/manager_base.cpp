@@ -6,18 +6,17 @@
  *             the GNU GPL3 License.
  */
 
-#include "net_test.hpp"
-
-#include "net/multiplexer_base.hpp"
-
-#include "net/event_result.hpp"
 #include "net/manager_base.hpp"
+#include "net/event_result.hpp"
 #include "net/socket/stream_socket.hpp"
 
 #include "util/byte_buffer.hpp"
 #include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/error_or.hpp"
+
+#include "multiplexer_mock.hpp"
+#include "net_test.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -26,26 +25,6 @@
 using namespace net;
 
 namespace {
-
-struct dummy_multiplexer : public multiplexer_base {
-  /// Handles an error `err`.
-  void handle_error(const util::error&) override {}
-
-  /// Adds a new fd to the multiplexer_base for operation `initial`.
-  /// @warn This function is *NOT* thread-safe.
-  void add(manager_base_ptr, operation) override {}
-
-  void shutdown() override {}
-
-  void enable(manager_base&, operation) override {
-    // nop
-  }
-
-  uint64_t set_timeout(manager_base_ptr,
-                       std::chrono::steady_clock::time_point) override {
-    return 0;
-  }
-};
 
 struct manager_base_test : public testing::Test {
   manager_base_test()
@@ -59,7 +38,7 @@ struct manager_base_test : public testing::Test {
   }
 
   stream_socket_pair sockets;
-  dummy_multiplexer mpx;
+  multiplexer_mock mpx;
 };
 
 } // namespace

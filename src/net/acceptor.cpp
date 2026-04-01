@@ -9,6 +9,7 @@
 #include "net/acceptor.hpp"
 
 #include "net/event_result.hpp"
+#include "net/multiplexer_base.hpp"
 
 #include "net/socket/tcp_accept_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"

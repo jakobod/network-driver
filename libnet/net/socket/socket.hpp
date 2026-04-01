@@ -9,9 +9,9 @@
 #pragma once
 
 #include "net/fwd.hpp"
-#include "net/socket_id.hpp"
-
 #include "util/fwd.hpp"
+
+#include "net/socket/socket_id.hpp"
 
 #include <cstddef>
 #include <string>

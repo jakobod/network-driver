@@ -20,13 +20,14 @@
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 
+#include "multiplexer_mock.hpp"
 #include "net_test.hpp"
 
 using namespace net;
 
 namespace {
 
-struct dummy_multiplexer : public multiplexer_base {
+struct dummy_multiplexer : public multiplexer_mock {
   void handle_error(const util::error& err) override { last_error = err; }
 
   void add(manager_base_ptr mgr, operation initial) override {
@@ -36,15 +37,6 @@ struct dummy_multiplexer : public multiplexer_base {
   }
 
   void shutdown() override { shutdown_called = true; }
-
-  void enable(manager_base&, operation) override {
-    // nop
-  }
-
-  uint64_t set_timeout(manager_base_ptr,
-                       std::chrono::steady_clock::time_point) override {
-    return 0;
-  }
 
   util::error last_error;
   bool shutdown_called{false};

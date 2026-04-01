@@ -6,33 +6,30 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/epoll/multiplexer.hpp"
+#if !defined(__linux__)
+#  error "epoll multiplexer is only usable on Linux"
+#else
 
-#include "net/acceptor.hpp"
-#include "net/event_result.hpp"
-#include "net/operation.hpp"
-#include "net/pollset_updater.hpp"
+#  include "net/epoll/multiplexer.hpp"
 
-#include "net/socket/pipe_socket.hpp"
-#include "net/socket/tcp_accept_socket.hpp"
+#  include "net/acceptor.hpp"
+#  include "net/event_result.hpp"
+#  include "net/operation.hpp"
 
-#include "net/ip/v4_address.hpp"
-#include "net/ip/v4_endpoint.hpp"
+#  include "util/binary_serializer.hpp"
+#  include "util/byte_span.hpp"
+#  include "util/config.hpp"
+#  include "util/error.hpp"
+#  include "util/error_or.hpp"
+#  include "util/format.hpp"
+#  include "util/intrusive_ptr.hpp"
+#  include "util/logger.hpp"
 
-#include "util/binary_serializer.hpp"
-#include "util/byte_span.hpp"
-#include "util/config.hpp"
-#include "util/error.hpp"
-#include "util/error_or.hpp"
-#include "util/format.hpp"
-#include "util/intrusive_ptr.hpp"
-#include "util/logger.hpp"
-
-#include <algorithm>
-#include <chrono>
-#include <iostream>
-#include <unistd.h>
-#include <utility>
+#  include <algorithm>
+#  include <chrono>
+#  include <iostream>
+#  include <unistd.h>
+#  include <utility>
 
 namespace net::epoll {
 
@@ -44,8 +41,6 @@ multiplexer::~multiplexer() {
 util::error multiplexer::init(acceptor::factory_type factory,
                               const util::config& cfg) {
   LOG_TRACE();
-  set_thread_id(std::this_thread::get_id());
-  cfg_ = std::addressof(cfg);
   LOG_DEBUG("initializing epoll multiplexer");
   mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (mpx_fd_ < 0) {
@@ -53,155 +48,7 @@ util::error multiplexer::init(acceptor::factory_type factory,
             "[multiplexer]: Creating epoll fd failed"};
   }
   LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
-  // Create pollset updater
-  auto pipe_res = make_pipe();
-  if (auto err = util::get_error(pipe_res)) {
-    return *err;
-  }
-  auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
-  pipe_reader_ = pipe_fds.first;
-  pipe_writer_ = pipe_fds.second;
-  add(util::make_intrusive<pollset_updater>(pipe_reader_, this),
-      operation::read);
-  // Create Acceptor
-  auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
-    (cfg_->get_or("multiplexer.local", true) ? ip::v4_address::localhost
-                                             : ip::v4_address::any),
-    cfg_->get_or<std::int64_t>("multiplexer.port", 0)));
-  if (auto err = util::get_error(res)) {
-    return *err;
-  }
-  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
-  auto accept_socket = accept_socket_pair.first;
-  set_port(accept_socket_pair.second);
-  add(util::make_intrusive<acceptor>(accept_socket, this, std::move(factory)),
-      operation::read);
-  set_thread_id();
-  return util::none;
-}
-
-void multiplexer::start() {
-  LOG_TRACE();
-  if (!running_) {
-    running_ = true;
-    mpx_thread_ = std::thread(&multiplexer::run, this);
-    mpx_thread_id_ = mpx_thread_.get_id();
-    LOG_DEBUG(NET_ARG(mpx_thread_id_));
-  }
-}
-
-void multiplexer::shutdown() {
-  LOG_TRACE();
-  if (is_multiplexer_thread()) {
-    LOG_DEBUG("multiplexer shutting down");
-    auto it = managers_.begin();
-    while (it != managers_.end()) {
-      auto& mgr = it->second;
-      if (mgr->handle() != pipe_reader_) {
-        disable(*mgr, operation::read, false);
-        if (mgr->mask() == operation::none) {
-          it = del(it);
-        } else {
-          ++it;
-        }
-      } else {
-        ++it;
-      }
-    }
-    shutting_down_ = true;
-    close(pipe_writer_);
-    pipe_writer_ = pipe_socket{};
-  } else if (!shutting_down_) {
-    LOG_DEBUG("requesting multiplexer shutdown");
-    auto res = write_to_pipe(pollset_updater::shutdown_code);
-    if (res != 1) {
-      LOG_ERROR("could not write shutdown code to pipe: ",
-                last_socket_error_as_string());
-      std::terminate(); // Can't be handled by shutting down, if shutdown fails.
-    }
-  }
-}
-
-void multiplexer::join() {
-  LOG_TRACE();
-  if (mpx_thread_.joinable()) {
-    LOG_DEBUG("joining on multiplexer thread");
-    mpx_thread_.join();
-  }
-}
-
-bool multiplexer::is_running() const noexcept {
-  return mpx_thread_.joinable();
-}
-
-void multiplexer::set_thread_id(std::thread::id tid) noexcept {
-  mpx_thread_id_ = tid;
-}
-
-void multiplexer::run() {
-  LOG_TRACE();
-  while (running_) {
-    if (poll_once(true)) {
-      running_ = false;
-    }
-  }
-}
-
-// -- Error handling -----------------------------------------------------------
-
-void multiplexer::handle_error([[maybe_unused]] const util::error& err) {
-  LOG_ERROR(err);
-  shutdown();
-}
-
-// -- Timeout management -------------------------------------------------------
-
-uint64_t multiplexer::set_timeout(manager_base_ptr mgr,
-                                  std::chrono::steady_clock::time_point when) {
-  LOG_TRACE();
-  LOG_DEBUG("Setting timeout ", current_timeout_id_, " on ",
-            NET_ARG2("mgr", mgr->handle().id));
-  timeouts_.emplace(mgr->handle().id, when, current_timeout_id_);
-  current_timeout_ = (current_timeout_ != std::nullopt)
-                       ? std::min(when, *current_timeout_)
-                       : when;
-  return current_timeout_id_++;
-}
-
-void multiplexer::handle_timeouts() {
-  using namespace std::chrono;
-  LOG_TRACE();
-  const auto now = steady_clock::now();
-  for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
-    const auto& entry = *it;
-    const auto when = time_point_cast<milliseconds>(entry.when_);
-    if (when <= now) {
-      // Registered timeout has expired
-      auto& mgr = *managers_.at(entry.handle_);
-      mgr.handle_timeout(entry.id_);
-    } else {
-      // Timeout not expired, delete handled entries and set the current timeout
-      timeouts_.erase(timeouts_.begin(), it);
-      if (timeouts_.empty()) {
-        LOG_DEBUG("No further timeouts registered");
-        current_timeout_ = std::nullopt;
-      } else {
-        LOG_DEBUG("Next timeout with ", NET_ARG2("id", entry.id_));
-        current_timeout_ = entry.when_;
-      }
-      break;
-    }
-  }
-}
-
-util::error_or<multiplexer_ptr> make_multiplexer(acceptor::factory_type factory,
-                                                 const util::config& cfg) {
-  LOG_TRACE();
-  auto mpx = std::make_shared<multiplexer>();
-  if (auto err = mpx->init(std::move(factory), cfg)) {
-    return err;
-  }
-  return mpx;
+  return multiplexer_base::init(std::move(factory), cfg);
 }
 
 using std::chrono::milliseconds;
@@ -348,4 +195,16 @@ void multiplexer::handle_events(event_span events) {
   }
 }
 
+util::error_or<multiplexer_ptr> make_multiplexer(acceptor::factory_type factory,
+                                                 const util::config& cfg) {
+  LOG_TRACE();
+  auto mpx = std::make_shared<multiplexer>();
+  if (auto err = mpx->init(std::move(factory), cfg)) {
+    return err;
+  }
+  return mpx;
+}
+
 } // namespace net::epoll
+
+#endif

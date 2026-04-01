@@ -10,7 +10,7 @@
 
 #include "net/event_result.hpp"
 #include "net/manager_base.hpp"
-#include "net/multiplexer_base.hpp"
+#include "net/operation.hpp"
 
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
@@ -21,6 +21,7 @@
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 
+#include "multiplexer_mock.hpp"
 #include "net_test.hpp"
 
 using namespace net;
@@ -28,28 +29,15 @@ using namespace net::ip;
 
 namespace {
 
-struct dummy_multiplexer : public multiplexer_base {
-  void handle_error(const util::error& err) override { last_error = err; }
-
+struct dummy_multiplexer : public multiplexer_mock {
   void add(manager_base_ptr new_mgr, operation) override {
     mgr = std::move(new_mgr);
   }
 
-  void shutdown() override {
-    // nop
-  }
-
-  void enable(manager_base&, operation) override {
-    // nop
-  }
-
-  uint64_t set_timeout(manager_base_ptr,
-                       std::chrono::steady_clock::time_point) override {
-    return 0;
-  }
+  void handle_error(const util::error& err) override { last_error = err; }
 
   util::error last_error;
-  manager_base_ptr mgr = nullptr;
+  manager_base_ptr mgr{nullptr};
 };
 
 struct acceptor_test : public testing::Test {
@@ -89,7 +77,7 @@ TEST_F(acceptor_test, handle_write_event) {
   EXPECT_FALSE(factory_called);
 }
 
-// TEST_F(acceptor_test, handle_timeout) {
-//   EXPECT_EQ(acc->handle_timeout(0), event_result::error);
-//   EXPECT_FALSE(factory_called);
-// }
+TEST_F(acceptor_test, handle_timeout) {
+  EXPECT_EQ(acc->handle_timeout(0), event_result::error);
+  EXPECT_FALSE(factory_called);
+}

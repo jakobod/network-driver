@@ -1,6 +1,6 @@
 /**
  *  @author    Jakob Otto
- *  @file      kqueue/multiplexer.cpp
+ *  @file      multiplexer.cpp
  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
  *             This file is part of the network-driver project, released under
  *             the GNU GPL3 License.
@@ -11,11 +11,8 @@
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 
-#include "net/kqueue/multiplexer.hpp"
-
 #include "net/event_result.hpp"
 #include "net/manager_base.hpp"
-#include "net/multiplexer_base.hpp"
 #include "net/socket/stream_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
 #include "net/socket_guard.hpp"
@@ -30,6 +27,16 @@
 #include <memory>
 #include <thread>
 #include <tuple>
+
+// This test module tests the kqueue implementation on Macos and the epoll
+// implementation on linux by `using` the corresponding symbols in this module.
+#if defined(__linux__)
+#  include "net/epoll/multiplexer.hpp"
+using net::epoll::multiplexer;
+#elif defined(__APPLE__)
+#  include "net/kqueue/multiplexer.hpp"
+using net::kqueue::multiplexer;
+#endif
 
 using namespace net;
 using namespace net::ip;
@@ -84,8 +91,8 @@ private:
 
 // -- Test fixture -------------------------------------------------------------
 
-struct kqueue_multiplexer_test : public testing::Test {
-  kqueue_multiplexer_test() {
+struct multiplexer_test : public testing::Test {
+  multiplexer_test() {
     auto factory = [this](net::socket handle, multiplexer_base* mpx) {
       return util::make_intrusive<dummy_socket_manager>(handle, mpx, state);
     };
@@ -120,7 +127,7 @@ struct kqueue_multiplexer_test : public testing::Test {
 
   bool has_handled_write_event() const { return state.write_event_handled; }
 
-  kqueue::multiplexer mpx;
+  multiplexer mpx;
   size_t default_num_socket_managers;
   test_state state;
 };
@@ -151,7 +158,7 @@ bool read_all(net::tcp_stream_socket handle, util::byte_span data) {
 
 } // namespace
 
-TEST_F(kqueue_multiplexer_test, mpx_shuts_down_correctly) {
+TEST_F(multiplexer_test, mpx_shuts_down_correctly) {
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers);
   // Enforce a shutdown event being written to the pipe
   mpx.set_thread_id();
@@ -163,7 +170,7 @@ TEST_F(kqueue_multiplexer_test, mpx_shuts_down_correctly) {
   ASSERT_TRUE(poll_until([&] { return mpx.num_socket_managers() == 0; }));
 }
 
-TEST_F(kqueue_multiplexer_test, mpx_accepts_connections) {
+TEST_F(multiplexer_test, mpx_accepts_connections) {
   std::array<tcp_stream_socket, 10> sockets;
   ASSERT_NE(mpx.port(), 0);
   for (auto& sock : sockets) {
@@ -179,7 +186,7 @@ TEST_F(kqueue_multiplexer_test, mpx_accepts_connections) {
   }
 }
 
-TEST_F(kqueue_multiplexer_test, manager_removed_after_disconnect) {
+TEST_F(multiplexer_test, manager_removed_after_disconnect) {
   {
     socket_guard guard{connect_to_mpx()};
     ASSERT_TRUE(poll_until([&] {
@@ -191,7 +198,7 @@ TEST_F(kqueue_multiplexer_test, manager_removed_after_disconnect) {
   }));
 }
 
-TEST_F(kqueue_multiplexer_test, event_handling) {
+TEST_F(multiplexer_test, event_handling) {
   // Connect to the multiplexer and trigger it for accepting the connection
   const socket_guard guard{connect_to_mpx()};
   enable_register_for_writing();
@@ -209,7 +216,7 @@ TEST_F(kqueue_multiplexer_test, event_handling) {
   ASSERT_TRUE(read_all(guard.get(), buf));
 }
 
-TEST_F(kqueue_multiplexer_test, resetting_timeout) {
+TEST_F(multiplexer_test, resetting_timeout) {
   const std::vector<uint64_t> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto res = make_stream_socket_pair();
   ASSERT_EQ(get_error(res), nullptr);
@@ -225,7 +232,7 @@ TEST_F(kqueue_multiplexer_test, resetting_timeout) {
   EXPECT_EQ(state.handled_timeouts, expected_result);
 }
 
-TEST_F(kqueue_multiplexer_test, multiple_timeouts) {
+TEST_F(multiplexer_test, multiple_timeouts) {
   const std::vector<uint64_t> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto res = make_stream_socket_pair();
   ASSERT_EQ(get_error(res), nullptr);

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "net/socket_id.hpp"
+#include "net/socket/socket_id.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -16,31 +16,45 @@
 namespace net {
 
 struct timeout_entry {
+  using timeout_id = uint64_t;
+
   timeout_entry(socket_id handle, std::chrono::steady_clock::time_point when,
-                uint64_t id)
+                timeout_id id)
     : handle_{handle}, when_{when}, id_{id} {
     // nop
   }
 
+  // -- properties -------------------------------------------------------------
+
+  socket_id handle() const noexcept { return handle_; }
+
+  std::chrono::steady_clock::time_point when() const noexcept { return when_; }
+
+  timeout_id id() const noexcept { return id_; }
+
+  bool has_expired() const noexcept {
+    return when_ <= std::chrono::steady_clock::now();
+  }
+
   // -- Comparison operations --------------------------------------------------
 
-  bool operator<=>(const timeout_entry& other) const = default;
-
-  bool operator<(const timeout_entry& other) const {
+  bool operator<(const timeout_entry& other) const noexcept {
     return when_ < other.when_;
   }
 
-  bool operator>(const timeout_entry& other) const {
+  bool operator>(const timeout_entry& other) const noexcept {
     return when_ > other.when_;
   }
 
-  bool operator==(const timeout_entry& other) const = default;
+  bool operator==(const timeout_entry& other) const noexcept = default;
 
+private:
   // -- members ----------------------------------------------------------------
 
-  socket_id handle_;
+  socket_id
+    handle_; // TODO: Add a pointer to the manager that should be triggered
   std::chrono::steady_clock::time_point when_;
-  uint64_t id_;
+  timeout_id id_;
 };
 
 } // namespace net

@@ -9,7 +9,7 @@
 #include "net/socket/datagram_socket.hpp"
 
 #include "net/socket/socket.hpp"
-#include "net/socket_id.hpp"
+#include "net/socket/socket_id.hpp"
 
 #include "util/error.hpp"
 #include "util/logger.hpp"
@@ -32,9 +32,10 @@ namespace net {
 util::error_or<datagram_socket_pair> make_connected_datagram_socket_pair() {
   LOG_TRACE();
   std::array<socket_id, 2> sockets;
-  if (socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets.data()) < 0)
+  if (socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets.data()) < 0) {
     return util::error(util::error_code::socket_operation_failed,
                        last_socket_error_as_string());
+  }
   LOG_DEBUG("Created datagram socket pair with ids=(", sockets.front(), ",",
             sockets.back(), ")");
   return std::make_pair(datagram_socket{sockets[0]},

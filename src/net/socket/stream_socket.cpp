@@ -9,7 +9,7 @@
 #include "net/socket/stream_socket.hpp"
 
 #include "net/socket/socket.hpp"
-#include "net/socket_id.hpp"
+#include "net/socket/socket_id.hpp"
 
 #include "util/error.hpp"
 #include "util/logger.hpp"
@@ -32,9 +32,10 @@ namespace net {
 
 util::error_or<stream_socket_pair> make_stream_socket_pair() {
   std::array<socket_id, 2> sockets;
-  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets.data()) < 0)
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets.data()) < 0) {
     return util::error(util::error_code::socket_operation_failed,
                        last_socket_error_as_string());
+  }
   LOG_DEBUG("Created stream_socket_pair with fds=[", sockets[0], ",",
             sockets[1], "]");
   return std::make_pair(stream_socket{sockets[0]}, stream_socket{sockets[1]});

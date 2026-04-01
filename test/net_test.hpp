@@ -14,10 +14,7 @@
 
 // -- Helper macros for tests --------------------------------------------------
 
-#define MESSAGE()                                                              \
-  std::cerr << "\033[0;33m"                                                    \
-            << "[   info   ] "                                                 \
-            << "\033[m"
+#define MESSAGE() std::cerr << "\033[0;33m" << "[   info   ] " << "\033[m"
 
 #define EXPECT_NO_ERROR(expr)                                                  \
   do {                                                                         \

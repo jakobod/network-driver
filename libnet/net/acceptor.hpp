@@ -12,7 +12,6 @@
 #include "util/fwd.hpp"
 
 #include "net/manager_base.hpp"
-#include "net/multiplexer_base.hpp"
 
 #include <functional>
 

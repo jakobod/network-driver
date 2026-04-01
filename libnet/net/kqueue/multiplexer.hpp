@@ -9,41 +9,28 @@
 #pragma once
 
 #if !defined(__APPLE__)
-  #error "kqueue multiplexer is only usable on MacOS"
+#  error "kqueue multiplexer is only usable on MacOS"
 #else
 
-#include "net/fwd.hpp"
-#include "util/fwd.hpp"
+#  include "net/fwd.hpp"
+#  include "util/fwd.hpp"
 
-#include "net/acceptor.hpp"
-#include "net/multiplexer_base.hpp"
-#include "net/timeout_entry.hpp"
+#  include "net/multiplexer_base.hpp"
 
-#include "net/socket/pipe_socket.hpp"
+#  include "net/acceptor.hpp"
 
-#include "util/binary_serializer.hpp"
-#include "util/byte_buffer.hpp"
+#  include <array>
+#  include <cstdint>
+#  include <span>
+#  include <vector>
 
-#include <array>
-#include <chrono>
-#include <cstdint>
-#include <optional>
-#include <set>
-#include <span>
-#include <thread>
-#include <unordered_map>
-#include <variant>
-#include <vector>
-
-#include <sys/event.h>
+#  include <sys/event.h>
 
 namespace net::kqueue {
 
 /// Implements a multiplexing backend for handling event multiplexing facilities
 /// such as epoll and kqueue.
 class multiplexer : public multiplexer_base {
-  friend class manager;
-
   static constexpr std::size_t max_events = 32;
 
   using event_type = struct kevent;
@@ -53,12 +40,6 @@ class multiplexer : public multiplexer_base {
   using pollset = std::array<event_type, max_events>;
   using update_list = std::vector<event_type>;
   using event_span = std::span<event_type>;
-  using manager_map = std::unordered_map<socket_id, manager_base_ptr>;
-
-  // Timeout handling types
-  using optional_timepoint
-    = std::optional<std::chrono::steady_clock::time_point>;
-  using timeout_entry_set = std::set<timeout_entry>;
 
 public:
   // -- constructors, destructors ----------------------------------------------
@@ -70,27 +51,6 @@ public:
   /// Initializes the multiplexer.
   util::error init(acceptor::factory_type factory, const util::config& cfg);
 
-  // -- Thread functions -------------------------------------------------------
-
-  /// Creates a thread that runs this multiplexer indefinately.
-  void start();
-
-  /// Shuts the multiplexer down!
-  void shutdown() override;
-
-  /// Joins with the multiplexer.
-  void join();
-
-  bool is_running() const noexcept;
-
-  void set_thread_id(std::thread::id tid = {}) noexcept;
-
-  // -- members ----------------------------------------------------------------
-
-  std::uint16_t num_socket_managers() const noexcept {
-    return managers_.size();
-  }
-
   // -- Interface functions ----------------------------------------------------
 
   void add(manager_base_ptr mgr, operation initial) override;
@@ -101,74 +61,29 @@ public:
   /// Disables an operation `op` for socket manager `mgr`.
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
-  void disable(manager_base& mgr, operation op, bool remove);
-
-  std::uint64_t
-  set_timeout(manager_base_ptr mgr,
-              std::chrono::steady_clock::time_point when) override;
+  void disable(manager_base& mgr, operation op, bool remove) override;
 
   /// Main multiplexing loop.
-  util::error poll_once(bool blocking);
-
-  // -- Error handling ---------------------------------------------------------
-
-  void handle_error(const util::error& err) override;
+  util::error poll_once(bool blocking) override;
 
 private:
-  /// Notifies all socket managers about timeouts that have expired.
-  void handle_timeouts();
-
   /// Handles all IO-events that occurred.
   void handle_events(event_span events);
-
-  /// The main multiplexer loop.
-  void run();
 
   /// Deletes an existing socket_manager using its key `handle`.
   void del(socket handle);
 
   /// Deletes an existing socket_manager using an iterator `it` to the
   /// manager_map.
-  manager_map::iterator del(manager_map::iterator it);
+  manager_map::iterator del(manager_map::iterator it) override;
 
   /// Modifies the epollset for existing fds.
   void mod(int fd, int op, operation events);
-
-  /// Writes the pollset_update code to the pipe
-  template <class... Ts>
-  ptrdiff_t write_to_pipe(Ts&&... ts) {
-    util::byte_buffer buf;
-    util::binary_serializer bs{buf};
-    bs(std::forward<Ts>(ts)...);
-    return write(pipe_writer_, util::as_const_bytes(buf));
-  }
-
-  bool is_multiplexer_thread() {
-    return (std::this_thread::get_id() == mpx_thread_id_);
-  }
-
-  // pipe for synchronous access to mpx
-  pipe_socket pipe_writer_{invalid_socket_id};
-  pipe_socket pipe_reader_{invalid_socket_id};
 
   // Multiplexing variables
   mpx_fd mpx_fd_{invalid_socket_id};
   pollset pollset_;
   update_list update_cache_;
-  manager_map managers_;
-
-  // timeout handling
-  timeout_entry_set timeouts_;
-  optional_timepoint current_timeout_{std::nullopt};
-  std::uint64_t current_timeout_id_{0};
-
-  // thread variables
-  bool shutting_down_{false};
-  bool running_{false};
-  std::thread mpx_thread_;
-  std::thread::id mpx_thread_id_;
-
-  const util::config* cfg_ = nullptr;
 };
 
 using multiplexer_ptr = std::shared_ptr<multiplexer>;
