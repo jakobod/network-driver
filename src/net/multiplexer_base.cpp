@@ -21,7 +21,7 @@
 
 namespace net {
 
-util::error multiplexer_base::init(acceptor::factory_type factory,
+util::error multiplexer_base::init(manager_factory factory,
                                    const util::config& cfg) {
   LOG_TRACE();
   set_thread_id(std::this_thread::get_id());

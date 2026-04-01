@@ -13,6 +13,7 @@
 
 #include "net/event_result.hpp"
 #include "net/manager_base.hpp"
+#include "net/multiplexer.hpp"
 #include "net/socket/stream_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
 #include "net/socket_guard.hpp"
@@ -27,16 +28,6 @@
 #include <memory>
 #include <thread>
 #include <tuple>
-
-// This test module tests the kqueue implementation on Macos and the epoll
-// implementation on linux by `using` the corresponding symbols in this module.
-#if defined(__linux__)
-#  include "net/epoll/multiplexer.hpp"
-using net::epoll::multiplexer;
-#elif defined(__APPLE__)
-#  include "net/kqueue/multiplexer.hpp"
-using net::kqueue::multiplexer;
-#endif
 
 using namespace net;
 using namespace net::ip;

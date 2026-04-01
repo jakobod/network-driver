@@ -12,19 +12,15 @@
 #include "util/fwd.hpp"
 
 #include "net/manager_base.hpp"
-
-#include <functional>
+#include "net/manager_factory.hpp"
 
 namespace net {
 
 /// Manages the lifetime of a socket.
 class acceptor : public manager_base {
 public:
-  using factory_type
-    = std::function<manager_base_ptr(net::socket, multiplexer_base*)>;
-
   acceptor(tcp_accept_socket handle, multiplexer_base* mpx,
-           factory_type factory);
+           manager_factory factory);
 
   virtual ~acceptor() = default;
 
@@ -33,7 +29,7 @@ public:
   event_result handle_read_event() override;
 
 private:
-  factory_type factory_;
+  manager_factory factory_;
 };
 
 } // namespace net

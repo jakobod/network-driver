@@ -1,16 +1,16 @@
 /**
  *  @author    Jakob Otto
- *  @file      multiplexer.cpp
+ *  @file      detail/kqueue_multiplexer.cpp
  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
  *             This file is part of the network-driver project, released under
  *             the GNU GPL3 License.
  */
 
 #if !defined(__APPLE__)
-#  error "kqueue multiplexer is only usable on MacOS"
+#  error "kqueue_multiplexer is only usable on MacOS"
 #else
 
-#  include "net/kqueue/multiplexer.hpp"
+#  include "net/detail/kqueue_multiplexer.hpp"
 
 #  include "net/acceptor.hpp"
 #  include "net/pollset_updater.hpp"
@@ -36,27 +36,27 @@
 #  include <unistd.h>
 #  include <utility>
 
-namespace net::kqueue {
+namespace net::detail {
 
-multiplexer::~multiplexer() {
+kqueue_multiplexer::~kqueue_multiplexer() {
   LOG_TRACE();
   ::close(mpx_fd_);
 }
 
-util::error multiplexer::init(acceptor::factory_type factory,
-                              const util::config& cfg) {
+util::error kqueue_multiplexer::init(manager_factory factory,
+                                     const util::config& cfg) {
   LOG_TRACE();
-  LOG_DEBUG("initializing kqueue multiplexer");
+  LOG_DEBUG("initializing kqueue kqueue_multiplexer");
   mpx_fd_ = ::kqueue();
   if (mpx_fd_ < 0) {
     return {util::error_code::runtime_error,
-            "[multiplexer]: Creating epoll fd failed"};
+            "[kqueue_multiplexer]: Creating epoll fd failed"};
   }
   LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
   return multiplexer_base::init(std::move(factory), cfg);
 }
 
-void multiplexer::add(manager_base_ptr mgr, operation initial) {
+void kqueue_multiplexer::add(manager_base_ptr mgr, operation initial) {
   LOG_TRACE();
   if (is_multiplexer_thread()) {
     LOG_DEBUG("Adding socket_manager with ", NET_ARG2("id", mgr->handle().id),
@@ -84,7 +84,7 @@ void multiplexer::add(manager_base_ptr mgr, operation initial) {
   }
 }
 
-void multiplexer::enable(manager_base& mgr, operation op) {
+void kqueue_multiplexer::enable(manager_base& mgr, operation op) {
   LOG_TRACE();
   LOG_DEBUG("Enabling mgr with ", NET_ARG2("id", mgr->handle().id),
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
@@ -95,7 +95,7 @@ void multiplexer::enable(manager_base& mgr, operation op) {
   mod(mgr.handle().id, EV_ENABLE, mgr.mask());
 }
 
-void multiplexer::disable(manager_base& mgr, operation op, bool remove) {
+void kqueue_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
   LOG_TRACE();
   LOG_DEBUG("Disabling mgr with ", NET_ARG2("id", mgr->handle().id),
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
@@ -109,7 +109,7 @@ void multiplexer::disable(manager_base& mgr, operation op, bool remove) {
   }
 }
 
-void multiplexer::del(socket handle) {
+void kqueue_multiplexer::del(socket handle) {
   LOG_TRACE();
   LOG_DEBUG("Deleting mgr with ", NET_ARG2("id", handle.id));
   mod(handle.id, EV_DELETE, operation::read_write);
@@ -119,7 +119,8 @@ void multiplexer::del(socket handle) {
   }
 }
 
-multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
+kqueue_multiplexer::manager_map::iterator
+kqueue_multiplexer::del(manager_map::iterator it) {
   LOG_TRACE();
   auto fd = it->second->handle().id;
   LOG_DEBUG("Deleting mgr with ", NET_ARG2("id", fd));
@@ -131,7 +132,7 @@ multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
   return new_it;
 }
 
-void multiplexer::mod(int fd, int op, operation events) {
+void kqueue_multiplexer::mod(int fd, int op, operation events) {
   LOG_TRACE();
   LOG_DEBUG("Modifying mgr with ", NET_ARG2("id", fd), ", ", NET_ARG(op),
             ", for ", NET_ARG2("events", to_string(events)));
@@ -160,7 +161,7 @@ void multiplexer::mod(int fd, int op, operation events) {
   }
 }
 
-util::error multiplexer::poll_once(bool blocking) {
+util::error kqueue_multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   LOG_TRACE();
   const auto now = time_point_cast<milliseconds>(steady_clock::now());
@@ -203,7 +204,7 @@ util::error multiplexer::poll_once(bool blocking) {
   return util::none;
 }
 
-void multiplexer::handle_events(event_span events) {
+void kqueue_multiplexer::handle_events(event_span events) {
   LOG_TRACE();
   LOG_DEBUG("Handling ", events.size(), " I/O events");
   auto handle_result = [this](manager_base& mgr, event_result res,
@@ -250,16 +251,6 @@ void multiplexer::handle_events(event_span events) {
   }
 }
 
-util::error_or<multiplexer_ptr> make_multiplexer(acceptor::factory_type factory,
-                                                 const util::config& cfg) {
-  LOG_TRACE();
-  auto mpx = std::make_shared<multiplexer>();
-  if (auto err = mpx->init(std::move(factory), cfg)) {
-    return err;
-  }
-  return mpx;
-}
-
-} // namespace net::kqueue
+} // namespace net::detail
 
 #endif

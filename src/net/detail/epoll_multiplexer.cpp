@@ -1,16 +1,16 @@
 /**
  *  @author    Jakob Otto
- *  @file      epoll/multiplexer.cpp
+ *  @file      detail/epoll_multiplexer.cpp
  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
  *             This file is part of the network-driver project, released under
  *             the GNU GPL3 License.
  */
 
 #if !defined(__linux__)
-#  error "epoll multiplexer is only usable on Linux"
+#  error "epoll_multiplexer is only usable on Linux"
 #else
 
-#  include "net/epoll/multiplexer.hpp"
+#  include "net/detail/epoll_multiplexer.hpp"
 
 #  include "net/acceptor.hpp"
 #  include "net/event_result.hpp"
@@ -31,21 +31,21 @@
 #  include <unistd.h>
 #  include <utility>
 
-namespace net::epoll {
+namespace net::detail {
 
-multiplexer::~multiplexer() {
+epoll_multiplexer::~epoll_multiplexer() {
   LOG_TRACE();
   ::close(mpx_fd_);
 }
 
-util::error multiplexer::init(acceptor::factory_type factory,
-                              const util::config& cfg) {
+util::error epoll_multiplexer::init(manager_factory factory,
+                                    const util::config& cfg) {
   LOG_TRACE();
-  LOG_DEBUG("initializing epoll multiplexer");
+  LOG_DEBUG("initializing epoll epoll_multiplexer");
   mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (mpx_fd_ < 0) {
     return {util::error_code::runtime_error,
-            "[multiplexer]: Creating epoll fd failed"};
+            "[epoll_multiplexer]: Creating epoll fd failed"};
   }
   LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
   return multiplexer_base::init(std::move(factory), cfg);
@@ -57,7 +57,7 @@ using std::chrono::time_point_cast;
 
 // -- Interface functions ------------------------------------------------------
 
-void multiplexer::add(manager_base_ptr mgr, operation initial) {
+void epoll_multiplexer::add(manager_base_ptr mgr, operation initial) {
   mgr->mask_set(initial);
   if (!nonblocking(mgr->handle(), true)) {
     handle_error(util::error(util::error_code::socket_operation_failed,
@@ -71,14 +71,14 @@ void multiplexer::add(manager_base_ptr mgr, operation initial) {
   }
 }
 
-void multiplexer::enable(manager_base& mgr, operation op) {
+void epoll_multiplexer::enable(manager_base& mgr, operation op) {
   if (!mgr.mask_add(op)) {
     return;
   }
   mod(mgr.handle().id, EPOLL_CTL_MOD, mgr.mask());
 }
 
-void multiplexer::disable(manager_base& mgr, operation op, bool remove) {
+void epoll_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
   if (!mgr.mask_del(op)) {
     return;
   }
@@ -88,7 +88,7 @@ void multiplexer::disable(manager_base& mgr, operation op, bool remove) {
   }
 }
 
-void multiplexer::del(socket handle) {
+void epoll_multiplexer::del(socket handle) {
   mod(handle.id, EPOLL_CTL_DEL, operation::none);
   managers_.erase(handle.id);
   if (shutting_down_ && managers_.empty()) {
@@ -96,7 +96,8 @@ void multiplexer::del(socket handle) {
   }
 }
 
-multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
+epoll_multiplexer::manager_map::iterator
+epoll_multiplexer::del(manager_map::iterator it) {
   auto fd = it->second->handle().id;
   mod(fd, EPOLL_CTL_DEL, operation::none);
   auto new_it = managers_.erase(it);
@@ -106,7 +107,7 @@ multiplexer::manager_map::iterator multiplexer::del(manager_map::iterator it) {
   return new_it;
 }
 
-void multiplexer::mod(int fd, int op, operation events) {
+void epoll_multiplexer::mod(int fd, int op, operation events) {
   static const auto to_epoll_flag = [](net::operation op) -> uint32_t {
     switch (op) {
       case net::operation::none:
@@ -130,7 +131,7 @@ void multiplexer::mod(int fd, int op, operation events) {
   }
 }
 
-util::error multiplexer::poll_once(bool blocking) {
+util::error epoll_multiplexer::poll_once(bool blocking) {
   // Calculates the timeout value for the epoll_wait call
   auto timeout = [&]() -> int {
     if (!blocking) {
@@ -159,7 +160,7 @@ util::error multiplexer::poll_once(bool blocking) {
   return util::none;
 }
 
-void multiplexer::handle_events(event_span events) {
+void epoll_multiplexer::handle_events(event_span events) {
   auto handle_result = [&](manager_base_ptr& mgr, event_result res,
                            operation op) -> bool {
     if (res == event_result::done) {
@@ -195,16 +196,6 @@ void multiplexer::handle_events(event_span events) {
   }
 }
 
-util::error_or<multiplexer_ptr> make_multiplexer(acceptor::factory_type factory,
-                                                 const util::config& cfg) {
-  LOG_TRACE();
-  auto mpx = std::make_shared<multiplexer>();
-  if (auto err = mpx->init(std::move(factory), cfg)) {
-    return err;
-  }
-  return mpx;
-}
-
-} // namespace net::epoll
+} // namespace net::detail
 
 #endif

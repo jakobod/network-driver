@@ -21,6 +21,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_compile_options(-Wall -Wextra -pedantic -Werror)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 message (STATUS "Build type ${CMAKE_BUILD_TYPE}")
 
 # -- find or fetch dependencies ------------------------------------------------
@@ -37,7 +39,15 @@ if (LIB_NET_ENABLE_TESTS)
   FetchContent_MakeAvailable(googletest)
 endif()
 
-# Threads
+if(LIB_NET_ENABLE_URING)
+  if(LINUX)
+    find_package(IoUring REQUIRED)
+  else()
+    message(FATAL_ERROR "io_uring support is only available on Linux")
+  endif()
+endif()
+
+# OpenSSL
 # find_package(OpenSSL REQUIRED)
 
 # -- project files -------------------------------------------------------------
@@ -50,6 +60,7 @@ set(LIB_NET_SOURCES
   src/net/acceptor.cpp
   src/net/event_result.cpp 
   src/net/manager_base.cpp
+  src/net/multiplexer.cpp
   src/net/multiplexer_base.cpp
   src/net/operation.cpp
   src/net/pollset_updater.cpp
@@ -80,9 +91,10 @@ set(LIB_NET_SOURCES
 
 # Platform-specific event multiplexer implementations
 if(APPLE)
-  list(APPEND LIB_NET_SOURCES src/net/kqueue/multiplexer.cpp)
+  list(APPEND LIB_NET_SOURCES src/net/detail/kqueue_multiplexer.cpp)
 elseif(UNIX)
-  list(APPEND LIB_NET_SOURCES src/net/epoll/multiplexer.cpp)
+  list(APPEND LIB_NET_SOURCES src/net/detail/epoll_multiplexer.cpp)
+  list(APPEND LIB_NET_SOURCES src/net/detail/uring_multiplexer.cpp)
 endif()
 
 
@@ -92,7 +104,10 @@ add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
 target_link_libraries(net Threads::Threads)
-# target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
+
+if(LIB_NET_ENABLE_URING)
+  target_link_libraries(net IoUring::IoUring)
+endif()
 
 # Copy Dummy certs to build folder and set preprocessor definition to the folder
 file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

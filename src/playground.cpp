@@ -14,11 +14,7 @@
 #include "util/error_or.hpp"
 #include "util/logger.hpp"
 
-#ifdef __APPLE__
-#include "net/kqueue/multiplexer.hpp"
-#else
-#include "net/epoll/multiplexer.hpp"
-#endif
+#include "net/multiplexer.hpp"
 
 #include "net/socket/stream_socket.hpp"
 
@@ -79,21 +75,12 @@ int main(int, const char**) {
   auto factory = [](net::socket handle, net::multiplexer_base* mpx) {
     return util::make_intrusive<dummy_manager>(handle, mpx);
   };
-#ifdef __APPLE__
-  auto res = net::kqueue::make_multiplexer(std::move(factory), cfg);
+  auto res = net::make_multiplexer(std::move(factory), cfg);
   if ([[maybe_unused]] auto err = util::get_error(res)) {
     LOG_ERROR("Failed to create multiplexer: ", *err);
     return EXIT_FAILURE;
   }
-  auto mpx = std::get<net::kqueue::multiplexer_ptr>(res);
-#else
-  auto res = net::epoll::make_multiplexer(std::move(factory), cfg);
-  if ([[maybe_unused]] auto err = util::get_error(res)) {
-    LOG_ERROR("Failed to create multiplexer: ", *err);
-    return EXIT_FAILURE;
-  }
-  auto mpx = std::get<net::epoll::multiplexer_ptr>(res);
-#endif
+  auto mpx = std::get<net::multiplexer_ptr>(res);
   mpx->start();
 
   // std::string dummy;

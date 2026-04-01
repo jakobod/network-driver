@@ -20,7 +20,7 @@
 namespace net {
 
 acceptor::acceptor(tcp_accept_socket handle, multiplexer_base* mpx,
-                   factory_type factory)
+                   manager_factory factory)
   : manager_base(handle, mpx), factory_(std::move(factory)) {
   LOG_TRACE();
 }

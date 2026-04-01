@@ -44,22 +44,22 @@ public:
 
   virtual ~multiplexer_base() = default;
 
-  /// Initializes the multiplexer.
-  util::error init(acceptor::factory_type factory, const util::config& cfg);
+  /// Initializes the multiplexer_base.
+  util::error init(manager_factory factory, const util::config& cfg);
 
   // -- Thread functions -------------------------------------------------------
 
-  /// Creates a thread that runs this multiplexer indefinately.
+  /// Creates a thread that runs this multiplexer_base indefinitely.
   void start();
 
 private:
   void run();
 
 public:
-  /// Shuts the multiplexer down!
+  /// Shuts the multiplexer_base down!
   virtual void shutdown();
 
-  /// Joins with the multiplexer.
+  /// Joins with the multiplexer_base.
   void join();
 
   bool is_running() const noexcept;

@@ -1,6 +1,6 @@
 /**
  *  @author    Jakob Otto
- *  @file      multiplexer_impl.hpp
+ *  @file      detail/epoll_multiplexer_impl.hpp
  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
  *             This file is part of the network-driver project, released under
  *             the GNU GPL3 License.
@@ -8,32 +8,43 @@
 
 #pragma once
 
-#if !defined(__APPLE__)
-#  error "kqueue multiplexer is only usable on MacOS"
+#if !defined(__linux__)
+#  error "epoll_multiplexer is only usable on linux systems"
 #else
 
 #  include "net/fwd.hpp"
 #  include "util/fwd.hpp"
 
-#  include "net/multiplexer_base.hpp"
-
 #  include "net/acceptor.hpp"
+#  include "net/multiplexer_base.hpp"
+#  include "net/timeout_entry.hpp"
+
+#  include "net/socket/pipe_socket.hpp"
+
+#  include "util/binary_serializer.hpp"
+#  include "util/byte_buffer.hpp"
 
 #  include <array>
+#  include <chrono>
 #  include <cstdint>
+#  include <optional>
+#  include <set>
 #  include <span>
+#  include <thread>
+#  include <unordered_map>
+#  include <variant>
 #  include <vector>
 
-#  include <sys/event.h>
+#  include <sys/epoll.h>
 
-namespace net::kqueue {
+namespace net::detail {
 
 /// Implements a multiplexing backend for handling event multiplexing facilities
 /// such as epoll and kqueue.
-class multiplexer : public multiplexer_base {
+class epoll_multiplexer : public multiplexer_base {
   static constexpr std::size_t max_events = 32;
 
-  using event_type = struct kevent;
+  using event_type = epoll_event;
   using mpx_fd = int;
 
   // Pollset types
@@ -44,12 +55,12 @@ class multiplexer : public multiplexer_base {
 public:
   // -- constructors, destructors ----------------------------------------------
 
-  multiplexer() = default;
+  epoll_multiplexer() = default;
 
-  virtual ~multiplexer();
+  virtual ~epoll_multiplexer();
 
-  /// Initializes the multiplexer.
-  util::error init(acceptor::factory_type factory, const util::config& cfg);
+  /// Initializes the epoll_multiplexer.
+  util::error init(manager_factory factory, const util::config& cfg);
 
   // -- Interface functions ----------------------------------------------------
 
@@ -86,11 +97,6 @@ private:
   update_list update_cache_;
 };
 
-using multiplexer_ptr = std::shared_ptr<multiplexer>;
-
-util::error_or<multiplexer_ptr> make_multiplexer(acceptor::factory_type factory,
-                                                 const util::config& cfg);
-
-} // namespace net::kqueue
+} // namespace net::detail
 
 #endif

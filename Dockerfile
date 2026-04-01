@@ -19,15 +19,16 @@ RUN apt-get update && apt-get upgrade -y \
     gcc-14 \
     g++-14 \
     clang-18 \
-    clang-format-18 \
-    clang-tidy-18 \
-    llvm-18 \
+    clang-format \
+    clang-tidy \
+    llvm \
     git \
     cmake \
     make \
     ninja-build \
     pkg-config \
     libssl-dev \
+    liburing-dev \
     vim \
     nano \
     gdb \
