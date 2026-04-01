@@ -9,7 +9,6 @@
 #include "net/kqueue/multiplexer.hpp"
 
 #include "net/acceptor.hpp"
-#include "net/kqueue/manager.hpp"
 #include "net/pollset_updater.hpp"
 
 #include "net/event_result.hpp"
@@ -72,7 +71,7 @@ util::error multiplexer::init(acceptor::factory_type factory,
   }
   auto accept_socket_pair = std::get<net::acceptor_pair>(res);
   auto accept_socket = accept_socket_pair.first;
-  port_ = accept_socket_pair.second;
+  set_port(accept_socket_pair.second);
   add(util::make_intrusive<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
   set_thread_id();
@@ -155,8 +154,8 @@ void multiplexer::handle_error([[maybe_unused]] const util::error& err) {
 
 // -- Timeout management -------------------------------------------------------
 
-uint64_t multiplexer::set_timeout(manager_ptr mgr,
-                                  std::chrono::system_clock::time_point when) {
+uint64_t multiplexer::set_timeout(manager_base_ptr mgr,
+                                  std::chrono::steady_clock::time_point when) {
   LOG_TRACE();
   LOG_DEBUG("Setting timeout ", current_timeout_id_, " on ",
             NET_ARG2("mgr", mgr->handle().id));
@@ -170,13 +169,13 @@ uint64_t multiplexer::set_timeout(manager_ptr mgr,
 void multiplexer::handle_timeouts() {
   using namespace std::chrono;
   LOG_TRACE();
-  const auto now = time_point_cast<milliseconds>(system_clock::now());
+  const auto now = steady_clock::now();
   for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
     const auto& entry = *it;
     const auto when = time_point_cast<milliseconds>(entry.when_);
     if (when <= now) {
       // Registered timeout has expired
-      auto& mgr = static_cast<manager&>(*managers_.at(entry.handle_));
+      auto& mgr = *managers_.at(entry.handle_);
       mgr.handle_timeout(entry.id_);
     } else {
       // Timeout not expired, delete handled entries and set the current timeout
@@ -209,16 +208,15 @@ void multiplexer::add(manager_base_ptr mgr, operation initial) {
     LOG_DEBUG("Adding socket_manager with ", NET_ARG2("id", mgr->handle().id),
               " for ", NET_ARG(initial));
     // Set nonblocking on socket
-    const auto handle = mgr->handle();
-    if (!nonblocking(handle, true)) {
+    if (!nonblocking(mgr->handle(), true)) {
       handle_error(util::error(util::error_code::socket_operation_failed,
                                "Could not set nonblocking on handle"));
     }
     // Add the mgr to the pollset for both reading and writing and enable it for
     // the initial operations
-    mod(handle.id, (EV_ADD | EV_DISABLE), operation::read_write);
-    enable(*static_cast<manager*>(mgr.get()), initial);
-    managers_.emplace(handle.id, mgr);
+    mod(mgr->handle().id, (EV_ADD | EV_DISABLE), operation::read_write);
+    enable(*mgr, initial);
+    managers_.emplace(mgr->handle().id, mgr);
     // TODO: This should probably return an error instead of calling
     // handle_error
     if (auto err = mgr->init(*cfg_)) {
@@ -311,24 +309,33 @@ void multiplexer::mod(int fd, int op, operation events) {
 util::error multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   LOG_TRACE();
-  // Calculates the timeout value for the kqueue call
-  auto calculate_timeout = [this, blocking]() -> timespec {
-    if (!blocking || !current_timeout_) {
-      return {0, 0};
-    }
-    const auto now = time_point_cast<milliseconds>(system_clock::now());
-    const auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
-    const auto diff_ms = (timeout_tp - now).count();
-    return {(diff_ms / 1000), ((diff_ms % 1000) * 1000000)};
-  };
-  const auto timeout = calculate_timeout();
+  const auto now = time_point_cast<milliseconds>(steady_clock::now());
+  const auto timeout_passed = (current_timeout_ ? (now > *current_timeout_)
+                                                : false);
+  // Calculate the timeout value for the kqueue call
+  const auto timeout = std::invoke(
+    [this, blocking, timeout_passed, now] -> timespec {
+      if (!blocking || !current_timeout_ || timeout_passed) {
+        return {0, 0};
+      }
+      const auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
+      const auto diff_ms = (timeout_tp - now).count();
+      return {(diff_ms / 1000), ((diff_ms % 1000) * 1000000)};
+    });
+
   LOG_DEBUG("kevent ", NET_ARG(blocking), ", timeout={", timeout.tv_sec, "s,",
             timeout.tv_nsec, "ns}");
+
+  // Pass nullptr only when blocking indefinitely (no timeout set)
+  // Otherwise pass &timeout: either {0, 0} for non-blocking/passed timeout or
+  // actual timeout
+  const auto* timeout_ptr = (blocking && !current_timeout_) ? nullptr
+                                                            : &timeout;
   const int num_events = kevent(mpx_fd_, update_cache_.data(),
                                 static_cast<int>(update_cache_.size()),
                                 pollset_.data(),
-                                static_cast<int>(pollset_.size()),
-                                (!current_timeout_ ? nullptr : &timeout));
+                                static_cast<int>(pollset_.size()), timeout_ptr);
+
   update_cache_.clear();
   // Check for errors
   if (num_events < 0) {
@@ -350,7 +357,8 @@ void handle_error(const util::error& err) {
 void multiplexer::handle_events(event_span events) {
   LOG_TRACE();
   LOG_DEBUG("Handling ", events.size(), " I/O events");
-  auto handle_result = [this](manager& mgr, event_result res, operation op) {
+  auto handle_result = [this](manager_base& mgr, event_result res,
+                              operation op) {
     LOG_DEBUG(NET_ARG2("res", to_string(res)));
     switch (res) {
       case event_result::done:
@@ -373,7 +381,7 @@ void multiplexer::handle_events(event_span events) {
       del(handle);
       continue;
     } else {
-      auto& mgr = static_cast<manager&>(*managers_[handle.id]);
+      auto& mgr = *managers_[handle.id];
       switch (event.filter) {
         case EVFILT_READ:
           LOG_DEBUG("Handling EVFILT_READ on manager with ",

@@ -36,6 +36,15 @@ struct dummy_multiplexer : public multiplexer_base {
   void add(manager_base_ptr, operation) override {}
 
   void shutdown() override {}
+
+  void enable(manager_base&, operation) override {
+    // nop
+  }
+
+  uint64_t set_timeout(manager_base_ptr,
+                       std::chrono::steady_clock::time_point) override {
+    return 0;
+  }
 };
 
 struct manager_base_test : public testing::Test {

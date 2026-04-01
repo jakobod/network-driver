@@ -73,9 +73,19 @@ public:
 
   // -- Event handling ---------------------------------------------------------
 
+  void register_reading();
+
+  void register_writing();
+
   virtual event_result handle_read_event();
 
   virtual event_result handle_write_event();
+
+  // -- Timeout handling -------------------------------------------------------
+
+  uint64_t set_timeout_in(std::chrono::steady_clock::duration in);
+
+  uint64_t set_timeout_at(std::chrono::steady_clock::time_point when);
 
   virtual event_result handle_timeout(uint64_t);
 

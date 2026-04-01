@@ -35,13 +35,18 @@ public:
     // nop
   }
 
+  template <meta::convertible_to<T> U>
+  intrusive_ptr(intrusive_ptr<U>&& other) noexcept : ptr_(other.release()) {
+    // nop
+  }
+
   intrusive_ptr(const intrusive_ptr& other) noexcept {
     set_ptr(other.get(), true);
   }
 
   template <meta::convertible_to<T> U>
-  intrusive_ptr(intrusive_ptr<U>&& other) noexcept : ptr_(other.release()) {
-    // nop
+  intrusive_ptr(const intrusive_ptr<U>& other) noexcept {
+    set_ptr(other.get(), true);
   }
 
   ~intrusive_ptr() {

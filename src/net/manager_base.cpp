@@ -67,6 +67,18 @@ bool manager_base::mask_del(operation flag) noexcept {
   return true;
 }
 
+void manager_base::register_reading() {
+  if ((mask() & operation::read) == operation::none) {
+    mpx()->enable(*this, operation::read);
+  }
+}
+
+void manager_base::register_writing() {
+  if ((mask() & operation::write) == operation::none) {
+    mpx()->enable(*this, operation::write);
+  }
+}
+
 event_result manager_base::handle_read_event() {
   LOG_ERROR("Default implementation, should never be called");
   return event_result::error;
@@ -75,6 +87,16 @@ event_result manager_base::handle_read_event() {
 event_result manager_base::handle_write_event() {
   LOG_ERROR("Default implementation, should never be called");
   return event_result::error;
+}
+
+uint64_t manager_base::set_timeout_in(std::chrono::steady_clock::duration in) {
+  const auto when = std::chrono::steady_clock::now() + in;
+  return set_timeout_at(when);
+}
+
+uint64_t
+manager_base::set_timeout_at(std::chrono::steady_clock::time_point when) {
+  return mpx()->set_timeout(this, when);
 }
 
 event_result manager_base::handle_timeout(uint64_t) {

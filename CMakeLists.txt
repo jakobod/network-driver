@@ -58,7 +58,6 @@ set(LIB_NET_SOURCES
   src/net/ip/v4_endpoint.cpp
   
   src/net/kqueue/multiplexer.cpp
-  src/net/kqueue/manager.cpp
   
   src/openssl/tls_context.cpp
   src/openssl/tls_session.cpp
@@ -131,12 +130,13 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
 
+    test/net/kqueue/multiplexer.cpp
+    
+
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
 
-    # test/net/kqueue/multiplexer.cpp
     
-
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp

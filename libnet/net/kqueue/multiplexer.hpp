@@ -15,8 +15,6 @@
 #include "net/multiplexer_base.hpp"
 #include "net/timeout_entry.hpp"
 
-#include "net/kqueue/manager.hpp"
-
 #include "net/socket/pipe_socket.hpp"
 
 #include "util/binary_serializer.hpp"
@@ -54,7 +52,7 @@ class multiplexer : public multiplexer_base {
 
   // Timeout handling types
   using optional_timepoint
-    = std::optional<std::chrono::system_clock::time_point>;
+    = std::optional<std::chrono::steady_clock::time_point>;
   using timeout_entry_set = std::set<timeout_entry>;
 
 public:
@@ -93,15 +91,16 @@ public:
   void add(manager_base_ptr mgr, operation initial) override;
 
   /// Enables an operation `op` for socket manager `mgr`.
-  void enable(manager_base& mgr, operation op);
+  void enable(manager_base& mgr, operation op) override;
 
   /// Disables an operation `op` for socket manager `mgr`.
   /// If `mgr` is not registered for any operation after disabling it, it is
   /// removed if `remove` is set.
   void disable(manager_base& mgr, operation op, bool remove);
 
-  std::uint64_t set_timeout(manager_ptr mgr,
-                            std::chrono::system_clock::time_point when);
+  std::uint64_t
+  set_timeout(manager_base_ptr mgr,
+              std::chrono::steady_clock::time_point when) override;
 
   /// Main multiplexing loop.
   util::error poll_once(bool blocking);
@@ -165,8 +164,6 @@ private:
   std::thread::id mpx_thread_id_;
 
   const util::config* cfg_ = nullptr;
-
-  std::uint16_t port_{0};
 };
 
 using multiplexer_ptr = std::shared_ptr<multiplexer>;

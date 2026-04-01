@@ -14,12 +14,12 @@
 #include "util/error_or.hpp"
 #include "util/logger.hpp"
 
-#include "net/kqueue/manager.hpp"
 #include "net/kqueue/multiplexer.hpp"
 
 #include "net/socket/stream_socket.hpp"
 
 #include "net/event_result.hpp"
+#include "net/manager_base.hpp"
 
 #include <cstdlib>
 #include <string>
@@ -28,9 +28,9 @@ using namespace std::string_literals;
 
 namespace {
 
-struct dummy_manager : public net::kqueue::manager {
+struct dummy_manager : public net::manager_base {
   dummy_manager(net::socket handle, net::multiplexer_base* mpx)
-    : net::kqueue::manager(handle, mpx) {
+    : net::manager_base(handle, mpx) {
     // nop
   }
 
