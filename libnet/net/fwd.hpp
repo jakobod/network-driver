@@ -68,5 +68,8 @@ class transport_adaptor;
 
 namespace net::kqueue {
 class multiplexer;
-class manager;
 } // namespace net::kqueue
+
+namespace net::epoll {
+class multiplexer;
+} // namespace net::epoll

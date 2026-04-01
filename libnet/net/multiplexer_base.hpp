@@ -31,8 +31,9 @@ public:
 
   virtual void shutdown() = 0;
 
-  virtual uint64_t set_timeout(manager_base_ptr mgr,
-                               std::chrono::steady_clock::time_point when) = 0;
+  virtual uint64_t
+  set_timeout(manager_base_ptr mgr, std::chrono::steady_clock::time_point when)
+    = 0;
 
   uint16_t port() const noexcept { return port_; }
 

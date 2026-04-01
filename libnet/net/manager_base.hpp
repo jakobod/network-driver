@@ -17,6 +17,8 @@
 #include "util/intrusive_ptr.hpp"
 #include "util/ref_counted.hpp"
 
+#include <chrono>
+
 namespace net {
 
 /// Manages the lifetime of a socket and its events.

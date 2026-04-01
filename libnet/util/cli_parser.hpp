@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <ostream>
@@ -153,80 +154,10 @@ public:
   /// @throws std::runtime_error in case the specified `T` is not supported
   /// @returns default constructed T instance
   template <class T>
-  T option_value([[maybe_unused]] const std::string& id,
-                 [[maybe_unused]] std::size_t pos = 0) const {
+  inline T option_value([[maybe_unused]] const std::string& id,
+                        [[maybe_unused]] std::size_t pos = 0) const {
     throw std::runtime_error{"Conversion to specified type is not supported"};
     return {};
-  }
-
-  /// @brief Partial template specialization for converting to std::string
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds
-  /// @returns An argument value as std::string
-  template <>
-  std::string option_value(const std::string& id, std::size_t pos) const {
-    return parsed_.at(id).at(pos);
-  }
-
-  /// @brief Partial template specialization for converting to int
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of int
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as int
-  template <>
-  int option_value(const std::string& id, std::size_t pos) const {
-    return std::stoi(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to std::size_t
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of std::size_t
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as std::string
-  template <>
-  std::size_t option_value(const std::string& id, std::size_t pos) const {
-    return std::stoul(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to std::int64_t
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of std::int64_t
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as std::int64_t
-  template <>
-  std::int64_t option_value(const std::string& id, std::size_t pos) const {
-    return std::stoll(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to float
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of float
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as float
-  template <>
-  float option_value(const std::string& id, std::size_t pos) const {
-    return std::stof(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to double
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of double
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as double
-  template <>
-  double option_value(const std::string& id, std::size_t pos) const {
-    return std::stod(parsed_.at(id).at(pos));
   }
 
   /// @brief Template for converting the argument value of option with `id` at
@@ -262,5 +193,86 @@ private:
   /// @brief The parsed options and possible values
   result_map parsed_;
 };
+
+// -- Template specializations for option_value (at namespace scope) -----------
+
+/// @brief Partial template specialization for converting to std::string
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds
+/// @returns An argument value as std::string
+template <>
+inline std::string
+cli_parser::option_value<std::string>(const std::string& id,
+                                      std::size_t pos) const {
+  return parsed_.at(id).at(pos);
+}
+
+/// @brief Partial template specialization for converting to int
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of int
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as int
+template <>
+inline int
+cli_parser::option_value<int>(const std::string& id, std::size_t pos) const {
+  return std::stoi(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to std::size_t
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of std::size_t
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as std::size_t
+template <>
+inline std::size_t
+cli_parser::option_value<std::size_t>(const std::string& id,
+                                      std::size_t pos) const {
+  return std::stoul(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to std::int64_t
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of std::int64_t
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as std::int64_t
+template <>
+inline std::int64_t
+cli_parser::option_value<std::int64_t>(const std::string& id,
+                                       std::size_t pos) const {
+  return std::stoll(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to float
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of float
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as float
+template <>
+inline float
+cli_parser::option_value<float>(const std::string& id, std::size_t pos) const {
+  return std::stof(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to double
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of double
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as double
+template <>
+inline double
+cli_parser::option_value<double>(const std::string& id, std::size_t pos) const {
+  return std::stod(parsed_.at(id).at(pos));
+}
 
 } // namespace util

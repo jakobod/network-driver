@@ -55,6 +55,7 @@ set_log_level() {
 # Set defaults.
 CMakeBuildDir=""
 CMakeCacheEntries=""
+CMakeGenerator=""
 
 # Parse user input.
 while [ $# -ne 0 ]; do
@@ -84,6 +85,9 @@ while [ $# -ne 0 ]; do
       ;;
     --log-level=*)
       set_log_level "$optarg"
+      ;;
+    --generator=*)
+      CMakeGenerator="$optarg"
       ;;
     *)
       echo "Invalid option '$1'. Try $0 --help to see available options."

@@ -11,6 +11,7 @@
 #include "net/fwd.hpp"
 
 #include "net/event_result.hpp"
+#include "net/multiplexer_base.hpp"
 #include "net/receive_policy.hpp"
 #include "net/socket/stream_socket.hpp"
 #include "net/transport.hpp"

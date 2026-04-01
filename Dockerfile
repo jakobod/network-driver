@@ -3,8 +3,7 @@
 # Based on Ubuntu 20.04
 ############################################################
 
-FROM ubuntu:20.04
-MAINTAINER Jakob Otto
+FROM ubuntu:24.04
 
 # Disable blocking user input prompt while updating
 ARG DEBIAN_FRONTEND=noninteractive
@@ -13,18 +12,30 @@ ENV TZ=Europe/Berlin
 # Update image and install required packages
 RUN apt-get update && apt-get install -y apt-utils
 
-RUN apt-get upgrade -y && apt-get autoremove
-RUN apt-get install -y \
-  gcc-10 \
-  g++-10 \
-  clang \
-  git \
-  cmake \
-  make \
-  libssl-dev \
-  vim \
-  clang-format \
-  gdb
+# Update image and install required packages
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc-14 \
+    g++-14 \
+    clang-18 \
+    clang-format-18 \
+    clang-tidy-18 \
+    llvm-18 \
+    git \
+    cmake \
+    make \
+    ninja-build \
+    pkg-config \
+    libssl-dev \
+    vim \
+    nano \
+    gdb \
+    valgrind \
+    curl \
+    wget \
+    ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Add jenkins user
 RUN useradd -ms /bin/bash jenkins

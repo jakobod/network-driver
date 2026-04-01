@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-add_compile_options(-Wall -Wextra -pedantic -fexperimental-library)
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 message (STATUS "Build type ${CMAKE_BUILD_TYPE}")
 
@@ -57,8 +57,6 @@ set(LIB_NET_SOURCES
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
   
-  src/net/kqueue/multiplexer.cpp
-  
   src/openssl/tls_context.cpp
   src/openssl/tls_session.cpp
   
@@ -78,6 +76,14 @@ set(LIB_NET_SOURCES
   src/util/error.cpp
   src/util/format.cpp
 )
+
+# Platform-specific event multiplexer implementations
+if(APPLE)
+  list(APPEND LIB_NET_SOURCES src/net/kqueue/multiplexer.cpp)
+elseif(UNIX)
+  list(APPEND LIB_NET_SOURCES src/net/epoll/multiplexer.cpp)
+endif()
+
 
 # -- Object for different targets ----------------------------------------------
 
@@ -130,13 +136,9 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
 
-    test/net/kqueue/multiplexer.cpp
-    
-
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
 
-    
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp
@@ -146,10 +148,17 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/ref_counted.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
-
+  
     # test/net/tls.cpp
     # test/openssl/communication.cpp
   )
+
+  # Platform-specific event multiplexer tests
+  if(APPLE)
+    target_sources(lib_net_test PRIVATE test/net/kqueue/multiplexer.cpp)
+  elseif(UNIX)
+    target_sources(lib_net_test PRIVATE test/net/epoll/multiplexer.cpp)
+  endif()
 
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/test")

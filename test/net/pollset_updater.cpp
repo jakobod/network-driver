@@ -35,9 +35,7 @@ struct dummy_multiplexer : public multiplexer_base {
     initial_operation = initial;
   }
 
-  void shutdown() override {
-    // nop
-  }
+  void shutdown() override { shutdown_called = true; }
 
   void enable(manager_base&, operation) override {
     // nop
