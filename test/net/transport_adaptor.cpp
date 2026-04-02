@@ -12,7 +12,7 @@
 #include "net/stream_transport.hpp"
 #include "net/transport.hpp"
 
-#include "net/multiplexer_base.hpp"
+#include "net/detail/multiplexer_base.hpp"
 #include "net/receive_policy.hpp"
 
 #include "util/config.hpp"
@@ -48,7 +48,7 @@ struct application_vars {
 template <class NextLayer>
 struct dummy_transport : public transport {
   template <class... Ts>
-  dummy_transport(net::socket handle, multiplexer_base* mpx,
+  dummy_transport(net::socket handle, detail::multiplexer_base* mpx,
                   transport_vars& vars, Ts&&... xs)
     : transport(handle, mpx),
       next_layer_(*this, std::forward<Ts>(xs)...),

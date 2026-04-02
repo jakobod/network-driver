@@ -25,11 +25,7 @@ namespace net {
 
 // -- classes ------------------------------------------------------------------
 
-class manager_base;
-class multiplexer_base;
-class pollset_updater;
 class uri;
-class acceptor;
 
 // -- structs ------------------------------------------------------------------
 
@@ -48,7 +44,7 @@ struct timeout_entry;
 // -- enums --------------------------------------------------------------------
 
 enum class event_result : std::uint8_t;
-enum class operation : std::uint32_t;
+enum class operation : std::uint8_t;
 
 // -- type aliases -------------------------------------------------------------
 
@@ -64,3 +60,10 @@ template <class NextLayer>
 class transport_adaptor;
 
 } // namespace net
+
+namespace net::detail {
+class manager_base;
+class multiplexer_base;
+class pollset_updater;
+class acceptor;
+} // namespace net::detail

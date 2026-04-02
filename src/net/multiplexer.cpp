@@ -13,8 +13,9 @@
 
 namespace net {
 
-util::error_or<multiplexer_ptr> make_multiplexer(manager_factory factory,
-                                                 const util::config& cfg) {
+util::error_or<multiplexer_ptr>
+make_multiplexer(multiplexer::manager_factory factory,
+                 const util::config& cfg) {
   LOG_TRACE();
   auto mpx = std::make_shared<multiplexer>();
   if (auto err = mpx->init(std::move(factory), cfg)) {

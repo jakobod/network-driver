@@ -12,7 +12,14 @@
 
 #  include "net/detail/epoll_multiplexer.hpp"
 
-#  include "net/acceptor.hpp"
+#  include "net/detail/acceptor.hpp"
+#  include "net/detail/event_handler.hpp"
+
+#  include "net/socket/tcp_accept_socket.hpp"
+
+#  include "net/ip/v4_address.hpp"
+#  include "net/ip/v4_endpoint.hpp"
+
 #  include "net/event_result.hpp"
 #  include "net/operation.hpp"
 
@@ -48,7 +55,33 @@ util::error epoll_multiplexer::init(manager_factory factory,
             "[epoll_multiplexer]: Creating epoll fd failed"};
   }
   LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
-  return multiplexer_base::init(std::move(factory), cfg);
+
+  // TODO how to fix this sequence problem?
+  if (auto err = multiplexer_base::init(cfg)) {
+    return err;
+  }
+
+  // Create Acceptor
+  auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
+    (cfg_->get_or("multiplexer.local", true) ? ip::v4_address::localhost
+                                             : ip::v4_address::any),
+    cfg_->get_or<std::int64_t>("multiplexer.port", 0)));
+  if (auto err = util::get_error(res)) {
+    return *err;
+  }
+  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
+  auto accept_socket = accept_socket_pair.first;
+  set_port(accept_socket_pair.second);
+
+  auto generic_factory = [factory = std::move(factory),
+                          this](net::socket handle) -> manager_base_ptr {
+    return factory(handle, this);
+  };
+  add(util::make_intrusive<acceptor>(accept_socket, this,
+                                     std::move(generic_factory)),
+      operation::read);
+
+  return util::none;
 }
 
 using std::chrono::milliseconds;
@@ -65,7 +98,6 @@ void epoll_multiplexer::add(manager_base_ptr mgr, operation initial) {
   }
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
   managers_.emplace(mgr->handle().id, mgr);
-  // TODO: This should probably return an error instead of calling handle_error
   if (auto err = mgr->init(*cfg_)) {
     handle_error(err);
   }
@@ -161,12 +193,12 @@ util::error epoll_multiplexer::poll_once(bool blocking) {
 }
 
 void epoll_multiplexer::handle_events(event_span events) {
-  auto handle_result = [&](manager_base_ptr& mgr, event_result res,
+  auto handle_result = [&](manager_base& mgr, event_result res,
                            operation op) -> bool {
     if (res == event_result::done) {
-      disable(*mgr, op, true);
+      disable(mgr, op, true);
     } else if (res == event_result::error) {
-      del(mgr->handle());
+      del(mgr.handle());
       return false;
     }
     return true;
@@ -179,16 +211,16 @@ void epoll_multiplexer::handle_events(event_span events) {
       del(socket{event.data.fd});
       continue;
     } else {
-      auto& mgr = managers_[event.data.fd];
+      auto& mgr = static_cast<event_handler&>(*managers_[event.data.fd]);
       // Handle possible read event
       if ((event.events & EPOLLIN) == EPOLLIN) {
-        if (!handle_result(mgr, mgr->handle_read_event(), operation::read)) {
+        if (!handle_result(mgr, mgr.handle_read_event(), operation::read)) {
           continue;
         }
       }
       // Handle possible write event
       if ((event.events & EPOLLOUT) == EPOLLOUT) {
-        if (!handle_result(mgr, mgr->handle_write_event(), operation::write)) {
+        if (!handle_result(mgr, mgr.handle_write_event(), operation::read)) {
           continue;
         }
       }

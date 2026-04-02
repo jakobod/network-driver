@@ -6,10 +6,11 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/manager_base.hpp"
+#include "net/detail/manager_base.hpp"
+
+#include "net/detail/multiplexer_base.hpp"
 
 #include "net/event_result.hpp"
-#include "net/multiplexer_base.hpp"
 
 #include "util/error.hpp"
 #include "util/logger.hpp"
@@ -18,7 +19,7 @@
 #include <memory>
 #include <sys/socket.h>
 
-namespace net {
+namespace net::detail {
 
 manager_base::manager_base(socket handle, multiplexer_base* mpx)
   : handle_{handle}, mpx_{mpx} {
@@ -79,16 +80,6 @@ void manager_base::register_writing() {
   }
 }
 
-event_result manager_base::handle_read_event() {
-  LOG_ERROR("Default implementation, should never be called");
-  return event_result::error;
-}
-
-event_result manager_base::handle_write_event() {
-  LOG_ERROR("Default implementation, should never be called");
-  return event_result::error;
-}
-
 uint64_t manager_base::set_timeout_in(std::chrono::steady_clock::duration in) {
   const auto when = std::chrono::steady_clock::now() + in;
   return set_timeout_at(when);
@@ -96,7 +87,7 @@ uint64_t manager_base::set_timeout_in(std::chrono::steady_clock::duration in) {
 
 uint64_t
 manager_base::set_timeout_at(std::chrono::steady_clock::time_point when) {
-  return mpx()->set_timeout(this, when);
+  return mpx()->set_timeout(*this, when);
 }
 
 event_result manager_base::handle_timeout(uint64_t) {
@@ -104,4 +95,4 @@ event_result manager_base::handle_timeout(uint64_t) {
   return event_result::error;
 }
 
-} // namespace net
+} // namespace net::detail

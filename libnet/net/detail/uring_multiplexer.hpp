@@ -1,91 +1,86 @@
-// /**
-//  *  @author    Jakob Otto
-//  *  @file      multiplexer_impl.hpp
-//  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
-//  *             This file is part of the network-driver project, released
-//  under
-//  *             the GNU GPL3 License.
-//  */
+/**
+ *  @author    Jakob Otto
+ *  @file      multiplexer_impl.hpp
+ *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
+ *             This file is part of the network-driver project, released
+ under
+ *             the GNU GPL3 License.
+ */
 
-// #pragma once
+#pragma once
 
-// #if !defined(__linux__)
-// #  error "uring multiplexer is only usable on Linux"
-// #else
+#if !defined(__linux__)
+#  error "uring multiplexer is only usable on Linux"
+#elif !defined(LIB_NET_URING)
+#  error "uring support not enabled"
+#else
 
-// #  include "net/fwd.hpp"
-// #  include "util/fwd.hpp"
+#  include "net/fwd.hpp"
+#  include "util/fwd.hpp"
 
-// #  include "net/multiplexer_base.hpp"
+#  include "net/detail/multiplexer_base.hpp"
+#  include "net/detail/uring_manager.hpp"
 
-// #  include "net/acceptor.hpp"
+#  include <array>
+#  include <cstdint>
+#  include <functional>
+#  include <span>
+#  include <vector>
 
-// #  include <array>
-// #  include <cstdint>
-// #  include <span>
-// #  include <vector>
+#  include <liburing.h>
 
-// #  include <liburing.h>
+namespace net::detail {
 
-// namespace net::uring {
+/// Implements a multiplexing backend for handling event multiplexing facilities
+/// such as epoll and kqueue.
+class uring_multiplexer : public multiplexer_base {
+  static constexpr std::size_t max_uring_depth = 32;
 
-// /// Implements a multiplexing backend for handling event multiplexing
-// facilities
-// /// such as epoll and kqueue.
-// class multiplexer : public multiplexer_base {
-//   static constexpr std::size_t max_uring_depth = 32;
+public:
+  using manager_factory
+    = std::function<uring_manager_ptr(net::socket, uring_multiplexer*)>;
 
-// public:
-//   // -- constructors, destructors
-//   ----------------------------------------------
+  // -- constructors, destructors ----------------------------------------------
 
-//   multiplexer() = default;
+  uring_multiplexer() = default;
 
-//   virtual ~multiplexer();
+  virtual ~uring_multiplexer();
 
-//   /// Initializes the multiplexer.
-//   util::error init(acceptor::factory_type factory, const util::config& cfg);
+  /// Initializes the multiplexer.
+  util::error init(manager_factory factory, const util::config& cfg);
 
-//   // -- Interface functions
-//   ----------------------------------------------------
+  // -- Interface function -----------------------------------------------------
 
-//   void add(manager_base_ptr mgr, operation initial) override;
+  void add(manager_base_ptr mgr, operation initial) override;
 
-//   /// Enables an operation `op` for socket manager `mgr`.
-//   void enable(manager_base& mgr, operation op) override;
+private:
+  /// Deletes an existing socket_manager using an iterator `it` to the
+  /// manager_map.
+  manager_map::iterator del(manager_map::iterator it) override;
 
-//   /// Disables an operation `op` for socket manager `mgr`.
-//   /// If `mgr` is not registered for any operation after disabling it, it is
-//   /// removed if `remove` is set.
-//   void disable(manager_base& mgr, operation op, bool remove) override;
+  /// Enables an operation `op` for socket manager `mgr`.
+  void enable(manager_base& mgr, operation op) override;
 
-//   /// Main multiplexing loop.
-//   util::error poll_once(bool blocking) override;
+  /// Disables an operation `op` for socket manager `mgr`.
+  /// If `mgr` is not registered for any operation after disabling it, it is
+  /// removed if `remove` is set.
+  void disable(manager_base& mgr, operation op, bool remove) override;
 
-// private:
-//   /// Handles all IO-events that occurred.
-//   void handle_events(event_span events);
+  /// Main multiplexing loop.
+  util::error poll_once(bool blocking) override;
 
-//   /// Deletes an existing socket_manager using its key `handle`.
-//   void del(socket handle);
+  void handle_events();
 
-//   /// Deletes an existing socket_manager using an iterator `it` to the
-//   /// manager_map.
-//   manager_map::iterator del(manager_map::iterator it) override;
+  // Multiplexing variables
+  io_uring uring_;
+};
 
-//   /// Modifies the epollset for existing fds.
-//   void mod(int fd, int op, operation events);
+using uring_multiplexer_ptr = std::shared_ptr<uring_multiplexer>;
 
-//   // Multiplexing variables
-//   io_uring uring;
-// };
+util::error_or<uring_multiplexer_ptr>
+make_uring_multiplexer(uring_multiplexer::manager_factory factory,
+                       const util::config& cfg);
 
-// using multiplexer_ptr = std::shared_ptr<multiplexer>;
+} // namespace net::detail
 
-// util::error_or<multiplexer_ptr> make_multiplexer(acceptor::factory_type
-// factory,
-//                                                  const util::config& cfg);
-
-// } // namespace net::uring
-
-// #endif
+#endif

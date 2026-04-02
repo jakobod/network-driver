@@ -19,7 +19,8 @@
 #include "net/socket/stream_socket.hpp"
 
 #include "net/event_result.hpp"
-#include "net/manager_base.hpp"
+
+#include "net/detail/event_handler.hpp"
 
 #include <cstdlib>
 #include <string>
@@ -28,13 +29,11 @@ using namespace std::string_literals;
 
 namespace {
 
-struct dummy_manager : public net::manager_base {
-  dummy_manager(net::socket handle, net::multiplexer_base* mpx)
-    : net::manager_base(handle, mpx) {
+struct dummy_manager : public net::detail::event_handler {
+  dummy_manager(net::socket handle, net::detail::multiplexer_base* mpx)
+    : net::detail::event_handler(handle, mpx) {
     // nop
   }
-
-  util::error init(const util::config&) override { return util::none; }
 
   net::event_result handle_read_event() override {
     register_writing();
@@ -53,10 +52,6 @@ struct dummy_manager : public net::manager_base {
     return (num_bytes_ == 0) ? net::event_result::done : net::event_result::ok;
   }
 
-  net::event_result handle_timeout(uint64_t) override {
-    return net::event_result::ok;
-  }
-
 private:
   util::byte_array<1024> buf_;
   std::size_t num_bytes_{0};
@@ -72,7 +67,7 @@ int main(int, const char**) {
   //   // LOG_ERROR(err.what());
   // }
   LOG_INIT(cfg);
-  auto factory = [](net::socket handle, net::multiplexer_base* mpx) {
+  auto factory = [](net::socket handle, net::detail::multiplexer_base* mpx) {
     return util::make_intrusive<dummy_manager>(handle, mpx);
   };
   auto res = net::make_multiplexer(std::move(factory), cfg);

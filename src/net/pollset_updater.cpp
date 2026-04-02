@@ -6,9 +6,9 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/pollset_updater.hpp"
+#include "net/detail/pollset_updater.hpp"
 
-#include "net/multiplexer_base.hpp"
+#include "net/detail/multiplexer_base.hpp"
 
 #include "net/event_result.hpp"
 #include "net/socket/pipe_socket.hpp"
@@ -32,10 +32,10 @@ util::error read_from_pipe(net::pipe_socket handle, T& t) {
 
 } // namespace
 
-namespace net {
+namespace net::detail {
 
 pollset_updater::pollset_updater(pipe_socket handle, multiplexer_base* mpx)
-  : manager_base(handle, mpx) {
+  : event_handler{handle, mpx} {
   LOG_TRACE();
 }
 
@@ -43,13 +43,13 @@ pollset_updater::pollset_updater(pipe_socket handle, multiplexer_base* mpx)
 
 event_result pollset_updater::handle_read_event() {
   LOG_TRACE();
-  opcode code;
+  opcode code = opcode::none;
   if (auto err = read_from_pipe(handle<pipe_socket>(), code)) {
     return event_result::ok;
   }
   switch (code) {
-    case add_code: {
-      manager_base* mgr_ptr = nullptr;
+    case opcode::add: {
+      event_handler* mgr_ptr = nullptr;
       operation op;
       if (auto err = read_from_pipe(handle<pipe_socket>(), mgr_ptr)) {
         return event_result::ok;
@@ -62,7 +62,7 @@ event_result pollset_updater::handle_read_event() {
       mpx()->add(util::make_intrusive(mgr_ptr, false), op);
       break;
     }
-    case shutdown_code:
+    case opcode::shutdown:
       LOG_DEBUG("Received shutdown_code");
       mpx()->shutdown();
       return event_result::done;
@@ -73,4 +73,4 @@ event_result pollset_updater::handle_read_event() {
   return event_result::ok;
 }
 
-} // namespace net
+} // namespace net::detail

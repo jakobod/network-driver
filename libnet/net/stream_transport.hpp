@@ -10,11 +10,12 @@
 
 #include "net/fwd.hpp"
 
+#include "net/transport.hpp"
+
+#include "net/detail/multiplexer_base.hpp"
 #include "net/event_result.hpp"
-#include "net/multiplexer_base.hpp"
 #include "net/receive_policy.hpp"
 #include "net/socket/stream_socket.hpp"
-#include "net/transport.hpp"
 
 #include "util/config.hpp"
 #include "util/error.hpp"
@@ -30,7 +31,8 @@ template <class NextLayer>
 class stream_transport : public transport {
 public:
   template <class... Ts>
-  stream_transport(stream_socket handle, multiplexer_base* mpx, Ts&&... xs)
+  stream_transport(stream_socket handle, detail::multiplexer_base* mpx,
+                   Ts&&... xs)
     : transport(handle, mpx), next_layer_(*this, std::forward<Ts>(xs)...) {
     LOG_DEBUG("Creating stream_transport with ", NET_ARG2("id", handle.id));
   }
@@ -74,9 +76,6 @@ public:
         return event_result::error;
       } else if (read_res < 0) {
         if (!last_socket_error_is_temporary()) {
-          mpx()->handle_error(util::error(
-            util::error_code::socket_operation_failed,
-            "[socket_manager.read()] " + last_socket_error_as_string()));
           return event_result::error;
         }
         return event_result::ok;
@@ -120,10 +119,6 @@ public:
         if (last_socket_error_is_temporary()) {
           return event_result::ok;
         } else {
-          mpx()->handle_error(
-            {util::error_code::socket_operation_failed,
-             util::format("[stream::write()] errno = {0}: {1}", errno,
-                          last_socket_error_as_string())});
           return event_result::error;
         }
       }

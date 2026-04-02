@@ -58,13 +58,14 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 # New source files have to be added here
 set(LIB_NET_SOURCES
   src/net/acceptor.cpp
-  src/net/event_result.cpp 
-  src/net/manager_base.cpp
+  src/net/event_result.cpp   
   src/net/multiplexer.cpp
-  src/net/multiplexer_base.cpp
   src/net/operation.cpp
   src/net/pollset_updater.cpp
   src/net/uri.cpp
+
+  src/net/detail/manager_base.cpp
+  src/net/detail/multiplexer_base.cpp
 
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
@@ -95,6 +96,7 @@ if(APPLE)
 elseif(UNIX)
   list(APPEND LIB_NET_SOURCES src/net/detail/epoll_multiplexer.cpp)
   list(APPEND LIB_NET_SOURCES src/net/detail/uring_multiplexer.cpp)
+  list(APPEND LIB_NET_SOURCES src/net/detail/uring_manager.cpp)
 endif()
 
 
@@ -107,6 +109,7 @@ target_link_libraries(net Threads::Threads)
 
 if(LIB_NET_ENABLE_URING)
   target_link_libraries(net IoUring::IoUring)
+  add_compile_definitions(LIB_NET_URING)
 endif()
 
 # Copy Dummy certs to build folder and set preprocessor definition to the folder

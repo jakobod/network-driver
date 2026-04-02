@@ -10,7 +10,7 @@
 
 #include "net/fwd.hpp"
 
-#include "net/manager_base.hpp"
+#include "net/detail/event_handler.hpp"
 
 #include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
@@ -21,9 +21,10 @@
 namespace net {
 
 /// Implements a generic transport for use as pointer in the stack.
-class transport : public manager_base {
+class transport : public detail::event_handler {
 public:
-  transport(socket handle, multiplexer_base* mpx) : manager_base{handle, mpx} {
+  transport(socket handle, detail::multiplexer_base* mpx)
+    : detail::event_handler{handle, mpx} {
     // nop
   }
 

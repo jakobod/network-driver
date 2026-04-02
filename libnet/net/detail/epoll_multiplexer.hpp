@@ -15,24 +15,12 @@
 #  include "net/fwd.hpp"
 #  include "util/fwd.hpp"
 
-#  include "net/acceptor.hpp"
-#  include "net/multiplexer_base.hpp"
-#  include "net/timeout_entry.hpp"
-
-#  include "net/socket/pipe_socket.hpp"
-
-#  include "util/binary_serializer.hpp"
-#  include "util/byte_buffer.hpp"
+#  include "net/detail/event_handler.hpp"
+#  include "net/detail/multiplexer_base.hpp"
 
 #  include <array>
-#  include <chrono>
 #  include <cstdint>
-#  include <optional>
-#  include <set>
 #  include <span>
-#  include <thread>
-#  include <unordered_map>
-#  include <variant>
 #  include <vector>
 
 #  include <sys/epoll.h>
@@ -42,8 +30,13 @@ namespace net::detail {
 /// Implements a multiplexing backend for handling event multiplexing facilities
 /// such as epoll and kqueue.
 class epoll_multiplexer : public multiplexer_base {
+public:
   static constexpr std::size_t max_events = 32;
 
+  using manager_factory
+    = std::function<event_handler_ptr(net::socket, multiplexer_base*)>;
+
+private:
   using event_type = epoll_event;
   using mpx_fd = int;
 
@@ -58,6 +51,11 @@ public:
   epoll_multiplexer() = default;
 
   virtual ~epoll_multiplexer();
+
+  epoll_multiplexer(const epoll_multiplexer& other) = default;
+  epoll_multiplexer(epoll_multiplexer&& other) noexcept = default;
+  epoll_multiplexer& operator=(const epoll_multiplexer& other) = default;
+  epoll_multiplexer& operator=(epoll_multiplexer&& other) noexcept = default;
 
   /// Initializes the epoll_multiplexer.
   util::error init(manager_factory factory, const util::config& cfg);

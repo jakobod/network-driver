@@ -12,7 +12,6 @@
 #include "net/ip/v4_endpoint.hpp"
 
 #include "net/event_result.hpp"
-#include "net/manager_base.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket/stream_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
@@ -44,10 +43,10 @@ struct test_state {
   bool reset_timeouts{false};
 };
 
-struct dummy_socket_manager : public manager_base {
-  dummy_socket_manager(net::socket handle, multiplexer_base* mpx,
+struct dummy_socket_manager : public detail::event_handler {
+  dummy_socket_manager(net::socket handle, detail::multiplexer_base* mpx,
                        test_state& state)
-    : manager_base(handle, mpx), state_{state} {
+    : detail::event_handler(handle, mpx), state_{state} {
     // nop
   }
 
@@ -84,7 +83,7 @@ private:
 
 struct multiplexer_test : public testing::Test {
   multiplexer_test() {
-    auto factory = [this](net::socket handle, multiplexer_base* mpx) {
+    auto factory = [this](net::socket handle, detail::multiplexer_base* mpx) {
       return util::make_intrusive<dummy_socket_manager>(handle, mpx, state);
     };
     EXPECT_EQ(mpx.init(std::move(factory), util::config{}), util::none);

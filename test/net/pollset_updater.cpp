@@ -6,11 +6,9 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/pollset_updater.hpp"
+#include "net/detail/pollset_updater.hpp"
 
 #include "net/event_result.hpp"
-#include "net/manager_base.hpp"
-#include "net/multiplexer_base.hpp"
 #include "net/operation.hpp"
 #include "net/socket/pipe_socket.hpp"
 
@@ -30,9 +28,9 @@ namespace {
 struct dummy_multiplexer : public multiplexer_mock {
   void handle_error(const util::error& err) override { last_error = err; }
 
-  void add(manager_base_ptr mgr, operation initial) override {
+  void add(detail::manager_base_ptr mgr, operation initial) override {
     add_called = true;
-    last_manager = mgr.get();
+    last_manager = std::move(mgr);
     initial_operation = initial;
   }
 
@@ -42,7 +40,7 @@ struct dummy_multiplexer : public multiplexer_mock {
   bool shutdown_called{false};
   bool add_called{false};
   operation initial_operation{operation::none};
-  manager_base* last_manager{nullptr};
+  detail::manager_base_ptr last_manager;
 };
 
 struct pollset_updater_test : public ::testing::Test {
@@ -70,40 +68,43 @@ struct pollset_updater_test : public ::testing::Test {
 } // namespace
 
 TEST_F(pollset_updater_test, init) {
-  pollset_updater updater{pipe_reader, &mpx};
+  detail::pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
 }
 
 TEST_F(pollset_updater_test, handle_shutdown) {
-  pollset_updater updater{pipe_reader, &mpx};
+  detail::pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
-  write_to_pipe(pollset_updater::shutdown_code);
+  write_to_pipe(detail::pollset_updater::opcode::shutdown);
   updater.handle_read_event();
   EXPECT_EQ(mpx.last_error, util::none);
   EXPECT_TRUE(mpx.shutdown_called);
 }
 
 TEST_F(pollset_updater_test, handle_add) {
-  pollset_updater updater{pipe_reader, &mpx};
+  detail::pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
-  auto mgr = util::make_intrusive<manager_base>(invalid_socket, &mpx);
+  auto mgr = util::make_intrusive<detail::event_handler>(invalid_socket, &mpx);
   mgr->ref();
   EXPECT_EQ(mgr->ref_count(), 2);
-  write_to_pipe(pollset_updater::add_code, mgr.get(), operation::read);
+  write_to_pipe(detail::pollset_updater::opcode::add, mgr.get(),
+                operation::read);
   updater.handle_read_event();
-  EXPECT_EQ(mgr->ref_count(), 1);
+  EXPECT_EQ(mgr->ref_count(), 2);
   EXPECT_EQ(mpx.last_error, util::none);
   EXPECT_TRUE(mpx.add_called);
-  EXPECT_EQ(mpx.last_manager, mgr.get());
+  EXPECT_EQ(mpx.last_manager, mgr);
+  mpx.last_manager.reset();
+  EXPECT_EQ(mgr->ref_count(), 1);
   EXPECT_EQ(mpx.initial_operation, operation::read);
 }
 
 TEST_F(pollset_updater_test, handle_write_event) {
-  pollset_updater updater{pipe_reader, &mpx};
+  detail::pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.handle_write_event(), event_result::error);
 }
 
 TEST_F(pollset_updater_test, handle_timeout) {
-  pollset_updater updater{pipe_reader, &mpx};
+  detail::pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.handle_timeout(42), event_result::error);
 }

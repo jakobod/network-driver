@@ -6,10 +6,9 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/acceptor.hpp"
+#include "net/detail/acceptor.hpp"
 
 #include "net/event_result.hpp"
-#include "net/manager_base.hpp"
 #include "net/operation.hpp"
 
 #include "net/ip/v4_address.hpp"
@@ -30,14 +29,14 @@ using namespace net::ip;
 namespace {
 
 struct dummy_multiplexer : public multiplexer_mock {
-  void add(manager_base_ptr new_mgr, operation) override {
+  void add(detail::manager_base_ptr new_mgr, operation) override {
     mgr = std::move(new_mgr);
   }
 
   void handle_error(const util::error& err) override { last_error = err; }
 
   util::error last_error;
-  manager_base_ptr mgr{nullptr};
+  detail::manager_base_ptr mgr;
 };
 
 struct acceptor_test : public testing::Test {
@@ -45,16 +44,18 @@ struct acceptor_test : public testing::Test {
     auto res = make_tcp_accept_socket({net::ip::v4_address::localhost, 0});
     EXPECT_EQ(util::get_error(res), nullptr);
     auto sock_pair = std::get<acceptor_pair>(res);
-    auto factory = [this](net::socket hdl, multiplexer_base* mpx) {
+    auto factory = [this](net::socket handle) -> detail::manager_base_ptr {
       factory_called = true;
-      return util::make_intrusive<manager_base>(hdl, mpx);
+      return util::make_intrusive<detail::event_handler>(handle, &mpx);
     };
-    acc = std::make_unique<acceptor>(sock_pair.first, &mpx, std::move(factory));
+
+    acc = std::make_unique<detail::acceptor>(sock_pair.first, &mpx,
+                                             std::move(factory));
     port = sock_pair.second;
   }
 
   dummy_multiplexer mpx;
-  std::unique_ptr<acceptor> acc;
+  std::unique_ptr<detail::acceptor> acc;
   uint16_t port{0};
 
   // Test check flags

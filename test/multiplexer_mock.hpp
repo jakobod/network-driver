@@ -6,15 +6,14 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/manager_base.hpp"
-#include "net/multiplexer_base.hpp"
+#include "net/detail/multiplexer_base.hpp"
 
 #include "util/error.hpp"
 
 #include <gtest/gtest.h>
 
-struct multiplexer_mock : public net::multiplexer_base {
-  void add(net::manager_base_ptr, net::operation) override {}
+struct multiplexer_mock : public net::detail::multiplexer_base {
+  void add(net::detail::manager_base_ptr, net::operation) override {}
 
 private:
   virtual manager_map::iterator del(manager_map::iterator it) override {
@@ -22,9 +21,9 @@ private:
   }
 
 public:
-  void enable(net::manager_base&, net::operation) override {}
+  void enable(net::detail::manager_base&, net::operation) override {}
 
-  void disable(net::manager_base&, net::operation, bool) override {}
+  void disable(net::detail::manager_base&, net::operation, bool) override {}
 
   util::error poll_once(bool) override { return util::none; }
 

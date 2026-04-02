@@ -13,8 +13,10 @@
 
 #if defined(__linux__)
 #  include "net/detail/epoll_multiplexer.hpp"
+#  define LIB_NET_EPOLL
 #elif defined(__APPLE__)
 #  include "net/detail/kqueue_multiplexer.hpp"
+#  define LIB_NET_KQUEUE
 #endif
 
 namespace net {
@@ -27,7 +29,7 @@ using multiplexer = ::net::detail::kqueue_multiplexer;
 
 using multiplexer_ptr = std::shared_ptr<multiplexer>;
 
-util::error_or<multiplexer_ptr> make_multiplexer(manager_factory factory,
-                                                 const util::config& cfg);
+util::error_or<multiplexer_ptr>
+make_multiplexer(multiplexer::manager_factory factory, const util::config& cfg);
 
 } // namespace net

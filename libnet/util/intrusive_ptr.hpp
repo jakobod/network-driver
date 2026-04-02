@@ -19,9 +19,7 @@ class intrusive_ptr {
 public:
   // -- Constructors -----------------------------------------------------------
 
-  constexpr intrusive_ptr() noexcept : ptr_(nullptr) {
-    // nop
-  }
+  constexpr intrusive_ptr() noexcept = default;
 
   constexpr intrusive_ptr(std::nullptr_t) noexcept : intrusive_ptr() {
     // nop
@@ -107,7 +105,7 @@ private:
     }
   }
 
-  T* ptr_;
+  T* ptr_{nullptr};
 };
 
 // -- Convenience functions to create intrusive_ptrs ---------------------------
@@ -125,44 +123,64 @@ intrusive_ptr<T> make_intrusive(T* raw_ptr, bool add_ref = true) {
 // -- Raw pointer comparisons --------------------------------------------------
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator==(const intrusive_ptr<T>& a, const T* b) {
+bool operator==(const util::intrusive_ptr<T>& a, const T* b) {
   return a.get() == b;
 }
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator==(const T* a, const intrusive_ptr<T>& b) {
+bool operator==(const T* a, const util::intrusive_ptr<T>& b) {
   return a == b.get();
 }
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator!=(const intrusive_ptr<T>& a, const T* b) {
+bool operator!=(const util::intrusive_ptr<T>& a, const T* b) {
   return a.get() != b;
 }
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator!=(const T* a, const intrusive_ptr<T>& b) {
+bool operator!=(const T* a, const util::intrusive_ptr<T>& b) {
   return a != b.get();
+}
+
+// -- intrusive_ptr-to-intrusive_ptr comparisons -------------------------------
+
+template <meta::derived_from<util::ref_counted> T,
+          meta::derived_from<util::ref_counted> U>
+bool operator==(const util::intrusive_ptr<T>& a,
+                const util::intrusive_ptr<U>& b) {
+  return a.get() == b.get();
+}
+
+template <meta::derived_from<util::ref_counted> T,
+          meta::derived_from<util::ref_counted> U>
+bool operator!=(const util::intrusive_ptr<T>& a,
+                const util::intrusive_ptr<U>& b) {
+  return a.get() != b.get();
 }
 
 // -- nullptr comparisons ------------------------------------------------------
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator==(const intrusive_ptr<T>& ptr, std::nullptr_t) {
+constexpr bool
+operator==(const util::intrusive_ptr<T>& ptr, std::nullptr_t) noexcept {
   return !ptr;
 }
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator==(std::nullptr_t, const intrusive_ptr<T>& ptr) {
+constexpr bool
+operator==(std::nullptr_t, const util::intrusive_ptr<T>& ptr) noexcept {
   return !ptr;
 }
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator!=(const intrusive_ptr<T>& ptr, std::nullptr_t) {
+constexpr bool
+operator!=(const util::intrusive_ptr<T>& ptr, std::nullptr_t) noexcept {
   return static_cast<bool>(ptr);
 }
 
 template <meta::derived_from<util::ref_counted> T>
-bool operator!=(std::nullptr_t, const intrusive_ptr<T>& ptr) {
+constexpr bool
+operator!=(std::nullptr_t, const util::intrusive_ptr<T>& ptr) noexcept {
   return static_cast<bool>(ptr);
 }
 

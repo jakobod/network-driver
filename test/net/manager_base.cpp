@@ -6,7 +6,8 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/manager_base.hpp"
+#include "net/detail/manager_base.hpp"
+
 #include "net/event_result.hpp"
 #include "net/socket/stream_socket.hpp"
 
@@ -45,7 +46,7 @@ struct manager_base_test : public testing::Test {
 
 TEST_F(manager_base_test, construction_and_destruction) {
   {
-    const manager_base mgr{sockets.first, &mpx};
+    const detail::manager_base mgr{sockets.first, &mpx};
     EXPECT_EQ(mgr.mpx(), &mpx);
     EXPECT_EQ(mgr.handle(), sockets.first);
     EXPECT_EQ(mgr.mask(), operation::none);
@@ -56,18 +57,18 @@ TEST_F(manager_base_test, construction_and_destruction) {
 
 TEST_F(manager_base_test, move_operations) {
   {
-    manager_base mgr{sockets.first, &mpx};
+    detail::manager_base mgr{sockets.first, &mpx};
     mgr.mask_set(operation::read_write);
-    manager_base other{std::move(mgr)};
+    detail::manager_base other{std::move(mgr)};
     EXPECT_EQ(other.handle(), sockets.first);
     EXPECT_EQ(other.mpx(), &mpx);
     EXPECT_EQ(other.mask(), operation::read_write);
     EXPECT_EQ(mgr.handle(), invalid_socket);
   }
   {
-    manager_base mgr{sockets.first, &mpx};
+    detail::manager_base mgr{sockets.first, &mpx};
     mgr.mask_set(operation::read_write);
-    manager_base other = std::move(mgr);
+    detail::manager_base other = std::move(mgr);
     EXPECT_EQ(other.handle(), sockets.first);
     EXPECT_EQ(other.mpx(), &mpx);
     EXPECT_EQ(other.mask(), operation::read_write);
@@ -78,7 +79,7 @@ TEST_F(manager_base_test, move_operations) {
 TEST_F(manager_base_test, mask_operations) {
   {
     // Add single operations
-    manager_base mgr{sockets.first, &mpx};
+    detail::manager_base mgr{sockets.first, &mpx};
     EXPECT_EQ(mgr.mask(), operation::none);
     EXPECT_TRUE(mgr.mask_add(operation::read));
     EXPECT_EQ(mgr.mask(), operation::read);
@@ -92,7 +93,7 @@ TEST_F(manager_base_test, mask_operations) {
 
   {
     // Add multiple operations
-    manager_base mgr{sockets.first, &mpx};
+    detail::manager_base mgr{sockets.first, &mpx};
     EXPECT_TRUE(mgr.mask_add(operation::read_write));
     EXPECT_EQ(mgr.mask(), operation::read_write);
     EXPECT_TRUE(mgr.mask_del(operation::read_write));
@@ -101,7 +102,7 @@ TEST_F(manager_base_test, mask_operations) {
 
   {
     // Add partial
-    manager_base mgr{sockets.first, &mpx};
+    detail::manager_base mgr{sockets.first, &mpx};
     EXPECT_TRUE(mgr.mask_add(operation::read));
     EXPECT_EQ(mgr.mask(), operation::read);
     EXPECT_TRUE(mgr.mask_add(operation::read_write));
@@ -110,7 +111,7 @@ TEST_F(manager_base_test, mask_operations) {
 
   {
     // Delete more than set
-    manager_base mgr{sockets.first, &mpx};
+    detail::manager_base mgr{sockets.first, &mpx};
     EXPECT_FALSE(mgr.mask_del(operation::read));
     EXPECT_EQ(mgr.mask(), operation::none);
     mgr.mask_set(operation::write);
@@ -119,11 +120,9 @@ TEST_F(manager_base_test, mask_operations) {
   }
 }
 
-TEST_F(manager_base_test, event_handling) {
+TEST_F(manager_base_test, timeout_handling) {
   {
-    manager_base mgr{sockets.first, &mpx};
-    EXPECT_EQ(mgr.handle_read_event(), event_result::error);
-    EXPECT_EQ(mgr.handle_write_event(), event_result::error);
+    detail::manager_base mgr{sockets.first, &mpx};
     EXPECT_EQ(mgr.handle_timeout(0), event_result::error);
   }
 }

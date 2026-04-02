@@ -11,8 +11,8 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#include "net/acceptor.hpp"
-#include "net/manager_base.hpp"
+#include "net/detail/manager_base.hpp"
+
 #include "net/operation.hpp"
 #include "net/socket/pipe_socket.hpp"
 #include "net/socket/socket_id.hpp"
@@ -22,13 +22,16 @@
 #include "util/byte_buffer.hpp"
 
 #include <chrono>
+#include <functional>
 #include <set>
 #include <thread>
 #include <unordered_map>
 
-namespace net {
+namespace net::detail {
 
 class multiplexer_base {
+  friend class manager_base;
+
 protected:
   using manager_map = std::unordered_map<socket_id, manager_base_ptr>;
 
@@ -44,8 +47,13 @@ public:
 
   virtual ~multiplexer_base() = default;
 
+  multiplexer_base(const multiplexer_base& other) = default;
+  multiplexer_base(multiplexer_base&& other) noexcept = default;
+  multiplexer_base& operator=(const multiplexer_base& other) = default;
+  multiplexer_base& operator=(multiplexer_base&& other) noexcept = default;
+
   /// Initializes the multiplexer_base.
-  util::error init(manager_factory factory, const util::config& cfg);
+  util::error init(const util::config& cfg);
 
   // -- Thread functions -------------------------------------------------------
 
@@ -83,7 +91,6 @@ private:
   /// manager_map.
   virtual manager_map::iterator del(manager_map::iterator it) = 0;
 
-public:
   /// Enables an operation `op` for socket manager `mgr`.
   virtual void enable(manager_base& mgr, operation op) = 0;
 
@@ -97,16 +104,16 @@ public:
 
   // -- Timeout management -----------------------------------------------------
 
-  std::uint64_t set_timeout(manager_base_ptr mgr,
+  std::uint64_t set_timeout(manager_base& mgr,
                             std::chrono::steady_clock::time_point when);
 
+protected:
   void handle_timeouts();
 
   // -- Error handling ---------------------------------------------------------
 
   virtual void handle_error(const util::error& err);
 
-protected:
   bool is_multiplexer_thread() {
     return (std::this_thread::get_id() == mpx_thread_id_);
   }
@@ -143,4 +150,4 @@ protected:
   std::uint64_t current_timeout_id_{0};
 };
 
-} // namespace net
+} // namespace net::detail

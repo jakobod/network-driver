@@ -11,35 +11,39 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#include "net/manager_base.hpp"
-
-#include "net/event_result.hpp"
+#include "net/detail/event_handler.hpp"
 
 #include <cstdint>
 
-namespace net {
+namespace net::detail {
 
 /// Manages the pollset of the multiplexer implementation. Handles adding,
 /// enabling, disabling, and shutting down the multiplexer in a thread-safe
 /// manner.
-class pollset_updater : public manager_base {
+class pollset_updater : public event_handler {
 public:
   // -- member types -----------------------------------------------------------
 
   /// Type for the opcodes used by this pollset_updater
-  using opcode = std::uint8_t;
-
-  // -- constants --------------------------------------------------------------
-
-  /// Opcode for adding a socket_manager to the pollset.
-  static constexpr const opcode add_code = 0x00;
-  /// Opcode for triggering a shutdown of the multiplexer.
-  static constexpr const opcode shutdown_code = 0x01;
+  enum class opcode : std::uint8_t {
+    none = 0x00,
+    /// Opcode for adding a socket_manager to the pollset.
+    add = 0x01,
+    /// Opcode for triggering a shutdown of the multiplexer.
+    shutdown = 0x02,
+  };
 
   // -- constructors, destructors, and assignment operators --------------------
 
   /// Constructs a pollset updater
-  pollset_updater(net::pipe_socket read_handle, multiplexer_base* parent);
+  pollset_updater(net::pipe_socket handle, multiplexer_base* mpx);
+
+  virtual ~pollset_updater() = default;
+
+  pollset_updater(const pollset_updater& other) = default;
+  pollset_updater(pollset_updater&& other) noexcept = default;
+  pollset_updater& operator=(const pollset_updater& other) = default;
+  pollset_updater& operator=(pollset_updater&& other) noexcept = default;
 
   // -- interface functions ----------------------------------------------------
 
@@ -47,4 +51,4 @@ public:
   event_result handle_read_event() override;
 };
 
-} // namespace net
+} // namespace net::detail

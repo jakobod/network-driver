@@ -6,9 +6,10 @@
  *             the GNU GPL3 License.
  */
 
-#include "net/multiplexer_base.hpp"
+#include "net/detail/multiplexer_base.hpp"
 
-#include "net/pollset_updater.hpp"
+#include "net/detail/acceptor.hpp"
+#include "net/detail/pollset_updater.hpp"
 
 #include "net/socket/tcp_accept_socket.hpp"
 
@@ -19,10 +20,9 @@
 #include "util/error_or.hpp"
 #include "util/logger.hpp"
 
-namespace net {
+namespace net::detail {
 
-util::error multiplexer_base::init(manager_factory factory,
-                                   const util::config& cfg) {
+util::error multiplexer_base::init(const util::config& cfg) {
   LOG_TRACE();
   set_thread_id(std::this_thread::get_id());
   cfg_ = std::addressof(cfg);
@@ -35,19 +35,6 @@ util::error multiplexer_base::init(manager_factory factory,
   pipe_reader_ = pipe_fds.first;
   pipe_writer_ = pipe_fds.second;
   add(util::make_intrusive<pollset_updater>(pipe_reader_, this),
-      operation::read);
-  // Create Acceptor
-  auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
-    (cfg_->get_or("multiplexer.local", true) ? ip::v4_address::localhost
-                                             : ip::v4_address::any),
-    cfg_->get_or<std::int64_t>("multiplexer.port", 0)));
-  if (auto err = util::get_error(res)) {
-    return *err;
-  }
-  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
-  auto accept_socket = accept_socket_pair.first;
-  set_port(accept_socket_pair.second);
-  add(util::make_intrusive<acceptor>(accept_socket, this, std::move(factory)),
       operation::read);
   set_thread_id();
   return util::none;
@@ -100,7 +87,7 @@ void multiplexer_base::shutdown() {
     pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {
     LOG_DEBUG("requesting multiplexer shutdown");
-    auto res = write_to_pipe(pollset_updater::shutdown_code);
+    auto res = write_to_pipe(pollset_updater::opcode::shutdown);
     if (res != 1) {
       LOG_ERROR("could not write shutdown code to pipe: ",
                 last_socket_error_as_string());
@@ -129,12 +116,12 @@ void multiplexer_base::set_thread_id(std::thread::id tid) noexcept {
 // -- Timeout management -------------------------------------------------------
 
 std::uint64_t
-multiplexer_base::set_timeout(manager_base_ptr mgr,
+multiplexer_base::set_timeout(manager_base& mgr,
                               std::chrono::steady_clock::time_point when) {
   LOG_TRACE();
   LOG_DEBUG("Setting timeout ", current_timeout_id_, " on ",
-            NET_ARG2("mgr", mgr->handle().id));
-  timeouts_.emplace(mgr->handle().id, when, current_timeout_id_);
+            NET_ARG2("mgr", mgr.handle().id));
+  timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
   current_timeout_ = (current_timeout_ != std::nullopt)
                        ? std::min(when, *current_timeout_)
                        : when;
@@ -171,4 +158,4 @@ void multiplexer_base::handle_error([[maybe_unused]] const util::error& err) {
   shutdown();
 }
 
-} // namespace net
+} // namespace net::detail

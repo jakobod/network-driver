@@ -19,7 +19,7 @@
 
 #include <chrono>
 
-namespace net {
+namespace net::detail {
 
 /// Manages the lifetime of a socket and its events.
 class manager_base : public util::ref_counted {
@@ -35,16 +35,9 @@ public:
 
   // -- Move and assignment operations -----------------------------------------
 
-  /// Deleted copy constructor
   manager_base(const manager_base&) = delete;
-
-  /// Move constructor
   manager_base(manager_base&& mgr) noexcept;
-
-  /// Deleted copy assignment operator
   manager_base& operator=(const manager_base&) = delete;
-
-  /// Move assignment operator
   manager_base& operator=(manager_base&& other) noexcept;
 
   // -- properties -------------------------------------------------------------
@@ -56,7 +49,7 @@ public:
   }
 
   /// Returns a ptr to the multiplexer
-  template <class Multiplexer = multiplexer_base>
+  template <class Multiplexer = detail::multiplexer_base>
   Multiplexer* mpx() const noexcept {
     return static_cast<Multiplexer*>(mpx_);
   }
@@ -79,10 +72,6 @@ public:
 
   void register_writing();
 
-  virtual event_result handle_read_event();
-
-  virtual event_result handle_write_event();
-
   // -- Timeout handling -------------------------------------------------------
 
   uint64_t set_timeout_in(std::chrono::steady_clock::duration in);
@@ -102,4 +91,4 @@ private:
 
 using manager_base_ptr = util::intrusive_ptr<manager_base>;
 
-} // namespace net
+} // namespace net::detail
