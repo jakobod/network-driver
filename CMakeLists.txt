@@ -64,8 +64,12 @@ set(LIB_NET_SOURCES
   src/net/pollset_updater.cpp
   src/net/uri.cpp
 
+  src/net/detail/epoll_multiplexer.cpp
+  src/net/detail/kqueue_multiplexer.cpp
   src/net/detail/manager_base.cpp
   src/net/detail/multiplexer_base.cpp
+  src/net/detail/uring_manager.cpp
+  src/net/detail/uring_multiplexer.cpp
 
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
@@ -89,15 +93,6 @@ set(LIB_NET_SOURCES
   src/util/error.cpp
   src/util/format.cpp
 )
-
-# Platform-specific event multiplexer implementations
-if(APPLE)
-  list(APPEND LIB_NET_SOURCES src/net/detail/kqueue_multiplexer.cpp)
-elseif(UNIX)
-  list(APPEND LIB_NET_SOURCES src/net/detail/epoll_multiplexer.cpp)
-  list(APPEND LIB_NET_SOURCES src/net/detail/uring_multiplexer.cpp)
-  list(APPEND LIB_NET_SOURCES src/net/detail/uring_manager.cpp)
-endif()
 
 
 # -- Object for different targets ----------------------------------------------
@@ -155,6 +150,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
+    test/net/uring_multiplexer.cpp
 
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp

@@ -6,9 +6,7 @@
  *             the GNU GPL3 License.
  */
 
-#if !defined(__APPLE__)
-#  error "kqueue_multiplexer is only usable on MacOS"
-#else
+#if defined(__APPLE__)
 
 #  include "net/detail/kqueue_multiplexer.hpp"
 

@@ -92,10 +92,6 @@ using std::chrono::time_point_cast;
 
 void epoll_multiplexer::add(manager_base_ptr mgr, operation initial) {
   mgr->mask_set(initial);
-  if (!nonblocking(mgr->handle(), true)) {
-    handle_error(util::error(util::error_code::socket_operation_failed,
-                             "Could not set nonblocking"));
-  }
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
   managers_.emplace(mgr->handle().id, mgr);
   if (auto err = mgr->init(*cfg_)) {

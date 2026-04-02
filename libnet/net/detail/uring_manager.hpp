@@ -19,6 +19,7 @@
 #  include "util/fwd.hpp"
 
 #  include "net/detail/manager_base.hpp"
+#  include "net/event_result.hpp"
 
 #  include "util/byte_buffer.hpp"
 #  include "util/byte_span.hpp"
@@ -35,6 +36,8 @@ namespace net::detail {
 /// provides data handling via handle_data().
 class uring_manager : public manager_base {
 public:
+  using manager_base::manager_base;
+
   /// Destructs a uring_manager object
   virtual ~uring_manager() = default;
 
@@ -48,24 +51,50 @@ public:
   // -- Event handling ---------------------------------------------------------
 
   /// Handle data from completed uring operations
-  virtual event_result handle_cqe(const io_uring_cqe* cqe);
+  virtual event_result handle_completion([[maybe_unused]] operation op,
+                                         [[maybe_unused]] int res) {
+    currently_writing_ = false;
+    return event_result::ok;
+  }
 
   // -- Data management --------------------------------------------------------
 
   /// Returns mutable reference to the read buffer
   util::byte_buffer& read_buffer() { return read_buffer_; }
 
+  const util::byte_buffer& read_buffer() const noexcept { return read_buffer_; }
+
   /// Returns mutable reference to the write buffer
   util::byte_buffer& write_buffer() { return write_buffer_; }
 
+  /// Returns mutable reference to the write buffer
+  const util::byte_buffer& write_buffer() const noexcept {
+    return write_buffer_;
+  }
+
+  /// Returns mutable reference to the write buffer
+  util::byte_buffer& read_buffer_for_submission() {
+    currently_reading_ = true;
+    return read_buffer();
+  }
+
+  /// Returns mutable reference to the write buffer
+  util::byte_buffer& write_buffer_for_submission() {
+    currently_writing_ = true;
+    return write_buffer();
+  }
+
   /// Provides data to the uring manager for processing
-  void provide_data(util::const_byte_span data) {
-    read_buffer_.insert(read_buffer_.end(), data.begin(), data.end());
+  virtual bool has_more_data() const noexcept {
+    return !write_buffer().empty() && !currently_writing_;
   }
 
 private:
   util::byte_buffer read_buffer_;
   util::byte_buffer write_buffer_;
+
+  bool currently_reading_{false};
+  bool currently_writing_{false};
 };
 
 using uring_manager_ptr = util::intrusive_ptr<uring_manager>;

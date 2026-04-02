@@ -66,13 +66,15 @@ private:
   /// removed if `remove` is set.
   void disable(manager_base& mgr, operation op, bool remove) override;
 
+public:
   /// Main multiplexing loop.
   util::error poll_once(bool blocking) override;
 
+private:
   void handle_events();
 
   // Multiplexing variables
-  io_uring uring_;
+  struct io_uring uring_;
 };
 
 using uring_multiplexer_ptr = std::shared_ptr<uring_multiplexer>;
