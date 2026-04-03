@@ -55,27 +55,6 @@ TEST_F(manager_base_test, construction_and_destruction) {
   EXPECT_EQ(read(sockets.second, buf), 0);
 }
 
-TEST_F(manager_base_test, move_operations) {
-  {
-    detail::manager_base mgr{sockets.first, &mpx};
-    mgr.mask_set(operation::read_write);
-    detail::manager_base other{std::move(mgr)};
-    EXPECT_EQ(other.handle(), sockets.first);
-    EXPECT_EQ(other.mpx(), &mpx);
-    EXPECT_EQ(other.mask(), operation::read_write);
-    EXPECT_EQ(mgr.handle(), invalid_socket);
-  }
-  {
-    detail::manager_base mgr{sockets.first, &mpx};
-    mgr.mask_set(operation::read_write);
-    detail::manager_base other = std::move(mgr);
-    EXPECT_EQ(other.handle(), sockets.first);
-    EXPECT_EQ(other.mpx(), &mpx);
-    EXPECT_EQ(other.mask(), operation::read_write);
-    EXPECT_EQ(mgr.handle(), invalid_socket);
-  }
-}
-
 TEST_F(manager_base_test, mask_operations) {
   {
     // Add single operations

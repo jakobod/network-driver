@@ -15,9 +15,10 @@
 #  include "net/fwd.hpp"
 #  include "util/fwd.hpp"
 
-#  include "net/acceptor.hpp"
-#  include "net/manager_factory.hpp"
-#  include "net/multiplexer_base.hpp"
+#  include "net/detail/acceptor.hpp"
+#  include "net/detail/event_handler.hpp"
+
+#  include "net/detail/multiplexer_base.hpp"
 
 #  include <array>
 #  include <cstdint>
@@ -33,6 +34,11 @@ namespace net::detail {
 class kqueue_multiplexer : public multiplexer_base {
   static constexpr std::size_t max_events = 32;
 
+public:
+  using manager_factory
+    = std::function<event_handler_ptr(net::socket, kqueue_multiplexer*)>;
+
+private:
   using event_type = struct kevent;
   using mpx_fd = int;
 
@@ -71,7 +77,7 @@ private:
   void handle_events(event_span events);
 
   /// Deletes an existing socket_manager using its key `handle`.
-  void del(socket handle);
+  void del(socket handle) override;
 
   /// Deletes an existing socket_manager using an iterator `it` to the
   /// manager_map.

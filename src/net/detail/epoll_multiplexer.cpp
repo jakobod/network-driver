@@ -6,9 +6,7 @@
  *             the GNU GPL3 License.
  */
 
-#if !defined(__linux__)
-#  error "epoll_multiplexer is only usable on Linux"
-#else
+#if defined(__linux__)
 
 #  include "net/detail/epoll_multiplexer.hpp"
 
@@ -49,6 +47,7 @@ util::error epoll_multiplexer::init(manager_factory factory,
                                     const util::config& cfg) {
   LOG_TRACE();
   LOG_DEBUG("initializing epoll epoll_multiplexer");
+  set_thread_id(std::this_thread::get_id());
   mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
   if (mpx_fd_ < 0) {
     return {util::error_code::runtime_error,
@@ -63,9 +62,9 @@ util::error epoll_multiplexer::init(manager_factory factory,
 
   // Create Acceptor
   auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
-    (cfg_->get_or("multiplexer.local", true) ? ip::v4_address::localhost
-                                             : ip::v4_address::any),
-    cfg_->get_or<std::int64_t>("multiplexer.port", 0)));
+    (cfg.get_or("multiplexer.local", true) ? ip::v4_address::localhost
+                                           : ip::v4_address::any),
+    cfg.get_or<std::int64_t>("multiplexer.port", 0)));
   if (auto err = util::get_error(res)) {
     return *err;
   }
@@ -77,10 +76,11 @@ util::error epoll_multiplexer::init(manager_factory factory,
                           this](net::socket handle) -> manager_base_ptr {
     return factory(handle, this);
   };
-  add(util::make_intrusive<acceptor>(accept_socket, this,
-                                     std::move(generic_factory)),
+  add(util::make_intrusive<acceptor<event_handler>>(accept_socket, this,
+                                                    std::move(generic_factory)),
       operation::read);
 
+  set_thread_id();
   return util::none;
 }
 
@@ -93,8 +93,8 @@ using std::chrono::time_point_cast;
 void epoll_multiplexer::add(manager_base_ptr mgr, operation initial) {
   mgr->mask_set(initial);
   mod(mgr->handle().id, EPOLL_CTL_ADD, mgr->mask());
-  managers_.emplace(mgr->handle().id, mgr);
-  if (auto err = mgr->init(*cfg_)) {
+  multiplexer_base::add(mgr);
+  if (auto err = mgr->init(cfg())) {
     handle_error(err);
   }
 }
@@ -118,8 +118,8 @@ void epoll_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
 
 void epoll_multiplexer::del(socket handle) {
   mod(handle.id, EPOLL_CTL_DEL, operation::none);
-  managers_.erase(handle.id);
-  if (shutting_down_ && managers_.empty()) {
+  multiplexer_base::del(handle);
+  if (shutting_down_ && !multiplexer_base::has_managers()) {
     running_ = false;
   }
 }
@@ -128,8 +128,8 @@ epoll_multiplexer::manager_map::iterator
 epoll_multiplexer::del(manager_map::iterator it) {
   auto fd = it->second->handle().id;
   mod(fd, EPOLL_CTL_DEL, operation::none);
-  auto new_it = managers_.erase(it);
-  if (shutting_down_ && managers_.empty()) {
+  auto new_it = multiplexer_base::del(it);
+  if (shutting_down_ && multiplexer_base::has_managers()) {
     running_ = false;
   }
   return new_it;
@@ -161,21 +161,21 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
 
 util::error epoll_multiplexer::poll_once(bool blocking) {
   // Calculates the timeout value for the epoll_wait call
-  auto timeout = [&]() -> int {
-    if (!blocking) {
-      return 0; // nonblocking
-    }
-    if (!current_timeout_.has_value()) {
-      return -1; // No timeout
-    }
+  const auto now = time_point_cast<milliseconds>(steady_clock::now());
+  const auto timeout_passed = current_timeout_ ? (now > *current_timeout_)
+                                               : false;
+  const auto must_calculate_timeout = (blocking && current_timeout_.has_value()
+                                       && !timeout_passed);
+  int timeout = 0;
+  if (must_calculate_timeout) {
     auto now = time_point_cast<milliseconds>(steady_clock::now());
     auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
-    return static_cast<int>((timeout_tp - now).count());
-  };
+    timeout = static_cast<int>((timeout_tp - now).count());
+  }
 
   // Poll for events on the reqistered sockets
   auto num_events = epoll_wait(mpx_fd_, pollset_.data(),
-                               static_cast<int>(pollset_.size()), timeout());
+                               static_cast<int>(pollset_.size()), timeout);
   // Check for errors
   if (num_events < 0) {
     return (errno == EINTR) ? util::none
@@ -207,16 +207,20 @@ void epoll_multiplexer::handle_events(event_span events) {
       del(socket{event.data.fd});
       continue;
     } else {
-      auto& mgr = static_cast<event_handler&>(*managers_[event.data.fd]);
+      auto* mgr = manager<event_handler>(net::socket{event.data.fd});
+      if (!mgr) {
+        LOG_ERROR("manager not found! This should never happen!");
+        continue;
+      }
       // Handle possible read event
       if ((event.events & EPOLLIN) == EPOLLIN) {
-        if (!handle_result(mgr, mgr.handle_read_event(), operation::read)) {
+        if (!handle_result(*mgr, mgr->handle_read_event(), operation::read)) {
           continue;
         }
       }
       // Handle possible write event
       if ((event.events & EPOLLOUT) == EPOLLOUT) {
-        if (!handle_result(mgr, mgr.handle_write_event(), operation::read)) {
+        if (!handle_result(*mgr, mgr->handle_write_event(), operation::read)) {
           continue;
         }
       }

@@ -15,22 +15,16 @@
 
 #include "net/detail/manager_base.hpp"
 
+#include "util/logger.hpp"
+
 namespace net::detail {
 
 class event_handler : public manager_base {
 public:
-  // -- Constructors, destructors ----------------------------------------------
-
-  using manager_base::manager_base;
-
-  virtual ~event_handler() = default;
-
-  // -- Move and assignment operations -----------------------------------------
-
-  event_handler(const event_handler&) = default;
-  event_handler(event_handler&& mgr) noexcept = default;
-  event_handler& operator=(const event_handler&) = default;
-  event_handler& operator=(event_handler&& other) = default;
+  event_handler(net::socket handle, multiplexer_base* mpx)
+    : manager_base{handle, mpx} {
+    LOG_TRACE();
+  }
 
   // -- Event handling ---------------------------------------------------------
 

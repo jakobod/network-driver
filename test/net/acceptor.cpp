@@ -11,6 +11,8 @@
 #include "net/event_result.hpp"
 #include "net/operation.hpp"
 
+#include "net/detail/event_handler.hpp"
+
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 
@@ -49,13 +51,13 @@ struct acceptor_test : public testing::Test {
       return util::make_intrusive<detail::event_handler>(handle, &mpx);
     };
 
-    acc = std::make_unique<detail::acceptor>(sock_pair.first, &mpx,
-                                             std::move(factory));
+    acc = std::make_unique<detail::acceptor<detail::event_handler>>(
+      sock_pair.first, &mpx, std::move(factory));
     port = sock_pair.second;
   }
 
   dummy_multiplexer mpx;
-  std::unique_ptr<detail::acceptor> acc;
+  std::unique_ptr<detail::acceptor<detail::event_handler>> acc;
   uint16_t port{0};
 
   // Test check flags

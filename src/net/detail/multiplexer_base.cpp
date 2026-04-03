@@ -8,7 +8,7 @@
 
 #include "net/detail/multiplexer_base.hpp"
 
-#include "net/detail/acceptor.hpp"
+#include "net/detail/event_handler.hpp"
 #include "net/detail/pollset_updater.hpp"
 
 #include "net/socket/tcp_accept_socket.hpp"
@@ -24,7 +24,6 @@ namespace net::detail {
 
 util::error multiplexer_base::init(const util::config& cfg) {
   LOG_TRACE();
-  set_thread_id(std::this_thread::get_id());
   cfg_ = std::addressof(cfg);
   // Create pollset updater
   auto pipe_res = make_pipe();
@@ -34,9 +33,8 @@ util::error multiplexer_base::init(const util::config& cfg) {
   auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
   pipe_reader_ = pipe_fds.first;
   pipe_writer_ = pipe_fds.second;
-  add(util::make_intrusive<pollset_updater>(pipe_reader_, this),
+  add(util::make_intrusive<pollset_updater<event_handler>>(pipe_reader_, this),
       operation::read);
-  set_thread_id();
   return util::none;
 }
 
@@ -87,8 +85,9 @@ void multiplexer_base::shutdown() {
     pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {
     LOG_DEBUG("requesting multiplexer shutdown");
-    auto res = write_to_pipe(pollset_updater::opcode::shutdown);
-    if (res != 1) {
+    auto res = write_to_pipe(pollset_updater<event_handler>::opcode::shutdown,
+                             nullptr, operation::none);
+    if (res != 10) {
       LOG_ERROR("could not write shutdown code to pipe: ",
                 last_socket_error_as_string());
       std::terminate(); // Can't be handled by shutting down, if shutdown fails.

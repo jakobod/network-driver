@@ -9,11 +9,7 @@
 
 #pragma once
 
-#if !defined(__linux__)
-#  error "uring multiplexer is only usable on Linux"
-#elif !defined(LIB_NET_URING)
-#  error "uring support not enabled"
-#else
+#if defined(__linux__) and defined(LIB_NET_URING)
 
 #  include "net/fwd.hpp"
 #  include "util/fwd.hpp"

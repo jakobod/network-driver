@@ -8,6 +8,8 @@
 
 #include "net/detail/pollset_updater.hpp"
 
+#include "net/detail/event_handler.hpp"
+
 #include "net/event_result.hpp"
 #include "net/operation.hpp"
 #include "net/socket/pipe_socket.hpp"
@@ -20,6 +22,15 @@
 
 #include "multiplexer_mock.hpp"
 #include "net_test.hpp"
+
+#include "net/detail/uring_manager.hpp"
+using event_pollset_updater
+  = net::detail::pollset_updater<net::detail::event_handler>;
+#if defined(LIB_NET_URING)
+#  include "net/detail/uring_manager.hpp"
+using uring_pollset_updater
+  = net::detail::pollset_updater<net::detail::uring_manager>;
+#endif
 
 using namespace net;
 
@@ -68,27 +79,27 @@ struct pollset_updater_test : public ::testing::Test {
 } // namespace
 
 TEST_F(pollset_updater_test, init) {
-  detail::pollset_updater updater{pipe_reader, &mpx};
+  event_pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
 }
 
 TEST_F(pollset_updater_test, handle_shutdown) {
-  detail::pollset_updater updater{pipe_reader, &mpx};
+  event_pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
-  write_to_pipe(detail::pollset_updater::opcode::shutdown);
+  write_to_pipe(event_pollset_updater::opcode::shutdown, nullptr,
+                operation::none);
   updater.handle_read_event();
   EXPECT_EQ(mpx.last_error, util::none);
   EXPECT_TRUE(mpx.shutdown_called);
 }
 
 TEST_F(pollset_updater_test, handle_add) {
-  detail::pollset_updater updater{pipe_reader, &mpx};
+  event_pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
   auto mgr = util::make_intrusive<detail::event_handler>(invalid_socket, &mpx);
   mgr->ref();
   EXPECT_EQ(mgr->ref_count(), 2);
-  write_to_pipe(detail::pollset_updater::opcode::add, mgr.get(),
-                operation::read);
+  write_to_pipe(event_pollset_updater::opcode::add, mgr.get(), operation::read);
   updater.handle_read_event();
   EXPECT_EQ(mgr->ref_count(), 2);
   EXPECT_EQ(mpx.last_error, util::none);
@@ -100,11 +111,11 @@ TEST_F(pollset_updater_test, handle_add) {
 }
 
 TEST_F(pollset_updater_test, handle_write_event) {
-  detail::pollset_updater updater{pipe_reader, &mpx};
+  event_pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.handle_write_event(), event_result::error);
 }
 
 TEST_F(pollset_updater_test, handle_timeout) {
-  detail::pollset_updater updater{pipe_reader, &mpx};
+  event_pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.handle_timeout(42), event_result::error);
 }

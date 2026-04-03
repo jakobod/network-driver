@@ -38,7 +38,7 @@ RUN apt-get update && apt-get upgrade -y \
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Add jenkins user
-RUN useradd -ms /bin/bash jenkins
-USER jenkins
-WORKDIR /home/jenkins
+# # Add jenkins user
+# RUN useradd -ms /bin/bash jenkins
+# USER jenkins
+# WORKDIR /home/jenkins

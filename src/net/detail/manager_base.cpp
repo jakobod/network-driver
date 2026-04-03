@@ -23,6 +23,7 @@ namespace net::detail {
 
 manager_base::manager_base(socket handle, multiplexer_base* mpx)
   : handle_{handle}, mpx_{mpx} {
+  nonblocking(handle, true);
   LOG_TRACE();
 }
 
@@ -35,21 +36,6 @@ manager_base::~manager_base() {
   LOG_TRACE();
   shutdown(handle_, SHUT_RDWR);
   close(handle_);
-}
-
-manager_base::manager_base(manager_base&& other) noexcept
-  : handle_{other.handle_}, mpx_{other.mpx_}, mask_{other.mask_} {
-  LOG_TRACE();
-  other.handle_ = invalid_socket;
-}
-
-manager_base& manager_base::operator=(manager_base&& other) noexcept {
-  LOG_TRACE();
-  handle_ = other.handle_;
-  other.handle_ = invalid_socket;
-  mpx_ = other.mpx_;
-  mask_ = other.mask_;
-  return *this;
 }
 
 bool manager_base::mask_add(operation flag) noexcept {

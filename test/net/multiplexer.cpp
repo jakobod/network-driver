@@ -183,7 +183,7 @@ TEST_F(multiplexer_test, manager_removed_after_disconnect) {
       return (mpx.num_socket_managers() == (default_num_socket_managers + 1));
     }));
   }
-  ASSERT_TRUE(poll_until([&] {
+  EXPECT_TRUE(poll_until([&] {
     return (mpx.num_socket_managers() == default_num_socket_managers);
   }));
 }

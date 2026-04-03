@@ -7,11 +7,7 @@
  *             the GNU GPL3 License.
  */
 
-#if !defined(__linux__)
-#  error "uring_multiplexer is only usable on Linux"
-#elif !defined(LIB_NET_URING)
-#  error "uring support not enabled"
-#else
+#if defined(LIB_NET_URING)
 
 #  include "net/detail/uring_multiplexer.hpp"
 
@@ -83,6 +79,8 @@ util::error uring_multiplexer::init(manager_factory factory,
                                     const util::config& cfg) {
   LOG_TRACE();
   LOG_DEBUG("initializing uring_multiplexer");
+  set_thread_id(std::this_thread::get_id());
+
   if (auto res = io_uring_queue_init(max_uring_depth, &uring_, 0); res < 0) {
     fprintf(stderr, "io_uring_queue_init failed: %s\n", strerror(-res));
     return {util::error_code::runtime_error,
@@ -92,9 +90,9 @@ util::error uring_multiplexer::init(manager_factory factory,
 
   // Create Acceptor
   const auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
-    (cfg_->get_or("multiplexer.local", true) ? ip::v4_address::localhost
-                                             : ip::v4_address::any),
-    cfg_->get_or<std::int64_t>("multiplexer.port", 0)));
+    (cfg.get_or("multiplexer.local", true) ? ip::v4_address::localhost
+                                           : ip::v4_address::any),
+    cfg.get_or<std::int64_t>("multiplexer.port", 0)));
   if (auto err = util::get_error(res)) {
     return *err;
   }
@@ -107,8 +105,8 @@ util::error uring_multiplexer::init(manager_factory factory,
     return factory(handle, this);
   };
 
-  add(util::make_intrusive<acceptor>(accept_socket, this,
-                                     std::move(generic_factory)),
+  add(util::make_intrusive<acceptor<uring_manager>>(accept_socket, this,
+                                                    std::move(generic_factory)),
       operation::accept);
 
   return multiplexer_base::init(cfg);
@@ -119,20 +117,17 @@ void uring_multiplexer::add(manager_base_ptr mgr, operation initial) {
   if (is_multiplexer_thread()) {
     LOG_DEBUG("Adding socket_manager with ", NET_ARG2("id", mgr->handle().id),
               " for ", NET_ARG(initial));
-    auto [_, success] = managers_.emplace(mgr->handle().id, mgr);
-    if (!success) {
-      handle_error(util::error{util::error_code::runtime_error,
-                               "Failed to emplace manager"});
-    }
-    if (auto err = mgr->init(*cfg_)) {
+    auto& added_mgr = multiplexer_base::add(std::move(mgr));
+    if (auto err = added_mgr->init(cfg())) {
       handle_error(err);
     }
-    enable(*mgr, initial);
+    enable(*added_mgr, initial);
   } else {
     LOG_DEBUG("Requesting to add socket_manager with ",
               NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
     mgr->ref();
-    write_to_pipe(pollset_updater::opcode::add, mgr.get(), initial);
+    write_to_pipe(pollset_updater<uring_manager>::opcode::add, mgr.get(),
+                  initial);
   }
 }
 
@@ -140,8 +135,8 @@ uring_multiplexer::manager_map::iterator
 uring_multiplexer::del(manager_map::iterator it) {
   LOG_TRACE();
   LOG_DEBUG("Deleting mgr with ", NET_ARG2("id", it->second->handle().id));
-  auto new_it = managers_.erase(it);
-  if (shutting_down_ && managers_.empty()) {
+  auto new_it = multiplexer_base::del(it);
+  if (shutting_down_ && multiplexer_base::has_managers()) {
     running_ = false;
   }
   return new_it;
@@ -152,7 +147,7 @@ void uring_multiplexer::enable(manager_base& mgr, operation op) {
   LOG_DEBUG("Enabling mgr with ", NET_ARG2("id", mgr->handle().id),
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
             " for ", NET_ARG2("new_event", to_string(op)));
-  auto& uring_mgr = static_cast<uring_manager&>(mgr);
+  auto& uring_mgr = dynamic_cast<uring_manager&>(mgr);
   if ((op & operation::read) == operation::read) {
     submit_read(uring_, &uring_mgr);
   }
@@ -225,7 +220,7 @@ void uring_multiplexer::handle_events() {
   io_uring_for_each_cqe(&uring_, head, cqe) {
     auto* data = reinterpret_cast<submission_data*>(io_uring_cqe_get_data(cqe));
     if (!data) {
-      LOG_WARNING("Received CQE with null user_data");
+      LOG_ERROR("Received CQE with null user_data");
       ++count;
       continue;
     }
@@ -236,20 +231,14 @@ void uring_multiplexer::handle_events() {
     // Handle the completion based on operation type
     if (cqe->res < 0) {
       LOG_ERROR("I/O operation failed: ", util::last_error_as_string());
-      auto it = managers_.find(data->mgr->handle().id);
-      if (it != managers_.end()) {
-        del(it);
-      }
+      multiplexer_base::del(data->mgr->handle());
     } else {
       // Successful completion - pass to manager
       auto result = data->mgr->handle_completion(data->op, cqe->res);
       if (result == event_result::ok) {
         enable(*data->mgr, data->op);
       } else if (result == event_result::error) {
-        auto it = managers_.find(data->mgr->handle().id);
-        if (it != managers_.end()) {
-          del(it);
-        }
+        multiplexer_base::del(data->mgr->handle());
       }
     }
 

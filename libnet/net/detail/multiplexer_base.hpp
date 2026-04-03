@@ -47,9 +47,9 @@ public:
 
   virtual ~multiplexer_base() = default;
 
-  multiplexer_base(const multiplexer_base& other) = default;
+  multiplexer_base(const multiplexer_base& other) = delete;
   multiplexer_base(multiplexer_base&& other) noexcept = default;
-  multiplexer_base& operator=(const multiplexer_base& other) = default;
+  multiplexer_base& operator=(const multiplexer_base& other) = delete;
   multiplexer_base& operator=(multiplexer_base&& other) noexcept = default;
 
   /// Initializes the multiplexer_base.
@@ -82,15 +82,44 @@ public:
 
   uint16_t port() const noexcept { return port_; }
 
+  const util::config& cfg() const noexcept { return *cfg_; }
+
+  bool shutting_down() const noexcept { return shutting_down_; }
+
+protected:
+  manager_base_ptr& add(manager_base_ptr mgr) {
+    auto [it, success] = managers_.emplace(mgr->handle().id, std::move(mgr));
+    return it->second;
+  }
+
+  virtual void del(net::socket handle) { managers_.erase(handle.id); }
+
+  virtual manager_map::iterator del(manager_map::iterator it) {
+    return managers_.erase(it);
+  }
+
+  template <class Manager = manager_base>
+  const Manager* manager(net::socket handle) const noexcept {
+    auto it = managers_.find(handle.id);
+    if (it != managers_.end()) {
+      return static_cast<Manager*>(it->second.get());
+    }
+    return nullptr;
+  }
+
+  template <class Manager = manager_base>
+  Manager* manager(net::socket handle) noexcept {
+    return const_cast<Manager*>(std::as_const(*this).manager<Manager>(handle));
+  }
+
+  bool has_managers() const noexcept { return !managers_.empty(); }
+
+public:
   // -- Event handling interface -----------------------------------------------
 
   virtual void add(manager_base_ptr mgr, operation initial) = 0;
 
 private:
-  /// Deletes an existing socket_manager using an iterator `it` to the
-  /// manager_map.
-  virtual manager_map::iterator del(manager_map::iterator it) = 0;
-
   /// Enables an operation `op` for socket manager `mgr`.
   virtual void enable(manager_base& mgr, operation op) = 0;
 
@@ -129,7 +158,7 @@ protected:
 
   void set_port(uint16_t port) noexcept { port_ = port; }
 
-protected:
+private:
   uint16_t port_{0};
   manager_map managers_;
   const util::config* cfg_{nullptr};
@@ -137,17 +166,22 @@ protected:
   // thread context
   std::thread mpx_thread_;
   std::thread::id mpx_thread_id_;
+
+protected:
   bool shutting_down_{false};
   bool running_{false};
 
+private:
   // pipe for synchronous access to mpx
   pipe_socket pipe_writer_{invalid_socket_id};
   pipe_socket pipe_reader_{invalid_socket_id};
 
   // timeout handling
   timeout_entry_set timeouts_;
-  optional_timepoint current_timeout_{std::nullopt};
   std::uint64_t current_timeout_id_{0};
+
+protected:
+  optional_timepoint current_timeout_{std::nullopt};
 };
 
 } // namespace net::detail

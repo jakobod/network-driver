@@ -57,11 +57,9 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
-  src/net/acceptor.cpp
-  src/net/event_result.cpp   
+  src/net/event_result.cpp
   src/net/multiplexer.cpp
   src/net/operation.cpp
-  src/net/pollset_updater.cpp
   src/net/uri.cpp
 
   src/net/detail/epoll_multiplexer.cpp

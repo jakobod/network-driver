@@ -6,28 +6,30 @@
  *             the GNU GPL3 License.
  */
 
-#include "net_test.hpp"
+#if defined(LIB_NET_URING)
 
-#include "net/detail/uring_manager.hpp"
-#include "net/detail/uring_multiplexer.hpp"
+#  include "net_test.hpp"
 
-#include "net/ip/v4_address.hpp"
-#include "net/ip/v4_endpoint.hpp"
+#  include "net/detail/uring_manager.hpp"
+#  include "net/detail/uring_multiplexer.hpp"
 
-#include "net/event_result.hpp"
-#include "net/socket/stream_socket.hpp"
-#include "net/socket/tcp_stream_socket.hpp"
-#include "net/socket_guard.hpp"
+#  include "net/ip/v4_address.hpp"
+#  include "net/ip/v4_endpoint.hpp"
 
-#include "util/config.hpp"
-#include "util/error.hpp"
-#include "util/error_or.hpp"
-#include "util/intrusive_ptr.hpp"
+#  include "net/event_result.hpp"
+#  include "net/socket/stream_socket.hpp"
+#  include "net/socket/tcp_stream_socket.hpp"
+#  include "net/socket_guard.hpp"
 
-#include <chrono>
-#include <memory>
-#include <thread>
-#include <tuple>
+#  include "util/config.hpp"
+#  include "util/error.hpp"
+#  include "util/error_or.hpp"
+#  include "util/intrusive_ptr.hpp"
+
+#  include <chrono>
+#  include <memory>
+#  include <thread>
+#  include <tuple>
 
 using namespace net;
 using namespace net::ip;
@@ -75,7 +77,7 @@ struct uring_multiplexer_test : public testing::Test {
     auto factory = [this](net::socket handle, detail::multiplexer_base* mpx) {
       return util::make_intrusive<dummy_socket_manager>(handle, mpx, state);
     };
-    EXPECT_EQ(mpx.init(std::move(factory), util::config{}), util::none);
+    EXPECT_EQ(mpx.init(std::move(factory), cfg), util::none);
     mpx.set_thread_id(std::this_thread::get_id());
     default_num_socket_managers = mpx.num_socket_managers();
   }
@@ -109,6 +111,7 @@ struct uring_multiplexer_test : public testing::Test {
   detail::uring_multiplexer mpx;
   size_t default_num_socket_managers;
   test_state state;
+  util::config cfg;
 };
 
 bool write_all(net::tcp_stream_socket handle, util::byte_span data) {
@@ -232,3 +235,5 @@ TEST_F(uring_multiplexer_test, multiple_timeouts) {
 
 // TODO: Implement test that checks pipe-reading and  writing for adding and
 // removing socket_managers from the pollset.
+
+#endif

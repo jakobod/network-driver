@@ -36,9 +36,9 @@ public:
   // -- Move and assignment operations -----------------------------------------
 
   manager_base(const manager_base&) = delete;
-  manager_base(manager_base&& mgr) noexcept;
+  manager_base(manager_base&& mgr) noexcept = delete;
   manager_base& operator=(const manager_base&) = delete;
-  manager_base& operator=(manager_base&& other) noexcept;
+  manager_base& operator=(manager_base&& other) noexcept = delete;
 
   // -- properties -------------------------------------------------------------
 

@@ -64,6 +64,8 @@ class transport_adaptor;
 namespace net::detail {
 class manager_base;
 class multiplexer_base;
+template <class Base>
 class pollset_updater;
+template <class Base>
 class acceptor;
 } // namespace net::detail

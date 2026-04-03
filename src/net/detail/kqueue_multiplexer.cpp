@@ -10,8 +10,8 @@
 
 #  include "net/detail/kqueue_multiplexer.hpp"
 
-#  include "net/acceptor.hpp"
-#  include "net/pollset_updater.hpp"
+#  include "net/detail/acceptor.hpp"
+#  include "net/detail/pollset_updater.hpp"
 
 #  include "net/event_result.hpp"
 #  include "net/ip/v4_address.hpp"
@@ -45,13 +45,46 @@ util::error kqueue_multiplexer::init(manager_factory factory,
                                      const util::config& cfg) {
   LOG_TRACE();
   LOG_DEBUG("initializing kqueue kqueue_multiplexer");
+  set_thread_id(std::this_thread::get_id());
   mpx_fd_ = ::kqueue();
   if (mpx_fd_ < 0) {
     return {util::error_code::runtime_error,
             "[kqueue_multiplexer]: Creating epoll fd failed"};
   }
   LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
-  return multiplexer_base::init(std::move(factory), cfg);
+
+  // TODO how to fix this sequence problem?
+  if (auto err = multiplexer_base::init(cfg)) {
+    return err;
+  }
+
+  // Create Acceptor
+  auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
+    (cfg.get_or("multiplexer.local", true) ? ip::v4_address::localhost
+                                           : ip::v4_address::any),
+    cfg.get_or<std::int64_t>("multiplexer.port", 0)));
+  if (auto err = util::get_error(res)) {
+    return *err;
+  }
+  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
+  auto accept_socket = accept_socket_pair.first;
+  set_port(accept_socket_pair.second);
+
+  auto generic_factory = [factory = std::move(factory),
+                          this](net::socket handle) -> manager_base_ptr {
+    return factory(handle, this);
+  };
+  add(util::make_intrusive<acceptor<event_handler>>(accept_socket, this,
+                                                    std::move(generic_factory)),
+      operation::read);
+
+  // Handles the updates to kqueue
+  if (auto err = poll_once(false)) {
+    return err;
+  }
+
+  set_thread_id();
+  return util::none;
 }
 
 void kqueue_multiplexer::add(manager_base_ptr mgr, operation initial) {
@@ -68,17 +101,18 @@ void kqueue_multiplexer::add(manager_base_ptr mgr, operation initial) {
     // the initial operations
     mod(mgr->handle().id, (EV_ADD | EV_DISABLE), operation::read_write);
     enable(*mgr, initial);
-    managers_.emplace(mgr->handle().id, mgr);
+    auto& added_mgr = multiplexer_base::add(std::move(mgr));
     // TODO: This should probably return an error instead of calling
     // handle_error
-    if (auto err = mgr->init(*cfg_)) {
+    if (auto err = added_mgr->init(cfg())) {
       handle_error(err);
     }
   } else {
     LOG_DEBUG("Requesting to add socket_manager with ",
               NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
     mgr->ref();
-    write_to_pipe(pollset_updater::add_code, mgr.get(), initial);
+    write_to_pipe(pollset_updater<event_handler>::opcode::add, mgr.get(),
+                  initial);
   }
 }
 
@@ -111,8 +145,8 @@ void kqueue_multiplexer::del(socket handle) {
   LOG_TRACE();
   LOG_DEBUG("Deleting mgr with ", NET_ARG2("id", handle.id));
   mod(handle.id, EV_DELETE, operation::read_write);
-  managers_.erase(handle.id);
-  if (shutting_down_ && managers_.empty()) {
+  multiplexer_base::del(handle);
+  if (shutting_down_ && !multiplexer_base::has_managers()) {
     running_ = false;
   }
 }
@@ -123,8 +157,8 @@ kqueue_multiplexer::del(manager_map::iterator it) {
   auto fd = it->second->handle().id;
   LOG_DEBUG("Deleting mgr with ", NET_ARG2("id", fd));
   mod(fd, EV_DELETE, operation::read_write);
-  auto new_it = managers_.erase(it);
-  if (shutting_down_ && managers_.empty()) {
+  auto new_it = multiplexer_base::del(it);
+  if (shutting_down_ && !multiplexer_base::has_managers()) {
     running_ = false;
   }
   return new_it;
@@ -229,17 +263,21 @@ void kqueue_multiplexer::handle_events(event_span events) {
       del(handle);
       continue;
     } else {
-      auto& mgr = *managers_[handle.id];
+      auto* mgr = manager<event_handler>(handle);
+      if (!mgr) {
+        LOG_ERROR("manager not found! This should never happen!");
+        continue;
+      }
       switch (event.filter) {
         case EVFILT_READ:
           LOG_DEBUG("Handling EVFILT_READ on manager with ",
                     NET_ARG2("id", handle.id));
-          handle_result(mgr, mgr.handle_read_event(), operation::read);
+          handle_result(*mgr, mgr->handle_read_event(), operation::read);
           break;
         case EVFILT_WRITE:
           LOG_DEBUG("Handling EVFILT_WRITE on manager with ",
                     NET_ARG2("id", handle.id));
-          handle_result(mgr, mgr.handle_write_event(), operation::write);
+          handle_result(*mgr, mgr->handle_write_event(), operation::write);
           break;
         default:
           LOG_WARNING("Event filter unknown");
