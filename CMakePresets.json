@@ -10,7 +10,8 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_STANDARD": "26",
         "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-        "LIB_NET_ENABLE_TESTS": "ON"
+        "LIB_NET_ENABLE_TESTS": "ON",
+        "LIB_NET_ENABLE_URING": "ON"
       }
     },
     {

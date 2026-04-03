@@ -25,6 +25,19 @@ public:
   /// Default initializes a socket_guard object.
   constexpr socket_guard() noexcept = default;
 
+  socket_guard(const socket_guard& other) = delete;
+
+  socket_guard(socket_guard&& other) noexcept : sock_{other.release()} {
+    // nop
+  }
+
+  socket_guard& operator=(const socket_guard& other) = delete;
+  socket_guard& operator=(socket_guard&& other) noexcept {
+    socket_guard tmp{std::move(other)};
+    std::swap(*this, tmp);
+    return *this;
+  }
+
   /// closes a managed socket object on destruction.
   ~socket_guard() {
     if (sock_ != invalid_socket) {

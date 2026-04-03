@@ -10,13 +10,7 @@
 
 #  include "net/detail/epoll_multiplexer.hpp"
 
-#  include "net/detail/acceptor.hpp"
 #  include "net/detail/event_handler.hpp"
-
-#  include "net/socket/tcp_accept_socket.hpp"
-
-#  include "net/ip/v4_address.hpp"
-#  include "net/ip/v4_endpoint.hpp"
 
 #  include "net/event_result.hpp"
 #  include "net/operation.hpp"
@@ -56,29 +50,12 @@ util::error epoll_multiplexer::init(manager_factory factory,
   LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
 
   // TODO how to fix this sequence problem?
-  if (auto err = multiplexer_base::init(cfg)) {
+  if (auto err = multiplexer_base::init<event_handler>(
+        [factory = std::move(factory), this](net::socket handle)
+          -> manager_base_ptr { return factory(handle, this); },
+        cfg)) {
     return err;
   }
-
-  // Create Acceptor
-  auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
-    (cfg.get_or("multiplexer.local", true) ? ip::v4_address::localhost
-                                           : ip::v4_address::any),
-    cfg.get_or<std::int64_t>("multiplexer.port", 0)));
-  if (auto err = util::get_error(res)) {
-    return *err;
-  }
-  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
-  auto accept_socket = accept_socket_pair.first;
-  set_port(accept_socket_pair.second);
-
-  auto generic_factory = [factory = std::move(factory),
-                          this](net::socket handle) -> manager_base_ptr {
-    return factory(handle, this);
-  };
-  add(util::make_intrusive<acceptor<event_handler>>(accept_socket, this,
-                                                    std::move(generic_factory)),
-      operation::read);
 
   set_thread_id();
   return util::none;

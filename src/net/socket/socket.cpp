@@ -23,14 +23,16 @@ namespace net {
 
 void close(socket hdl) {
   LOG_DEBUG("closing ", NET_ARG2("socket", hdl.id));
-  if (hdl != invalid_socket)
+  if (hdl != invalid_socket) {
     ::close(hdl.id);
+  }
 }
 
 void shutdown(socket hdl, int how) {
   LOG_DEBUG("shutdown ", NET_ARG2("socket", hdl.id), ", ", NET_ARG(how));
-  if (hdl != invalid_socket)
+  if (hdl != invalid_socket) {
     ::shutdown(hdl.id, how);
+  }
 }
 
 util::error bind(socket hdl, ip::v4_endpoint ep) {
@@ -39,9 +41,10 @@ util::error bind(socket hdl, ip::v4_endpoint ep) {
   const auto sin = ip::to_sockaddr_in(ep);
   if (::bind(hdl.id, reinterpret_cast<const sockaddr*>(&sin),
              sizeof(sockaddr_in))
-      != 0)
+      != 0) {
     return {util::error_code::socket_operation_failed,
             "Failed to bind socket: {0}", last_socket_error_as_string()};
+  }
   return util::none;
 }
 
@@ -66,8 +69,9 @@ bool nonblocking(socket hdl, bool new_value) {
   LOG_DEBUG("nonblocking on ", NET_ARG2("socket", hdl.id), ", ",
             NET_ARG(new_value));
   auto flags = fcntl(hdl.id, F_GETFL, 0);
-  if (flags == -1)
+  if (flags == -1) {
     return false;
+  }
   flags = new_value ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
   return (fcntl(hdl.id, F_SETFL, flags) == 0);
 }
@@ -75,9 +79,10 @@ bool nonblocking(socket hdl, bool new_value) {
 util::error_or<uint16_t> port_of(socket x) {
   sockaddr_in sin = {};
   socklen_t len = sizeof(sockaddr_in);
-  if (getsockname(x.id, reinterpret_cast<sockaddr*>(&sin), &len) == -1)
+  if (getsockname(x.id, reinterpret_cast<sockaddr*>(&sin), &len) == -1) {
     return util::error(util::error_code::socket_operation_failed,
                        last_socket_error_as_string());
+  }
   return ntohs(sin.sin_port);
 }
 

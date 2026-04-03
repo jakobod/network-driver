@@ -23,7 +23,6 @@ namespace net::detail {
 
 manager_base::manager_base(socket handle, multiplexer_base* mpx)
   : handle_{handle}, mpx_{mpx} {
-  nonblocking(handle, true);
   LOG_TRACE();
 }
 

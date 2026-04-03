@@ -54,8 +54,22 @@ struct dummy_socket_manager : public net::detail::uring_manager {
   }
 
   /// Handle data from completed uring operations
-  event_result handle_completion(operation, int) override {
-    return event_result::done;
+  event_result handle_completion(operation, int res) override {
+    static const auto is_temporary = [](int res) {
+#  if EAGAIN == EWOULDBLOCK
+      return res == EAGAIN;
+#  else
+      return res == EAGAIN || res == EWOULDBLOCK;
+#  endif
+    };
+
+    if (res < 0) {
+      return is_temporary(-res) ? event_result::ok : event_result::error;
+    } else if (res == 0) {
+      return event_result::done;
+    } else {
+      return event_result::ok;
+    }
   }
 
   event_result handle_timeout(uint64_t timeout_id) override {
@@ -87,7 +101,6 @@ struct uring_multiplexer_test : public testing::Test {
       v4_endpoint{v4_address::localhost, mpx.port()});
     EXPECT_EQ(util::get_error(sock_res), nullptr);
     auto sock = std::get<tcp_stream_socket>(sock_res);
-    EXPECT_TRUE(nonblocking(sock, true));
     return sock;
   }
 
@@ -153,18 +166,17 @@ TEST_F(uring_multiplexer_test, mpx_shuts_down_correctly) {
 }
 
 TEST_F(uring_multiplexer_test, mpx_accepts_connections) {
-  std::array<tcp_stream_socket, 10> sockets;
+  std::vector<tcp_stream_socket> sockets;
   ASSERT_NE(mpx.port(), 0);
-  for (auto& sock : sockets) {
+  for (std::size_t i = 0; i < 10; ++i) {
     const auto num_managers = mpx.num_socket_managers();
-    sock = connect_to_mpx();
+    sockets.emplace_back(connect_to_mpx());
     ASSERT_TRUE(poll_until(
       [&] { return mpx.num_socket_managers() == (num_managers + 1); }));
   }
   EXPECT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 10);
-
-  for (auto sock : sockets) {
-    close(sock);
+  for (auto& handle : sockets) {
+    close(handle);
   }
 }
 

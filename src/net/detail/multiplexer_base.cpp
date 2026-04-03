@@ -22,22 +22,6 @@
 
 namespace net::detail {
 
-util::error multiplexer_base::init(const util::config& cfg) {
-  LOG_TRACE();
-  cfg_ = std::addressof(cfg);
-  // Create pollset updater
-  auto pipe_res = make_pipe();
-  if (auto err = util::get_error(pipe_res)) {
-    return *err;
-  }
-  auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
-  pipe_reader_ = pipe_fds.first;
-  pipe_writer_ = pipe_fds.second;
-  add(util::make_intrusive<pollset_updater<event_handler>>(pipe_reader_, this),
-      operation::read);
-  return util::none;
-}
-
 // -- Thread functions -------------------------------------------------------
 
 /// Creates a thread that runs this multiplexer indefinately.
@@ -70,7 +54,7 @@ void multiplexer_base::shutdown() {
     while (it != managers_.end()) {
       auto& mgr = it->second;
       if (mgr->handle() != pipe_reader_) {
-        disable(*mgr, operation::read, false);
+        disable(*mgr, (operation::read_accept), false);
         if (mgr->mask() == operation::none) {
           it = del(it);
         } else {

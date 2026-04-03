@@ -20,6 +20,7 @@ enum class operation : std::uint8_t {
   write = 0x02,
   read_write = read | write,
   accept = 0x04,
+  read_accept = read | accept,
 };
 
 /// @relates operation

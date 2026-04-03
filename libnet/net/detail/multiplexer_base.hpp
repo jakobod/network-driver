@@ -11,15 +11,26 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
+#include "net/detail/acceptor.hpp"
 #include "net/detail/manager_base.hpp"
+#include "net/detail/pollset_updater.hpp"
+#include "net/detail/uring_manager.hpp"
 
 #include "net/operation.hpp"
 #include "net/socket/pipe_socket.hpp"
 #include "net/socket/socket_id.hpp"
 #include "net/timeout_entry.hpp"
 
+#include "net/socket/tcp_accept_socket.hpp"
+
+#include "net/ip/v4_address.hpp"
+#include "net/ip/v4_endpoint.hpp"
+
 #include "util/binary_serializer.hpp"
 #include "util/byte_buffer.hpp"
+#include "util/config.hpp"
+#include "util/error.hpp"
+#include "util/error_or.hpp"
 
 #include <chrono>
 #include <functional>
@@ -53,7 +64,49 @@ public:
   multiplexer_base& operator=(multiplexer_base&& other) noexcept = default;
 
   /// Initializes the multiplexer_base.
-  util::error init(const util::config& cfg);
+  template <class ManagerBase>
+  util::error init(acceptor<ManagerBase>::manager_factory factory,
+                   const util::config& cfg) {
+    LOG_TRACE();
+    cfg_ = std::addressof(cfg);
+    // Create pollset updater
+    auto pipe_res = make_pipe();
+    if (auto err = util::get_error(pipe_res)) {
+      return *err;
+    }
+    auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
+    pipe_reader_ = pipe_fds.first;
+    pipe_writer_ = pipe_fds.second;
+    add(util::make_intrusive<pollset_updater<ManagerBase>>(pipe_reader_, this),
+        operation::read);
+
+    // Create Acceptor
+    auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
+      (cfg.get_or("multiplexer.local", true) ? ip::v4_address::localhost
+                                             : ip::v4_address::any),
+      cfg.get_or<std::int64_t>("multiplexer.port", 0)));
+    if (auto err = util::get_error(res)) {
+      return *err;
+    }
+    auto accept_socket_pair = std::get<net::acceptor_pair>(res);
+    auto accept_socket = accept_socket_pair.first;
+    set_port(accept_socket_pair.second);
+
+    static constexpr auto initial = std::invoke([]() constexpr {
+#if defined(LIB_NET_URING)
+      if constexpr (std::is_same_v<ManagerBase, uring_manager>) {
+        return operation::accept;
+      } else {
+        return operation::read;
+      }
+#endif
+      return operation::read;
+    });
+    add(util::make_intrusive<acceptor<ManagerBase>>(accept_socket, this,
+                                                    std::move(factory)),
+        initial);
+    return util::none;
+  }
 
   // -- Thread functions -------------------------------------------------------
 

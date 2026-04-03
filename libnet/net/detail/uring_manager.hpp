@@ -9,7 +9,7 @@
 
 #pragma once
 
-#if defined(__linux__) and defined(LIB_NET_URING)
+#if defined(LIB_NET_URING)
 
 #  include "net/fwd.hpp"
 #  include "util/fwd.hpp"

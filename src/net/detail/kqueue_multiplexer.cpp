@@ -54,29 +54,12 @@ util::error kqueue_multiplexer::init(manager_factory factory,
   LOG_DEBUG("Created ", NET_ARG(mpx_fd_));
 
   // TODO how to fix this sequence problem?
-  if (auto err = multiplexer_base::init(cfg)) {
+  if (auto err = multiplexer_base::init<event_handler>(
+        [factory = std::move(factory), this](net::socket handle)
+          -> manager_base_ptr { return factory(handle, this); },
+        cfg)) {
     return err;
   }
-
-  // Create Acceptor
-  auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
-    (cfg.get_or("multiplexer.local", true) ? ip::v4_address::localhost
-                                           : ip::v4_address::any),
-    cfg.get_or<std::int64_t>("multiplexer.port", 0)));
-  if (auto err = util::get_error(res)) {
-    return *err;
-  }
-  auto accept_socket_pair = std::get<net::acceptor_pair>(res);
-  auto accept_socket = accept_socket_pair.first;
-  set_port(accept_socket_pair.second);
-
-  auto generic_factory = [factory = std::move(factory),
-                          this](net::socket handle) -> manager_base_ptr {
-    return factory(handle, this);
-  };
-  add(util::make_intrusive<acceptor<event_handler>>(accept_socket, this,
-                                                    std::move(generic_factory)),
-      operation::read);
 
   // Handles the updates to kqueue
   if (auto err = poll_once(false)) {
@@ -92,11 +75,6 @@ void kqueue_multiplexer::add(manager_base_ptr mgr, operation initial) {
   if (is_multiplexer_thread()) {
     LOG_DEBUG("Adding socket_manager with ", NET_ARG2("id", mgr->handle().id),
               " for ", NET_ARG(initial));
-    // Set nonblocking on socket
-    if (!nonblocking(mgr->handle(), true)) {
-      handle_error(util::error(util::error_code::socket_operation_failed,
-                               "Could not set nonblocking on handle"));
-    }
     // Add the mgr to the pollset for both reading and writing and enable it for
     // the initial operations
     mod(mgr->handle().id, (EV_ADD | EV_DISABLE), operation::read_write);

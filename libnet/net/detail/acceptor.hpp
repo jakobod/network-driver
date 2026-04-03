@@ -13,6 +13,7 @@
 
 #include "net/event_result.hpp"
 
+#include "net/detail/manager_base.hpp"
 #include "net/detail/multiplexer_base.hpp"
 
 #include "net/socket/socket.hpp"
@@ -28,9 +29,9 @@ namespace net::detail {
 /// Manages the lifetime of a socket.
 template <class Base>
 class acceptor : public Base {
+public:
   using manager_factory = std::function<manager_base_ptr(net::socket)>;
 
-public:
   acceptor(tcp_accept_socket handle, multiplexer_base* mpx,
            manager_factory factory)
     : Base{handle, mpx}, factory_{std::move(factory)} {
@@ -53,7 +54,9 @@ public:
     return handle_accepted(accepted);
   }
 
-  virtual event_result handle_completion(operation op, int res) {
+  virtual event_result handle_completion([[maybe_unused]] operation op,
+                                         [[maybe_unused]] int res) {
+#if defined(LIB_NET_URING)
     if (op != operation::accept) {
       LOG_ERROR("acceptor called for operation != accept");
       return event_result::error;
@@ -67,13 +70,12 @@ public:
       return event_result::ok;
     }
     return handle_accepted(tcp_stream_socket{res});
+#endif
+    return event_result::error;
   }
 
 private:
   event_result handle_accepted(tcp_stream_socket accepted) {
-    if (!nonblocking(accepted, true)) {
-      return event_result::ok;
-    }
     auto mgr = factory_(accepted);
     Base::mpx()->add(std::move(mgr), operation::read);
     return event_result::ok;

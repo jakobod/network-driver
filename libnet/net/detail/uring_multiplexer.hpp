@@ -9,7 +9,7 @@
 
 #pragma once
 
-#if defined(__linux__) and defined(LIB_NET_URING)
+#if defined(LIB_NET_URING)
 
 #  include "net/fwd.hpp"
 #  include "util/fwd.hpp"
@@ -70,7 +70,8 @@ private:
   void handle_events();
 
   // Multiplexing variables
-  struct io_uring uring_;
+  struct io_uring uring_ {};
+  bool initialized_{false};
 };
 
 using uring_multiplexer_ptr = std::shared_ptr<uring_multiplexer>;

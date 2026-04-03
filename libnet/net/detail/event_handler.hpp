@@ -24,6 +24,7 @@ public:
   event_handler(net::socket handle, multiplexer_base* mpx)
     : manager_base{handle, mpx} {
     LOG_TRACE();
+    nonblocking(handle, true);
   }
 
   // -- Event handling ---------------------------------------------------------

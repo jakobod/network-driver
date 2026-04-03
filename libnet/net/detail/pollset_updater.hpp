@@ -11,7 +11,7 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#if defined(__linux__) and defined(LIB_NET_URING)
+#if defined(LIB_NET_URING)
 #  include "net/detail/uring_manager.hpp"
 #endif
 
@@ -19,6 +19,7 @@
 
 #include "net/socket/pipe_socket.hpp"
 
+#include "util/binary_deserializer.hpp"
 #include "util/byte_span.hpp"
 #include "util/error.hpp"
 #include "util/logger.hpp"
@@ -50,7 +51,14 @@ public:
   pollset_updater(net::pipe_socket handle, multiplexer_base* mpx)
     : Base{handle, mpx} {
     LOG_TRACE();
+#if defined(LIB_NET_URING)
+    if constexpr (std::is_same_v<Base, detail::uring_manager>) {
+      uring_manager::read_buffer().resize(10);
+    }
+#endif
   }
+
+  virtual ~pollset_updater() = default;
 
   // -- interface functions ----------------------------------------------------
 
@@ -76,15 +84,15 @@ public:
   /// Handles a read event, managing the pollset afterwards
   virtual event_result handle_completion([[maybe_unused]] operation op,
                                          [[maybe_unused]] int res) {
-#if defined(__linux__) and defined(LIB_NET_URING)
+#if defined(LIB_NET_URING)
     if constexpr (std::is_same_v<Base, detail::uring_manager>) {
       if (op != operation::read) {
         LOG_ERROR("pollset_updater called for operation != read");
         return event_result::error;
       }
 
-      if (res <= 0) {
-        LOG_ERROR("error with accepted connection");
+      if (res != 10) {
+        LOG_ERROR("Not enough bytes for pollset updater to use");
         return event_result::ok;
       }
 
@@ -96,7 +104,7 @@ public:
       return handle_operation(code, mgr, op);
     }
 #endif
-    return event_result::ok;
+    return event_result::error;
   }
 
 private:
@@ -130,6 +138,6 @@ private:
         return event_result::error;
     }
   }
-};
+}; // namespace net::detail
 
 } // namespace net::detail
