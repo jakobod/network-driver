@@ -17,9 +17,9 @@ struct receive_policy {
   std::uint32_t min_size;
   std::uint32_t max_size;
 
-  friend bool operator==(const receive_policy& lhs, const receive_policy& rhs) {
-    return (lhs.min_size == rhs.min_size) && (lhs.max_size == rhs.max_size);
-  }
+  friend bool
+  operator==(const receive_policy& lhs, const receive_policy& rhs) noexcept
+    = default;
 
   static constexpr receive_policy between(std::uint32_t min_size,
                                           std::uint32_t max_size) {

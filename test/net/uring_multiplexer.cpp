@@ -50,25 +50,18 @@ struct dummy_socket_manager : public net::detail::uring_manager {
   dummy_socket_manager(net::socket handle, detail::multiplexer_base* mpx,
                        test_state& state)
     : detail::uring_manager(handle, mpx), state_{state} {
-    // nop
+    configure_next_read(receive_policy::exactly(1024));
   }
 
   /// Handle data from completed uring operations
-  event_result handle_completion(operation, int res) override {
-    static const auto is_temporary = [](int res) {
-#  if EAGAIN == EWOULDBLOCK
-      return res == EAGAIN;
-#  else
-      return res == EAGAIN || res == EWOULDBLOCK;
-#  endif
-    };
-
-    if (res < 0) {
-      return is_temporary(-res) ? event_result::ok : event_result::error;
-    } else if (res == 0) {
-      return event_result::done;
-    } else {
-      return event_result::ok;
+  event_result handle_completion(operation op, int res) override {
+    switch (op) {
+      case operation::read:
+        return handle_read_completion(res);
+      case operation::write:
+        return handle_write_completion(res);
+      default:
+        return event_result::error;
     }
   }
 
@@ -81,6 +74,35 @@ struct dummy_socket_manager : public net::detail::uring_manager {
   }
 
 private:
+  event_result handle_read_completion(int res) {
+    state_.read_event_handled = true;
+    if (res < 0) {
+      return event_result::error;
+    } else if (res == 0) {
+      return event_result::done;
+    }
+
+    received_ += res;
+    if (received_ >= min_read_size_) {
+      if (state_.register_for_writing) {
+        write_buffer().insert(write_buffer().end(), read_buffer().begin(),
+                              read_buffer().begin() + res);
+        register_writing();
+      }
+      read_buffer().clear();
+    }
+    return event_result::ok;
+  }
+
+  event_result handle_write_completion(int res) {
+    state_.write_event_handled = true;
+    if (res < 0) {
+      return event_result::error;
+    }
+    write_buffer().erase(write_buffer().begin(), write_buffer().begin() + res);
+    return write_buffer().empty() ? event_result::done : event_result::ok;
+  }
+
   test_state& state_;
 };
 

@@ -56,13 +56,13 @@ io_uring_sqe* prepare_sqe(io_uring& uring, net::detail::uring_manager_ptr& mgr,
   }
   switch (op) {
     case net::operation::read: {
-      auto& buf = mgr->read_buffer_for_submission();
+      auto buf = mgr->data_to_read();
       io_uring_prep_read(sqe, mgr->handle().id, buf.data(), buf.size(), 0);
       break;
     }
 
     case net::operation::write: {
-      auto& buf = mgr->write_buffer_for_submission();
+      auto buf = mgr->data_to_write();
       io_uring_prep_write(sqe, mgr->handle().id, buf.data(), buf.size(), 0);
       break;
     }
@@ -291,19 +291,19 @@ void uring_multiplexer::handle_events() {
       switch (result) {
         case event_result::ok:
           resubmit_operation(uring_, data);
-          data = nullptr;
           break;
         case event_result::done:
           disable(*data->mgr, data->op, true);
+          delete data;
           break;
         case event_result::error:
           multiplexer_base::del(data->mgr->handle());
+          delete data;
           break;
       }
     }
 
     count++;
-    delete data;
   }
 
   // Mark all CQEs as consumed

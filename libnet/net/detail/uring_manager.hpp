@@ -16,9 +16,12 @@
 
 #  include "net/detail/manager_base.hpp"
 #  include "net/event_result.hpp"
+#  include "net/receive_policy.hpp"
 
 #  include "util/byte_buffer.hpp"
 #  include "util/byte_span.hpp"
+#  include "util/error.hpp"
+#  include "util/logger.hpp"
 #  include "util/ref_counted.hpp"
 
 #  include <liburing.h>
@@ -32,7 +35,10 @@ namespace net::detail {
 /// provides data handling via handle_data().
 class uring_manager : public manager_base {
 public:
-  using manager_base::manager_base;
+  uring_manager(socket handle, multiplexer_base* mpx)
+    : manager_base{handle, mpx} {
+    // nop
+  }
 
   /// Destructs a uring_manager object
   virtual ~uring_manager() = default;
@@ -44,16 +50,34 @@ public:
   uring_manager& operator=(const uring_manager&) = delete;
   uring_manager& operator=(uring_manager&& other) noexcept = default;
 
+  // -- initialization ---------------------------------------------------------
+
+  util::error init(const util::config&) override {
+    configure_next_read(receive_policy::up_to(1024));
+    return util::none;
+  }
+
   // -- Event handling ---------------------------------------------------------
+
+  /// Configures the amount to be read next
+  void configure_next_read(receive_policy policy) {
+    LOG_DEBUG("Configuring next read on ", NET_ARG2("socket", handle().id),
+              ": ", NET_ARG(min_read_size_), ", ",
+              NET_ARG2("max_read_size_", policy.max_size));
+    received_ = 0;
+    min_read_size_ = policy.min_size;
+    if (read_buffer_.size() != policy.max_size) {
+      read_buffer_.resize(policy.max_size);
+    }
+  }
 
   /// Handle data from completed uring operations
   virtual event_result handle_completion([[maybe_unused]] operation op,
                                          [[maybe_unused]] int res) {
-    currently_writing_ = false;
     return event_result::ok;
   }
 
-  // -- Data management --------------------------------------------------------
+  // -- Buffer management ------------------------------------------------------
 
   /// Returns mutable reference to the read buffer
   util::byte_buffer& read_buffer() { return read_buffer_; }
@@ -68,29 +92,24 @@ public:
     return write_buffer_;
   }
 
-  /// Returns mutable reference to the write buffer
-  util::byte_buffer& read_buffer_for_submission() {
-    currently_reading_ = true;
-    return read_buffer();
-  }
+  // -- uring_mpx access -------------------------------------------------------
 
-  /// Returns mutable reference to the write buffer
-  util::byte_buffer& write_buffer_for_submission() {
-    currently_writing_ = true;
+  // Lock this somehow, possibly a second buffer and swap?
+  virtual util::const_byte_span data_to_write() const noexcept {
     return write_buffer();
   }
 
-  /// Provides data to the uring manager for processing
-  virtual bool has_more_data() const noexcept {
-    return !write_buffer().empty() && !currently_writing_;
+  virtual util::byte_span data_to_read() noexcept {
+    return std::span{read_buffer_.begin() + received_, read_buffer_.end()};
   }
+
+protected:
+  std::size_t min_read_size_{0};
+  std::size_t received_{0};
 
 private:
   util::byte_buffer read_buffer_;
   util::byte_buffer write_buffer_;
-
-  bool currently_reading_{false};
-  bool currently_writing_{false};
 };
 
 using uring_manager_ptr = util::intrusive_ptr<uring_manager>;
