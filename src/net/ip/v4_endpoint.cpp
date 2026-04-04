@@ -31,16 +31,23 @@ std::string to_string(const v4_endpoint& ep) {
   return util::format("{0}:{1}", to_string(ep.address()), ep.port());
 }
 
-util::error_or<v4_endpoint> parse_v4_endpoint(const std::string& str) {
+util::error_or<v4_endpoint> parse_v4_endpoint(std::string_view str) {
   const auto parts = util::split(str, ':');
-  if (parts.size() != 2)
+  if (parts.size() != 2) {
     return util::error{util::error_code::parser_error,
                        "Parsing to v4_endpoint failed: needs address and port, "
                        "separated by ':'"};
+  }
   auto maybe_addr = parse_v4_address(parts.front());
-  if (auto err = util::get_error(maybe_addr))
+  if (auto err = util::get_error(maybe_addr)) {
     return *err;
-  auto port = static_cast<std::uint16_t>(std::stoi(parts.back()));
+  }
+
+  uint16_t port = 0;
+  if (!util::parse(parts.back(), port)) {
+    return util::error{util::error_code::parser_error,
+                       "Could not parse the port"};
+  }
   return v4_endpoint{std::get<v4_address>(maybe_addr), port};
 }
 

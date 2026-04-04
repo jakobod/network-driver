@@ -10,10 +10,12 @@
 
 namespace net {
 
-/// type of the socket ids
+/// @brief Type alias for socket file descriptors.
+/// Represents a system socket as a non-negative integer (file descriptor).
 using socket_id = int;
 
-/// Denotes the invalid socket id
+/// @brief Constant representing an invalid or uninitialized socket.
+/// Used to denote sockets that have not been successfully created.
 static constexpr socket_id invalid_socket_id = -1;
 
 } // namespace net

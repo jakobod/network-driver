@@ -13,6 +13,8 @@
 
 namespace util {
 
+/// @brief Type alias for a dynamically-resizable byte buffer.
+/// Used for storing variable-length binary data in memory.
 using byte_buffer = std::vector<std::byte>;
 
 } // namespace util

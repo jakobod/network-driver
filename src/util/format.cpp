@@ -11,26 +11,31 @@
 #include <numeric>
 #include <sstream>
 
-namespace util {
+namespace {
 
-std::vector<std::string> split(std::string str, const std::string& delim) {
-  std::vector<std::string> tokens;
+std::vector<std::string_view> split_impl(std::string_view str, auto delim,
+                                         std::size_t delim_size) {
+  std::vector<std::string_view> tokens;
   size_t pos = 0;
   while ((pos = str.find(delim)) != std::string::npos) {
     tokens.emplace_back(str.substr(0, pos));
-    str.erase(0, pos + delim.length());
+    str = str.substr(pos + delim_size);
   }
   tokens.emplace_back(std::move(str));
   return tokens;
 }
 
-std::vector<std::string> split(const std::string& str, const char delim) {
-  std::vector<std::string> tokens;
-  std::stringstream stream(str);
-  std::string token;
-  while (std::getline(stream, token, delim))
-    tokens.emplace_back(std::move(token));
-  return tokens;
+} // namespace
+
+namespace util {
+
+std::vector<std::string_view> split(std::string_view str,
+                                    std::string_view delim) {
+  return split_impl(str, delim, delim.size());
+}
+
+std::vector<std::string_view> split(std::string_view str, const char delim) {
+  return split_impl(str, delim, 1);
 }
 
 std::string join(const std::vector<std::string>& strings, const char delim) {

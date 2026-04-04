@@ -8,6 +8,7 @@
 
 #include "util/config.hpp"
 
+#include "util/exception.hpp"
 #include "util/format.hpp"
 
 #include <algorithm>
@@ -57,20 +58,27 @@ void parse_line(const std::string& prefix, const std::string& line,
                 dictionary& dict) {
   const auto parts = util::split(line, '=');
   if ((parts.size() != 2) || parts.front().empty() || parts.back().empty()) {
-    throw std::runtime_error{"Error while parsing config line=\"" + line
-                             + "\""};
+    throw util::exception{util::error_code::parser_error,
+                          "Error while parsing config line=\"" + line + "\""};
   }
 
-  const auto key = prefix + parts.front();
+  auto key = prefix;
+  key += parts.front();
 
   if (is_bool(parts.back())) {
     dict.emplace(key, (parts.back() == "true"));
   } else if (is_double(parts.back())) {
-    dict.emplace(key, std::stod(parts.back()));
+    double d = 0.0;
+    if (util::parse(parts.back(), d)) {
+      dict.emplace(key, d);
+    }
   } else if (is_integer(parts.back())) {
-    dict.emplace(key, std::stoll(parts.back()));
+    std::int64_t i = 0;
+    if (util::parse(parts.back(), i)) {
+      dict.emplace(key, i);
+    }
   } else {
-    dict.emplace(key, parts.back());
+    dict.emplace(key, std::string{parts.back()});
   }
 }
 

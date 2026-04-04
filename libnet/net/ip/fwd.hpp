@@ -10,7 +10,10 @@
 
 namespace net::ip {
 
+/// @brief Forward declaration of IPv4 address class.
 class v4_address;
+
+/// @brief Forward declaration of IPv4 endpoint class.
 class v4_endpoint;
 
 } // namespace net::ip

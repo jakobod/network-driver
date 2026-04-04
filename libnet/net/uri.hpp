@@ -12,47 +12,60 @@
 
 #include "net/ip/v4_endpoint.hpp"
 
-#include <cstddef>
-#include <string>
+#include <span>
+#include <string_view>
 #include <vector>
 
 namespace net {
 
-/// RFC compliant Unified Ressource Identifier implementation.
+/// @brief RFC-compliant Unified Resource Identifier (URI) implementation.
+/// Parses and represents URIs with scheme, authority (endpoint), path,
+/// query parameters, and fragments. Follows the standard URI syntax format.
 class uri {
 public:
-  uri(std::string scheme, const ip::v4_endpoint& auth,
-      std::vector<std::string> path, std::vector<std::string> queries,
-      std::vector<std::string> fragments);
+  /// @brief Constructs a URI with all components.
+  /// @param uri_string The string to construct the uri from
+  explicit uri(std::string uri_string);
 
-  const std::string& scheme() const { return scheme_; }
+  /// @brief Retrieves the original uri string.
+  /// @return The original URI string.
+  std::string_view original() const noexcept { return original_; }
 
-  const ip::v4_endpoint& authority() const { return auth_; }
+  /// @brief Returns the URI scheme.
+  /// @return A const reference to the scheme string.
+  std::string_view scheme() const noexcept { return scheme_; }
 
-  const std::vector<std::string>& path() const { return path_; }
+  /// @brief Returns the URI authority (endpoint).
+  /// @return A const reference to the IPv4 endpoint.
+  const ip::v4_endpoint& authority() const noexcept { return auth_; }
 
-  const std::vector<std::string>& queries() const { return queries_; }
+  /// @brief Returns the URI path components.
+  /// @return A const reference to the path vector.
+  std::span<const std::string_view> path() const noexcept { return path_; }
 
-  const std::vector<std::string>& fragments() const { return fragments_; }
+  /// @brief Returns the URI query parameters.
+  /// @return A const reference to the queries vector.
+  std::span<const std::string_view> queries() const noexcept {
+    return queries_;
+  }
+
+  /// @brief Returns the URI fragment identifiers.
+  /// @return A const reference to the fragments vector.
+  std::span<const std::string_view> fragments() const noexcept {
+    return fragments_;
+  }
 
 private:
-  std::string scheme_;
+  std::string original_;
+
+  // Parsed uri parts
+  std::string_view scheme_;
   ip::v4_endpoint auth_;
-  std::vector<std::string> path_;
-  std::vector<std::string> queries_;
-  std::vector<std::string> fragments_;
+  std::vector<std::string_view> path_;
+  std::vector<std::string_view> queries_;
+  std::vector<std::string_view> fragments_;
 };
 
-/// Compares two uri for equality.
-bool operator==(const uri& lhs, const uri& rhs);
-
-/// Compares two uri for inequality.
-bool operator!=(const uri& lhs, const uri& rhs);
-
-/// Returns a uri as string.
-std::string to_string(const uri& addr);
-
-/// parses a uri from string.
-util::error_or<uri> parse_uri(const std::string& str);
+std::string_view to_string(const uri& uri) noexcept;
 
 } // namespace net

@@ -27,55 +27,81 @@
 
 namespace net::detail {
 
-/// Implements a multiplexing backend for handling event multiplexing facilities
-/// such as epoll and kqueue.
+/// @brief Event multiplexer using Linux io_uring backend.
+/// Implements the multiplexer interface for Linux systems using io_uring
+/// for scalable I/O submission and completion handling. Only available when
+/// LIB_NET_URING is defined during compilation.
 class uring_multiplexer : public multiplexer_base {
+  /// @brief Maximum queue depth for pending operations.
   static constexpr std::size_t max_uring_depth = 32;
 
 public:
+  /// @brief Factory function type for creating io_uring-specific managers.
   using manager_factory
     = std::function<uring_manager_ptr(net::socket, uring_multiplexer*)>;
 
-  // -- constructors, destructors ----------------------------------------------
+  // -- constructors, destructors -------------------------------------------
 
+  /// @brief Default constructs a uring multiplexer.
   uring_multiplexer() = default;
 
+  /// @brief Destructs the uring multiplexer and closes the io_uring instance.
   virtual ~uring_multiplexer();
 
-  /// Initializes the multiplexer.
+  /// @brief Initializes the uring multiplexer with the given configuration.
+  /// Creates an io_uring and sets up event monitoring.
+  /// @param factory Factory function for creating uring managers.
+  /// @param cfg Configuration parameters for the multiplexer.
+  /// @return An error on failure, none on success.
   util::error init(manager_factory factory, const util::config& cfg);
 
-  // -- Interface function -----------------------------------------------------
+  // -- Interface functions --------------------------------------------------
 
+  /// @brief Registers a socket manager for io_uring event monitoring.
+  /// @param mgr The manager to register.
+  /// @param initial The initial operations to monitor.
   void add(manager_base_ptr mgr, operation initial) override;
 
 private:
-  /// Deletes an existing socket_manager using an iterator `it` to the
-  /// manager_map.
+  /// @brief Removes a manager from the registry using an iterator.
+  /// @param it Iterator to the manager.
+  /// @return Iterator to the element following the erased element.
   manager_map::iterator del(manager_map::iterator it) override;
 
-  /// Enables an operation `op` for socket manager `mgr`.
+  /// @brief Enables monitoring of an operation for a manager.
+  /// @param mgr The manager to modify.
+  /// @param op The operation to enable (read/write).
   void enable(manager_base& mgr, operation op) override;
 
-  /// Disables an operation `op` for socket manager `mgr`.
-  /// If `mgr` is not registered for any operation after disabling it, it is
-  /// removed if `remove` is set.
+  /// @brief Disables monitoring of an operation for a manager.
+  /// @param mgr The manager to modify.
+  /// @param op The operation to disable.
+  /// @param remove If true, delete the manager when no operations remain.
   void disable(manager_base& mgr, operation op, bool remove) override;
 
 public:
-  /// Main multiplexing loop.
+  /// @brief Performs a single io_uring submission and processes completions.
+  /// @param blocking If true, wait for completions; if false, return
+  /// immediately.
+  /// @return An error on failure, none on success.
   util::error poll_once(bool blocking) override;
 
 private:
+  /// @brief Dispatches all completion queue entries to their handlers.
   void handle_events();
 
   // Multiplexing variables
-  struct io_uring uring_ {};
-  bool initialized_{false};
+  struct io_uring uring_ {}; ///< The io_uring instance
+  bool initialized_{false};  ///< Initialization flag
 };
 
+/// @brief Shared pointer type for uring multiplexers.
 using uring_multiplexer_ptr = std::shared_ptr<uring_multiplexer>;
 
+/// @brief Factory function to create a uring multiplexer.
+/// @param factory Factory function for creating managers.
+/// @param cfg Configuration parameters.
+/// @return The created multiplexer on success, or an error on failure.
 util::error_or<uring_multiplexer_ptr>
 make_uring_multiplexer(uring_multiplexer::manager_factory factory,
                        const util::config& cfg);

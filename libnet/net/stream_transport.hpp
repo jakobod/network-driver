@@ -26,10 +26,18 @@
 
 namespace net {
 
-/// Implements a stream oriented transport.
+/// @brief Layered stream (TCP) transport implementation.
+/// Provides a transport layer for stream-based protocols (TCP) with
+/// buffer management for reading and writing. Supports layering other
+/// protocol handlers on top through the NextLayer template parameter.
+/// @tparam NextLayer The upper protocol layer to stack on this transport.
 template <class NextLayer>
 class stream_transport : public transport {
 public:
+  /// @brief Constructs a stream transport layer.
+  /// @param handle The stream socket for this connection.
+  /// @param mpx The multiplexer managing this socket.
+  /// @param xs Constructor arguments forwarded to NextLayer.
   template <class... Ts>
   stream_transport(stream_socket handle, detail::multiplexer_base* mpx,
                    Ts&&... xs)
@@ -37,6 +45,10 @@ public:
     LOG_DEBUG("Creating stream_transport with ", NET_ARG2("id", handle.id));
   }
 
+  /// @brief Initializes the transport with configuration.
+  /// Sets the socket to non-blocking mode and initializes the next layer.
+  /// @param cfg The configuration object.
+  /// @return An error if initialization fails, success otherwise.
   util::error init(const util::config& cfg) override {
     LOG_DEBUG("init stream_transport with ", NET_ARG2("socket", handle().id));
     if (auto err = transport::init(cfg)) {
@@ -52,6 +64,10 @@ public:
 
   // -- socket_manager API -----------------------------------------------------
 
+  /// @brief Handles a read-ready event on the socket.
+  /// Reads available data from the socket into the read buffer and
+  /// forwards it to the next layer for processing.
+  /// @return event_result indicating success, error, or completion.
   event_result handle_read_event() override {
     LOG_TRACE();
     LOG_DEBUG("handle read_event on ", NET_ARG2("socket", handle().id));
@@ -84,6 +100,10 @@ public:
     return event_result::ok;
   }
 
+  /// @brief Handles a write-ready event on the socket.
+  /// Sends buffered data to the remote endpoint and fetches more data
+  /// from the next layer if needed.
+  /// @return event_result indicating success, error, or completion.
   event_result handle_write_event() override {
     LOG_TRACE();
     LOG_DEBUG("handle write_event on ", NET_ARG2("socket", handle().id));
@@ -132,7 +152,9 @@ public:
 
   // -- public API -------------------------------------------------------------
 
-  /// Configures the amount to be read next
+  /// @brief Configures the read buffer for the next read operation.
+  /// Sets the minimum bytes to receive and resizes the buffer if needed.
+  /// @param policy The receive policy specifying min and max sizes.
   void configure_next_read(receive_policy policy) override {
     received_ = 0;
     min_read_size_ = policy.min_size;
@@ -145,7 +167,7 @@ public:
   }
 
 private:
-  NextLayer next_layer_;
+  NextLayer next_layer_; ///< The next protocol layer in the stack.
 };
 
 } // namespace net
