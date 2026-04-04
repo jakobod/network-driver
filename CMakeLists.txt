@@ -23,7 +23,13 @@ add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# -- build type configuration --------------------------------------------------
+
 message (STATUS "Build type ${CMAKE_BUILD_TYPE}")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(LIB_NET_DEBUG TRUE)
+  add_compile_definitions(LIB_NET_DEBUG)
+endif()
 
 # -- find or fetch dependencies ------------------------------------------------
 
@@ -62,10 +68,12 @@ set(LIB_NET_SOURCES
   src/net/operation.cpp
   src/net/uri.cpp
 
+  src/net/detail/acceptor.cpp
   src/net/detail/epoll_multiplexer.cpp
   src/net/detail/kqueue_multiplexer.cpp
   src/net/detail/manager_base.cpp
   src/net/detail/multiplexer_base.cpp
+  src/net/detail/pollset_updater.cpp
   src/net/detail/uring_manager.cpp
   src/net/detail/uring_multiplexer.cpp
 
@@ -108,6 +116,17 @@ endif()
 # Copy Dummy certs to build folder and set preprocessor definition to the folder
 file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
+
+# -- assertion configuration ---------------------------------------------------
+
+option(LIB_NET_ENABLE_ASSERTIONS "Enable runtime assertions" OFF)
+
+if(LIB_NET_ENABLE_ASSERTIONS)
+  if(NOT LIB_NET_DEBUG) 
+    message(WARNING "This is a release build and assertions are enabled. Assertions have a significant impact on the runtime performance - Consider disabling them if not really necessary.")
+  endif()
+  add_compile_definitions(LIB_NET_ENABLE_ASSERTIONS)
+endif()
 
 # -- logging configuration -----------------------------------------------------
 
@@ -153,6 +172,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
 
+    test/util/assert.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp

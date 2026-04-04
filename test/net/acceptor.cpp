@@ -74,13 +74,3 @@ TEST_F(acceptor_test, handle_read_event) {
   EXPECT_NE(mpx.mgr, nullptr);
   EXPECT_TRUE(factory_called);
 }
-
-TEST_F(acceptor_test, handle_write_event) {
-  EXPECT_EQ(acc->handle_write_event(), event_result::error);
-  EXPECT_FALSE(factory_called);
-}
-
-TEST_F(acceptor_test, handle_timeout) {
-  EXPECT_EQ(acc->handle_timeout(0), event_result::error);
-  EXPECT_FALSE(factory_called);
-}

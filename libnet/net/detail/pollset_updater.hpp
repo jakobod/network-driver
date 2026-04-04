@@ -15,7 +15,10 @@
 #  include "net/detail/uring_manager.hpp"
 #endif
 
+#include "net/detail/event_handler.hpp"
+
 #include "net/event_result.hpp"
+#include "net/operation.hpp"
 
 #include "net/socket/pipe_socket.hpp"
 
@@ -28,89 +31,82 @@
 
 namespace net::detail {
 
-/// Manages the pollset of the multiplexer implementation. Handles adding,
-/// enabling, disabling, and shutting down the multiplexer in a thread-safe
-/// manner.
-template <class Base>
-class pollset_updater final : public Base {
+/// @brief Generic base for pollset updater implementations.
+/// Manages the pollset of the multiplexer from a separate thread. Handles
+/// adding and removing socket managers, and coordinating multiplexer
+/// shutdown in a thread-safe manner via a pipe socket.
+///
+/// The pollset_updater runs in the multiplexer thread and reads commands
+/// from a pipe that may be written to from other threads, allowing
+/// safe modification of the pollset without race conditions.
+template <class ManagerBase>
+class pollset_updater_base : public ManagerBase {
 public:
   // -- member types -----------------------------------------------------------
 
-  /// Type for the opcodes used by this pollset_updater
+  /// @brief Opcodes for commands sent through the pipe to the pollset updater.
+  /// Used to signal different operations that need to be performed on the
+  /// multiplexer's pollset.
   enum class opcode : std::uint8_t {
+    /// No operation (unused)
     none = 0x00,
-    /// Opcode for adding a socket_manager to the pollset.
+    /// Opcode indicating a new socket manager should be added to the pollset.
     add = 0x01,
-    /// Opcode for triggering a shutdown of the multiplexer.
+    /// Opcode indicating the multiplexer should be shut down.
     shutdown = 0x02,
   };
 
   // -- constructors, destructors, and assignment operators --------------------
 
-  /// Constructs a pollset updater
-  pollset_updater(net::pipe_socket handle, multiplexer_base* mpx)
-    : Base{handle, mpx} {
-    LOG_TRACE();
-#if defined(LIB_NET_URING)
-    if constexpr (std::is_same_v<Base, detail::uring_manager>) {
-      uring_manager::read_buffer().resize(10);
-    }
-#endif
-  }
+  /// @brief Constructs a pollset updater.
+  /// @param handle The read end of the pipe socket for receiving commands.
+  /// @param mpx Pointer to the owning multiplexer.
+  pollset_updater_base(net::pipe_socket handle, multiplexer_base* mpx);
 
-  virtual ~pollset_updater() = default;
+  /// @brief Destructs the pollset updater.
+  virtual ~pollset_updater_base() = default;
 
-  // -- interface functions ----------------------------------------------------
+protected:
+  // -- protected helper functions for common operations ----------------------
 
-  /// Handles a read event, managing the pollset afterwards
-  virtual event_result handle_read_event() {
-    LOG_TRACE();
-    opcode code = opcode::none;
-    Base* mgr = nullptr;
-    operation op;
+  /// @brief Handles a pollset update operation received from the pipe.
+  /// Processes the opcode and updates the pollset accordingly.
+  /// @param code The operation code (add manager or shutdown).
+  /// @param mgr The socket manager to add (if opcode is 'add').
+  /// @param op The operation type to register (read/write/accept).
+  /// @return The result of the operation.
+  event_result handle_operation(opcode code, ManagerBase* mgr, operation op);
+};
 
-    if (read_from_pipe(code)) {
-      return event_result::error;
-    }
-    if (read_from_pipe(mgr)) {
-      return event_result::error;
-    }
-    if (read_from_pipe(op)) {
-      return event_result::error;
-    }
-    return handle_operation(code, mgr, op);
-  }
+template <class ManagerBase>
+class pollset_updater;
 
-  /// Handles a read event, managing the pollset afterwards
-  virtual event_result handle_completion([[maybe_unused]] operation op,
-                                         [[maybe_unused]] int res) {
-#if defined(LIB_NET_URING)
-    if constexpr (std::is_same_v<Base, detail::uring_manager>) {
-      if (op != operation::read) {
-        LOG_ERROR("pollset_updater called for operation != read");
-        return event_result::error;
-      }
+/// @brief Specialization for epoll/kqueue-based managers.
+/// Handles pollset updates via read events on the pipe socket.
+/// When the pipe has data to read, it decodes the command and processes
+/// the pollset update accordingly.
+template <>
+class pollset_updater<event_handler>
+  : public pollset_updater_base<event_handler> {
+  using base = pollset_updater_base<event_handler>;
 
-      if (res != 10) {
-        LOG_ERROR("Not enough bytes for pollset updater to use");
-        return event_result::ok;
-      }
+public:
+  using base::base;
 
-      opcode code = opcode::none;
-      Base* mgr = nullptr;
-      operation op;
-      util::binary_deserializer deserializer(Base::read_buffer());
-      deserializer(code, mgr, op);
-      return handle_operation(code, mgr, op);
-    }
-#endif
-    return event_result::error;
-  }
+  /// @brief Handles a read event from the pipe socket (epoll/kqueue).
+  /// Reads commands from the pipe and processes pollset updates.
+  /// @return The result of handling the read event.
+  event_result handle_read_event();
 
 private:
+  /// @brief Reads data from the pipe socket.
+  /// Helper method to safely read structured data from the pipe.
+  /// @tparam T The type of data to read.
+  /// @param t Reference to the data structure to read into.
+  /// @return An error if the read failed, util::none on success.
   template <class T>
   util::error read_from_pipe(T& t) {
-    if (const auto res = net::read(Base::template handle<pipe_socket>(),
+    if (const auto res = net::read(handle<pipe_socket>(),
                                    util::as_bytes(&t, sizeof(T)));
         res != sizeof(T)) {
       LOG_ERROR("Could not read ", sizeof(T), " bytes from pipe socket: ",
@@ -119,25 +115,30 @@ private:
     }
     return util::none;
   }
+};
 
-  event_result handle_operation(opcode code, Base* mgr, operation op) {
-    switch (code) {
-      case opcode::add:
-        LOG_DEBUG("Received opcode::add for mgr with ",
-                  NET_ARG2("id", mgr->handle().id), " with ", NET_ARG(op));
-        Base::mpx()->add(util::make_intrusive(mgr, false), op);
-        return event_result::ok;
+#if defined(LIB_NET_URING)
 
-      case opcode::shutdown:
-        LOG_DEBUG("Received opcode::shutdown");
-        Base::mpx()->shutdown();
-        return event_result::done;
+/// @brief Specialization for io_uring-based managers.
+/// Handles pollset updates via io_uring completion events on the pipe read.
+/// When a completion event fires on the pipe socket, it decodes the command
+/// and processes the pollset update accordingly.
+template <>
+class pollset_updater<uring_manager>
+  : public pollset_updater_base<uring_manager> {
+  using base = pollset_updater_base<uring_manager>;
 
-      default:
-        LOG_WARNING("Received unhandled code");
-        return event_result::error;
-    }
-  }
-}; // namespace net::detail
+public:
+  using base::base;
+
+  /// @brief Handles a completion event from the pipe socket (io_uring).
+  /// Reads commands from the pipe and processes pollset updates.
+  /// @param op The operation that completed (should be read).
+  /// @param res The result of the io_uring operation (bytes read).
+  /// @return The result of handling the completion event.
+  event_result handle_completion(operation op, int res);
+};
+
+#endif // LIB_NET_URING
 
 } // namespace net::detail

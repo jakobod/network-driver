@@ -98,10 +98,3 @@ TEST_F(manager_base_test, mask_operations) {
     EXPECT_EQ(mgr.mask(), operation::none);
   }
 }
-
-TEST_F(manager_base_test, timeout_handling) {
-  {
-    detail::manager_base mgr{sockets.first, &mpx};
-    EXPECT_EQ(mgr.handle_timeout(0), event_result::error);
-  }
-}

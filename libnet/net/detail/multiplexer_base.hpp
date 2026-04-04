@@ -65,8 +65,7 @@ public:
 
   /// Initializes the multiplexer_base.
   template <class ManagerBase>
-  util::error init(acceptor<ManagerBase>::manager_factory factory,
-                   const util::config& cfg) {
+  util::error init(acceptor_factory factory, const util::config& cfg) {
     LOG_TRACE();
     cfg_ = std::addressof(cfg);
     // Create pollset updater
@@ -77,8 +76,12 @@ public:
     auto pipe_fds = std::get<pipe_socket_pair>(pipe_res);
     pipe_reader_ = pipe_fds.first;
     pipe_writer_ = pipe_fds.second;
-    add(util::make_intrusive<pollset_updater<ManagerBase>>(pipe_reader_, this),
-        operation::read);
+    {
+      auto updater = util::make_intrusive<pollset_updater<ManagerBase>>(
+        pipe_reader_, this);
+      const auto initial = updater->initial_operation();
+      add(std::move(updater), initial);
+    }
 
     // Create Acceptor
     auto res = net::make_tcp_accept_socket(ip::v4_endpoint(
@@ -92,19 +95,12 @@ public:
     auto accept_socket = accept_socket_pair.first;
     set_port(accept_socket_pair.second);
 
-    static constexpr auto initial = std::invoke([]() constexpr {
-#if defined(LIB_NET_URING)
-      if constexpr (std::is_same_v<ManagerBase, uring_manager>) {
-        return operation::accept;
-      } else {
-        return operation::read;
-      }
-#endif
-      return operation::read;
-    });
-    add(util::make_intrusive<acceptor<ManagerBase>>(accept_socket, this,
-                                                    std::move(factory)),
-        initial);
+    {
+      auto acc = util::make_intrusive<acceptor<ManagerBase>>(
+        accept_socket, this, std::move(factory));
+      const auto initial = acc->initial_operation();
+      add(std::move(acc), initial);
+    }
     return util::none;
   }
 

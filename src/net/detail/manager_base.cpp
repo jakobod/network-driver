@@ -12,12 +12,9 @@
 
 #include "net/event_result.hpp"
 
+#include "util/assert.hpp"
 #include "util/error.hpp"
 #include "util/logger.hpp"
-
-#include <iostream>
-#include <memory>
-#include <sys/socket.h>
 
 namespace net::detail {
 
@@ -66,6 +63,7 @@ void manager_base::register_writing() {
 }
 
 uint64_t manager_base::set_timeout_in(std::chrono::steady_clock::duration in) {
+  ASSERT(in >= std::chrono::steady_clock::duration{0});
   const auto when = std::chrono::steady_clock::now() + in;
   return set_timeout_at(when);
 }
@@ -77,6 +75,7 @@ manager_base::set_timeout_at(std::chrono::steady_clock::time_point when) {
 
 event_result manager_base::handle_timeout(uint64_t) {
   LOG_ERROR("Default implementation, should never be called");
+  ASSERT(false) << "Timeout set without overriding the default timeout handler";
   return event_result::error;
 }
 

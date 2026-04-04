@@ -29,6 +29,7 @@ set_build_flag() {
   case "$1" in
     testing)                 FlagName='LIB_NET_ENABLE_TESTS' ;;
     uring)                   FlagName='LIB_NET_ENABLE_URING' ;;
+    assertions)              FlagName='LIB_NET_ENABLE_ASSERTIONS' ;;
     *)
       echo "Invalid flag '$1'.  Try $0 --help to see available options."
       exit 1

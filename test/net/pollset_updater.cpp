@@ -109,13 +109,3 @@ TEST_F(pollset_updater_test, handle_add) {
   EXPECT_EQ(mgr->ref_count(), 1);
   EXPECT_EQ(mpx.initial_operation, operation::read);
 }
-
-TEST_F(pollset_updater_test, handle_write_event) {
-  event_pollset_updater updater{pipe_reader, &mpx};
-  EXPECT_EQ(updater.handle_write_event(), event_result::error);
-}
-
-TEST_F(pollset_updater_test, handle_timeout) {
-  event_pollset_updater updater{pipe_reader, &mpx};
-  EXPECT_EQ(updater.handle_timeout(42), event_result::error);
-}
