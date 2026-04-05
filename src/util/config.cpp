@@ -8,6 +8,7 @@
 
 #include "util/config.hpp"
 
+#include "util/exception.hpp"
 #include "util/format.hpp"
 
 #include <algorithm>
@@ -49,6 +50,18 @@ bool is_integer(const std::string_view value) {
                      [](const char c) { return ((c >= '0') && (c <= '9')); });
 }
 
+template <class T>
+void add_entry(std::string key, std::string_view value, const std::string& line,
+               dictionary& dict) {
+  T t;
+  if (util::parse(value, t)) {
+    dict.emplace(std::move(key), t);
+  } else {
+    throw util::exception{util::error_code::parser_error,
+                          "Error while parsing config line=\"" + line + "\""};
+  }
+}
+
 /// @brief Parses a given line from a config file and adds it to the dictionary
 /// @param prefix  The current prefix of the option
 /// @param line  The line to parse
@@ -57,20 +70,21 @@ void parse_line(const std::string& prefix, const std::string& line,
                 dictionary& dict) {
   const auto parts = util::split(line, '=');
   if ((parts.size() != 2) || parts.front().empty() || parts.back().empty()) {
-    throw std::runtime_error{"Error while parsing config line=\"" + line
-                             + "\""};
+    throw util::exception{util::error_code::parser_error,
+                          "Error while parsing config line=\"" + line + "\""};
   }
 
-  const auto key = prefix + parts.front();
+  auto key = prefix;
+  key += parts.front();
 
   if (is_bool(parts.back())) {
-    dict.emplace(key, (parts.back() == "true"));
+    dict.emplace(std::move(key), (parts.back() == "true"));
   } else if (is_double(parts.back())) {
-    dict.emplace(key, std::stod(parts.back()));
+    add_entry<double>(std::move(key), parts.back(), line, dict);
   } else if (is_integer(parts.back())) {
-    dict.emplace(key, std::stoll(parts.back()));
+    add_entry<std::int64_t>(std::move(key), parts.back(), line, dict);
   } else {
-    dict.emplace(key, parts.back());
+    dict.emplace(std::move(key), std::string{parts.back()});
   }
 }
 

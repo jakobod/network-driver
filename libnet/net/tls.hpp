@@ -21,18 +21,30 @@
 
 namespace net {
 
+/// @brief TLS/SSL transport layer implementing encrypted communication.
+/// Manages SSL/TLS encryption and decryption for secure connections,
+/// acting as a middleware between the transport and application layers.
+/// Supports both client and server modes with automatic handshake.
+/// @tparam NextLayer The upper layer (application or another layer) to encrypt
+/// data from.
 template <class NextLayer>
 class tls : public layer {
-  /// Custom enum for relevant states of the SSL
+  /// @brief Status codes for SSL/TLS operations.
   enum ssl_status {
-    ok,
-    want_io,
-    fail,
+    ok,      ///< Operation succeeded.
+    want_io, ///< Operation needs more I/O.
+    fail,    ///< Operation failed.
   };
 
+  /// @brief Buffer size for encrypted/decrypted data.
   static constexpr const std::size_t buffer_size = 2048;
 
 public:
+  /// @brief Constructs a TLS layer with SSL context.
+  /// @param parent The parent layer to send/receive data from.
+  /// @param ctx The TLS context with configured SSL settings.
+  /// @param is_client Whether this is a client (true) or server (false).
+  /// @param xs Constructor arguments forwarded to NextLayer.
   template <class... Ts>
   tls(layer& parent, openssl::tls_context& ctx, bool is_client, Ts&&... xs)
     : parent_{parent},
@@ -42,23 +54,27 @@ public:
       rbio_{BIO_new(BIO_s_mem())},
       wbio_{BIO_new(BIO_s_mem())} {
     // Set SSL to either client or server mode
-    if (is_client)
+    if (is_client) {
       SSL_set_connect_state(ssl_);
-    else
+    } else {
       SSL_set_accept_state(ssl_);
+    }
     SSL_set_bio(ssl_, rbio_, wbio_);
   }
 
-  // -- Upfacing interface (towards application) -------------------------------
+  // -- Upfacing interface (towards application) ------------------------------
 
   util::error init(const util::config&) override {
     // Check the relevant ssl members
-    if (!ssl_)
+    if (!ssl_) {
       return {util::error_code::openssl_error, "SSL object was not created"};
-    if (!rbio_)
+    }
+    if (!rbio_) {
       return {util::error_code::openssl_error, "rBIO object was not created"};
-    if (!wbio_)
+    }
+    if (!wbio_) {
       return {util::error_code::openssl_error, "wBIO object was not created"};
+    }
     // As client, initiate handshake
     if (is_client_) {
       if (auto err = handle_handshake()) {
@@ -74,8 +90,9 @@ public:
   }
 
   event_result produce() override {
-    if (next_layer_.produce() == event_result::error)
+    if (next_layer_.produce() == event_result::error) {
       return event_result::error;
+    }
     if (auto err = encrypt()) {
       parent_.handle_error(err);
       return event_result::error;
@@ -101,18 +118,20 @@ public:
           parent_.handle_error(err);
           return event_result::error;
         }
-        if (!handshake_done())
+        if (!handshake_done()) {
           return event_result::ok;
+        }
       }
 
       int read_res = 0;
       while (true) {
         read_res = SSL_read(ssl_, ssl_read_buf_.data(), ssl_read_buf_.size());
-        if (read_res > 0)
+        if (read_res > 0) {
           next_layer_.consume(util::const_byte_span{
             ssl_read_buf_.data(), static_cast<size_t>(read_res)});
-        else
+        } else {
           break;
+        }
       }
 
       switch (get_status(read_res)) {
@@ -179,8 +198,9 @@ public:
 private:
   util::error encrypt() {
     // Wait for initialization to be done
-    if (!SSL_is_init_finished(ssl_))
+    if (!SSL_is_init_finished(ssl_)) {
       return util::none;
+    }
 
     // Pass all queued plain bytes to SSL for encryption
     while (!encrypt_buf_.empty()) {
@@ -220,8 +240,9 @@ private:
     auto handshake_res = SSL_do_handshake(ssl_);
     switch (get_status(handshake_res)) {
       case want_io:
-        if (auto err = read_all_from_ssl())
+        if (auto err = read_all_from_ssl()) {
           return err;
+        }
         return util::none;
 
       case fail:

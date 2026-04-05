@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <ostream>
@@ -19,224 +20,157 @@
 
 namespace util {
 
-/// @brief Parser for CLI arguments.
+/// @brief Command-line argument parser for structured option handling.
+/// Provides registration of options with optional values and parsing of
+/// command-line arguments in both long form (--option) and short form (-o)
+/// styles. Supports querying parsed options and converting argument values to
+/// specific types.
 class cli_parser {
 public:
   // -- Public member types ----------------------------------------------------
 
-  /// @brief Option representation for registering options within the parser
+  /// @brief Representation of a command-line option.
   struct option {
-    /// @brief Constructs an option instance
-    /// @param id  Unique id of the option
-    /// @param longform  Longform (--...) of the cli option
-    /// @param shortform  Shortform (-...) of the cli option
-    /// @param has_value  Wether an argument value is expected
+    /// @brief Constructs an option with all parameters.
+    /// @param id Unique identifier for the option.
+    /// @param longform The long form of the option (e.g., "verbose").
+    /// @param shortform The short form of the option (e.g., 'v').
+    /// @param has_value Whether this option expects a value argument.
     option(std::string id, std::string longform, char shortform,
            bool has_value);
 
-    /// @brief Unique id of the option
+    /// @brief Unique identifier for this option.
     const std::string id_;
-    /// @brief Longform of the option
+    /// @brief Long form of the option (without dashes).
     const std::string longform_;
-    /// @brief Shortform of the option
+    /// @brief Short form of the option (single character).
     const char shortform_;
-    /// @brief Wether an argument value is expected
+    /// @brief Whether an argument value is expected.
     const bool has_value_;
 
-    /// @brief Compares two options for equality
-    /// @param other  The other instance to compare to
-    /// @returns true in case both objects are equal, false otherwise
+    /// @brief Equality comparison with another option.
+    /// @param other The option to compare with.
+    /// @return True if both options are identical.
     bool operator==(const option& other) const noexcept;
 
-    /// @brief Compares an option to a longform option
-    /// @param longform  The longform to compare to
-    /// @returns true in case the option has the longform, false otherwise
+    /// @brief Equality comparison with a longform string.
+    /// @param longform The long form to compare with.
+    /// @return True if this option has the specified long form.
     bool operator==(const std::string_view& longform) const noexcept;
 
-    /// @brief Compares an option to a shortform option
-    /// @param longform  The shortform to compare to
-    /// @returns true in case the option has the shortform, false otherwise
+    /// @brief Equality comparison with a shortform character.
+    /// @param shortform The character to compare with.
+    /// @return True if this option has the specified short form.
     bool operator==(char shortform) const noexcept;
 
-    /// @brief Checks wether this object is less than `other`
-    /// @param other  The other instance to compare to
-    /// @returns true in case this object is less, false otherwise
+    /// @brief Less-than comparison with another option.
+    /// @param other The option to compare with.
+    /// @return True if this option is less than the other.
     bool operator<(const option& other) const noexcept;
 
-    /// @brief Checks wether this object is more than `other`
-    /// @param other  The other instance to compare to
-    /// @returns true in case this object is more, false otherwise
+    /// @brief Greater-than comparison with another option.
+    /// @param other The option to compare with.
+    /// @return True if this option is greater than the other.
     bool operator>(const option& other) const noexcept;
   };
 
-  /// @brief Type of the argument span
+  /// @brief Type alias for span of command-line arguments.
   using arg_span = std::span<const char*>;
 
 private:
   // -- Private member types ---------------------------------------------------
 
-  /// @brief A set of options checking for equality instead of sorting
+  /// @brief A set of options with equality-based comparison.
   using option_set = std::set<option, std::not_equal_to<>>;
-  /// @brief A list of strings
+  /// @brief A vector of strings for argument values.
   using string_list = std::vector<std::string>;
-  /// @brief Map of {id, [arguments...]}
+  /// @brief Map from option ID to argument values.
   using result_map = std::map<std::string, string_list>;
 
 public:
   // -- Public member constants ------------------------------------------------
 
-  /// @brief Denotes a missing longform option
+  /// @brief Constant indicating no long form option is available.
   static constexpr const char* no_longform = "";
-  /// @brief Denotes a missing shortform option
+  /// @brief Constant indicating no short form option is available.
   static constexpr const char no_shortform = '\0';
 
   // -- Adding and parsing options ---------------------------------------------
 
-  /// @brief Registers an option in the parser
-  /// @param opt The option to register in the parser
-  /// @returns a reference to the parser
+  /// @brief Registers an option in the parser.
+  /// @param opt The option to register.
+  /// @return Reference to this parser for method chaining.
   cli_parser& register_option(option opt);
 
-  /// @brief Constructs and registers an option in the parser
-  /// @tparam ...Ts  Option constructor Argument types
-  /// @param ...xs  Arguments to forward to the option constructor
-  /// @return a reference to the parser
+  /// @brief Constructs and registers an option in the parser.
+  /// @tparam Ts Types of arguments for the option constructor.
+  /// @param xs Arguments to forward to the option constructor.
+  /// @return Reference to this parser for method chaining.
   template <class... Ts>
   cli_parser& register_option(Ts&&... xs) {
     return register_option(option{std::forward<Ts>(xs)...});
   }
 
-  /// @brief Parses the specified cli aruments using the previously registered
-  ///        options
-  /// @param args  The arguments to parse
+  /// @brief Parses command-line arguments using registered options.
+  /// @param args The arguments to parse (typically argv without program name).
   void parse(arg_span args);
 
-  /// @brief Parses the specified cli aruments using the previously registered
-  ///        options
-  /// @param argc The number of arguments to parse
-  /// @param argv The argument values to parse
+  /// @brief Parses command-line arguments using argc/argv format.
+  /// @param argc The number of arguments.
+  /// @param argv The argument values (including program name at argv[0]).
   void parse(int argc, const char** argv);
 
   // -- Queries ----------------------------------------------------------------
 
-  /// @brief Returns the name of the program
-  /// @return the name of the program
+  /// @brief Returns the name of the parsed program.
+  /// Extracted from argv[0] during parsing.
+  /// @return The program name as a string.
   const std::string& program_name() const noexcept;
 
-  /// @brief Queries the parser wether an option with `id` exists in the args
-  /// @param id the id of the option in question
-  /// @returns true if an option with `id` was specified, false otherwise
+  /// @brief Checks if an option with the specified ID exists in parsed
+  /// arguments.
+  /// @param id The unique ID of the option.
+  /// @return True if the option was specified on the command line.
   bool contains_option(const std::string& id) const;
 
-  /// @brief Returns the number of arguments for `id`
-  /// @param id the `id` for which to query the parser
-  /// @returns the number of arguments
+  /// @brief Returns the number of argument values for an option.
+  /// @param id The unique ID of the option.
+  /// @return The count of values provided for this option.
   std::size_t num_option_values(const std::string& id) const;
 
-  /// @brief Checks wether an option has been specified
-  /// @param id The `id` of the option
-  /// @returns true if the option has been specified, false otherwise
+  /// @brief Checks whether an option has at least one argument value.
+  /// @param id The unique ID of the option.
+  /// @return True if the option has at least one value.
   bool has_option_value(const std::string& id) const;
 
-  /// @brief Returns a list of all arguments for the option with `id`
-  /// @param id The `id` of the option
-  /// @returns a reference to the list of all arguments as strings
+  /// @brief Returns all argument values for an option.
+  /// @param id The unique ID of the option.
+  /// @return A const reference to the list of argument strings.
   const string_list& option_values(const std::string& id) const;
 
   // -- Option value access/conversion -----------------------------------------
 
-  /// @brief Template definition for the partial template specialization of the
-  ///        conversion functions
-  /// @tparam T  Type to convert to
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::runtime_error in case the specified `T` is not supported
-  /// @returns default constructed T instance
+  /// @brief Generic template for converting option values.
+  /// Specializations below provide actual implementations for supported types.
+  /// @tparam T The type to convert the argument value to.
+  /// @param id The unique ID of the option.
+  /// @param pos The index of the argument (default: 0 for first value).
+  /// @throws std::runtime_error If type T is not supported.
+  /// @return A default-constructed instance of T (base template).
   template <class T>
-  T option_value([[maybe_unused]] const std::string& id,
-                 [[maybe_unused]] std::size_t pos = 0) const {
+  inline T option_value([[maybe_unused]] const std::string& id,
+                        [[maybe_unused]] std::size_t pos = 0) const {
     throw std::runtime_error{"Conversion to specified type is not supported"};
     return {};
   }
 
-  /// @brief Partial template specialization for converting to std::string
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds
-  /// @returns An argument value as std::string
-  template <>
-  std::string option_value(const std::string& id, std::size_t pos) const {
-    return parsed_.at(id).at(pos);
-  }
-
-  /// @brief Partial template specialization for converting to int
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of int
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as int
-  template <>
-  int option_value(const std::string& id, std::size_t pos) const {
-    return std::stoi(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to std::size_t
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of std::size_t
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as std::string
-  template <>
-  std::size_t option_value(const std::string& id, std::size_t pos) const {
-    return std::stoul(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to std::int64_t
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of std::int64_t
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as std::int64_t
-  template <>
-  std::int64_t option_value(const std::string& id, std::size_t pos) const {
-    return std::stoll(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to float
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of float
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as float
-  template <>
-  float option_value(const std::string& id, std::size_t pos) const {
-    return std::stof(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Partial template specialization for converting to double
-  /// @param id  the `id` of the option for which to obtain the argument
-  /// @param pos  the index of the argument
-  /// @throws std::out_of_range in case `pos` is out of bounds or the conversion
-  ///         would exceed the bounds of double
-  /// @throws std::invalid_argument if no conversion could be performed
-  /// @returns An argument value as double
-  template <>
-  double option_value(const std::string& id, std::size_t pos) const {
-    return std::stod(parsed_.at(id).at(pos));
-  }
-
-  /// @brief Template for converting the argument value of option with `id` at
-  ///        `pos` using the specified conversion function `conv`
-  /// @tparam ConversionFunc  Type of `conv`
-  /// @param id  the `id` of the option for which to obtain and convert the
-  ///        argument
-  /// @param conv  the conversion function to convert the argument with
-  /// @param pos  the index of the argument
-  /// @returns the conversion result of the conversion function `conv`
+  /// @brief Converts an option value using a custom conversion function.
+  /// Allows flexible conversion to types not directly supported.
+  /// @tparam ConversionFunc The type of the conversion function.
+  /// @param id The unique ID of the option.
+  /// @param conv The conversion function to apply to the string value.
+  /// @param pos The index of the argument (default: 0 for first value).
+  /// @return The result of applying conv to the argument value.
   template <class ConversionFunc>
   auto option_value(const std::string& id, ConversionFunc conv,
                     std::size_t pos = 0) const {
@@ -244,23 +178,105 @@ public:
   }
 
 private:
-  /// @brief Parses a longform option with or without arguments
-  /// @param opt the option to parse
+  /// @brief Parses a long-form option (--option or --option=value).
+  /// @param opt The long-form option string to parse.
   void parse_longform_opt(std::string_view opt);
 
-  /// @brief Parses a single or multiple shortform option with or without
-  /// arguments
-  /// @param opt the option(s) in question
-  /// @param args  the remaining arguments, needed for retrieving option values
-  /// @returns  the option values after parsing possible option values
+  /// @brief Parses one or more short-form options (-o or -abc).
+  /// Handles combined short options and their values.
+  /// @param opt The short-form option string(s) to parse.
+  /// @param args The remaining arguments (may be consumed for option values).
+  /// @return The remaining arguments after parsing.
   arg_span parse_shortform_opt(std::string_view opt, arg_span args);
 
-  /// @brief The registered options
+  /// @brief The set of registered options.
   option_set options_;
-  /// @brief The parsed program name
+  /// @brief The program name extracted from argv[0].
   std::string program_name_;
-  /// @brief The parsed options and possible values
+  /// @brief Map of parsed option IDs to their argument values.
   result_map parsed_;
 };
+
+// -- Template specializations for option_value (at namespace scope) -----------
+
+/// @brief Template specialization for std::string option values.
+/// Returns the argument value as-is, without conversion.
+/// @param id The unique ID of the option.
+/// @param pos The index of the argument (default: 0).
+/// @throws std::out_of_range If pos is out of bounds.
+/// @return The argument value as a string.
+template <>
+inline std::string
+cli_parser::option_value<std::string>(const std::string& id,
+                                      std::size_t pos) const {
+  return parsed_.at(id).at(pos);
+}
+
+/// @brief Template specialization for int option values.
+/// Converts the string argument to an integer.
+/// @param id The unique ID of the option.
+/// @param pos The index of the argument (default: 0).
+/// @throws std::out_of_range If pos is out of bounds.
+/// @throws std::invalid_argument If the value cannot be converted to int.
+/// @return The argument value as an int.
+template <>
+inline int
+cli_parser::option_value<int>(const std::string& id, std::size_t pos) const {
+  return std::stoi(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to std::size_t
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of std::size_t
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as std::size_t
+template <>
+inline std::size_t
+cli_parser::option_value<std::size_t>(const std::string& id,
+                                      std::size_t pos) const {
+  return std::stoul(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to std::int64_t
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of std::int64_t
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as std::int64_t
+template <>
+inline std::int64_t
+cli_parser::option_value<std::int64_t>(const std::string& id,
+                                       std::size_t pos) const {
+  return std::stoll(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to float
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of float
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as float
+template <>
+inline float
+cli_parser::option_value<float>(const std::string& id, std::size_t pos) const {
+  return std::stof(parsed_.at(id).at(pos));
+}
+
+/// @brief Partial template specialization for converting to double
+/// @param id  the `id` of the option for which to obtain the argument
+/// @param pos  the index of the argument
+/// @throws std::out_of_range in case `pos` is out of bounds or the conversion
+///         would exceed the bounds of double
+/// @throws std::invalid_argument if no conversion could be performed
+/// @returns An argument value as double
+template <>
+inline double
+cli_parser::option_value<double>(const std::string& id, std::size_t pos) const {
+  return std::stod(parsed_.at(id).at(pos));
+}
 
 } // namespace util

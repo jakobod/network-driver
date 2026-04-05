@@ -54,8 +54,9 @@ TEST(format_test, split_string_by_char_delimiter) {
 }
 
 TEST(format_test, join_string) {
-  const std::string expected{"1-2-3-4-5-6-7-8-9"};
-  const auto res = util::join({"1", "2", "3", "4", "5", "6", "7", "8", "9"},
-                              '-');
+  const std::string_view expected{"1-2-3-4-5-6-7-8-9"};
+  const std::vector<std::string> parts{"1", "2", "3", "4", "5",
+                                       "6", "7", "8", "9"};
+  const auto res = util::join(parts, '-');
   ASSERT_EQ(expected, res);
 }

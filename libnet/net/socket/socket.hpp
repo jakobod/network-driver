@@ -9,80 +9,115 @@
 #pragma once
 
 #include "net/fwd.hpp"
-#include "net/socket_id.hpp"
-
 #include "util/fwd.hpp"
+
+#include "net/socket/socket_id.hpp"
 
 #include <cstddef>
 #include <string>
 
 namespace net {
 
-/// base class of the typed socket abstraction.
+/// @brief Base class of the typed socket abstraction.
+/// Represents a network socket with a unique identifier.
 struct socket {
-  /// Default constructs a socket object
+  /// @brief Default constructs a socket object with an invalid socket ID.
   constexpr socket() noexcept = default;
 
-  /// Constructs a socket object from a socekt_id
+  /// @brief Constructs a socket object from a socket ID.
+  /// @param id The socket ID.
   constexpr explicit socket(socket_id id) noexcept : id(id) {
     // nop
   }
 
-  /// Copy constructor
+  /// @brief Destructs
+  constexpr ~socket() noexcept = default;
+
+  /// @brief Copy constructor.
   constexpr socket(const socket& other) noexcept = default;
 
-  /// Copy assignment operator
+  /// @brief Copy assignment operator.
   constexpr socket& operator=(const socket& other) noexcept = default;
 
-  /// Comparison operator for equality of two sockets
+  /// @brief Comparison operator for equality of two sockets.
+  /// @param other The socket to compare with.
+  /// @return true if both sockets have the same ID, false otherwise.
   constexpr bool operator==(const socket other) const noexcept {
     return id == other.id;
   }
 
-  /// Comparison operator for inequality of two sockets
+  /// @brief Comparison operator for inequality of two sockets.
+  /// @param other The socket to compare with.
+  /// @return true if the sockets have different IDs, false otherwise.
   constexpr bool operator!=(const socket other) const noexcept {
     return id != other.id;
   }
 
-  /// contained socket_id of the socket
+  /// @brief The contained socket ID.
   socket_id id{invalid_socket_id};
 };
 
-/// Denotes the invalid socket.
+/// @brief Represents an invalid/uninitialized socket.
 constexpr socket invalid_socket{invalid_socket_id};
 
-/// Converts between different socket types.
+/// @brief Converts between different socket types.
+/// Performs a bitwise cast of the socket ID to the target type.
+/// @tparam To The target socket type.
+/// @tparam From The source socket type.
+/// @param x The source socket to convert.
+/// @return A socket of type `To` with the same ID as `x`.
 template <class To, class From>
 constexpr To socket_cast(From x) {
   return To{x.id};
 }
 
-/// Closes socket `x`.
+/// @brief Closes the specified socket.
+/// Releases the socket resources and marks it as invalid.
+/// @param x The socket to close.
 void close(socket x);
 
-/// Shuts down socket `x`.
+/// @brief Shuts down the specified socket.
+/// Disables further communication on the socket.
+/// @param sock The socket to shutdown.
+/// @param how How to shutdown (SHUT_RD, SHUT_WR, or SHUT_RDWR).
 void shutdown(socket sock, int how);
 
-/// binds socket `x` to endpoint `ep`.
+/// @brief Binds a socket to the specified endpoint.
+/// @param sock The socket to bind.
+/// @param ep The endpoint address and port to bind to.
+/// @return An error if binding failed, util::none on success.
 util::error bind(socket sock, ip::v4_endpoint ep);
 
-/// Returns the last socket error in this thread as an integer.
+/// @brief Returns the last socket error code in this thread.
+/// @return The errno value from the last failed socket operation.
 int last_socket_error();
 
-/// Checks whether `last_socket_error()` would return an error code that
-/// indicates a temporary error.
+/// @brief Checks whether the last socket error is temporary.
+/// Determines if the error indicates a temporary condition that may succeed on
+/// retry.
+/// @return true if the error is temporary, false otherwise.
 bool last_socket_error_is_temporary();
 
-/// Returns the last socket error as human-readable string.
+/// @brief Returns the last socket error as a human-readable string.
+/// @return A descriptive error message for the last socket error.
 std::string last_socket_error_as_string();
 
-/// Enables or disables nonblocking I/O on `x`.
+/// @brief Enables or disables nonblocking mode on a socket.
+/// @param x The socket to modify.
+/// @param new_value true to enable nonblocking mode, false to disable.
+/// @return true if the operation succeeded, false otherwise.
 bool nonblocking(socket x, bool new_value);
 
-/// Returns port of `x` or error if `x` is not bound.
+/// @brief Returns the port number of the specified socket.
+/// @param x The socket to query.
+/// @return The port number if the socket is bound, or an error if not.
 util::error_or<uint16_t> port_of(socket x);
 
-/// Enables or disables reuseaddr I/O on `x`.
+/// @brief Enables or disables the SO_REUSEADDR option on a socket.
+/// Allows reusing a port that is in TIME_WAIT state.
+/// @param x The socket to modify.
+/// @param new_value true to enable SO_REUSEADDR, false to disable.
+/// @return true if the operation succeeded, false otherwise.
 bool reuseaddr(socket x, bool new_value);
 
 } // namespace net

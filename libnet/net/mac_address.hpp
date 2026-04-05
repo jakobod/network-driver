@@ -14,8 +14,12 @@
 
 namespace net {
 
+/// @brief Length of a MAC address in bytes.
 static constexpr const std::size_t mac_length = 6;
 
+/// @brief Type alias for representing a MAC (Media Access Control) address.
+/// A MAC address is a 6-byte hardware address that uniquely identifies a device
+/// on a local area network. Stored in network-byte-order.
 using mac_address = util::byte_array<mac_length>;
 
 } // namespace net

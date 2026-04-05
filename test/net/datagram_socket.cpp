@@ -19,9 +19,7 @@ using namespace net;
 
 TEST(datagram_socket, write) {
   // Create socketpair
-  auto maybe_sockets = make_connected_datagram_socket_pair();
-  ASSERT_EQ(nullptr, get_error(maybe_sockets));
-  auto sockets = std::get<datagram_socket_pair>(maybe_sockets);
+  auto sockets = UNPACK_EXPRESSION(make_connected_datagram_socket_pair());
   // create and send the testdata
   util::byte_array<1024> data;
   std::uint8_t i = 0;

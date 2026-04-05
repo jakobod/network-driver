@@ -28,6 +28,8 @@ set_build_flag() {
   FlagName=''
   case "$1" in
     testing)                 FlagName='LIB_NET_ENABLE_TESTS' ;;
+    uring)                   FlagName='LIB_NET_ENABLE_URING' ;;
+    assertions)              FlagName='LIB_NET_ENABLE_ASSERTIONS' ;;
     *)
       echo "Invalid flag '$1'.  Try $0 --help to see available options."
       exit 1
@@ -55,6 +57,7 @@ set_log_level() {
 # Set defaults.
 CMakeBuildDir=""
 CMakeCacheEntries=""
+CMakeGenerator=""
 
 # Parse user input.
 while [ $# -ne 0 ]; do
@@ -84,6 +87,9 @@ while [ $# -ne 0 ]; do
       ;;
     --log-level=*)
       set_log_level "$optarg"
+      ;;
+    --generator=*)
+      CMakeGenerator="$optarg"
       ;;
     *)
       echo "Invalid option '$1'. Try $0 --help to see available options."

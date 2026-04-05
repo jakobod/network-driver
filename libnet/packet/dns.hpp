@@ -8,8 +8,11 @@
 
 #pragma once
 
+/// @brief DNS message header structure.
+/// Represents the fixed 12-byte header format for DNS queries and responses,
+/// containing flags for query type, response code, and resource record counts.
 struct dns_header {
-  uin16_t id; // identification number
+  uint16_t id; // identification number
 
   uint8_t rd : 1;     // recursion desired
   uint8_t tc : 1;     // truncated message
@@ -23,14 +26,17 @@ struct dns_header {
   uint8_t z : 1;     // its z! reserved
   uint8_t ra : 1;    // recursion available
 
-  uin16_t q_count;    // number of question entries
-  uin16_t ans_count;  // number of answer entries
-  uin16_t auth_count; // number of authority entries
-  uin16_t add_count;  // number of resource entries
+  uint16_t q_count;    // number of question entries
+  uint16_t ans_count;  // number of answer entries
+  uint16_t auth_count; // number of authority entries
+  uint16_t add_count;  // number of resource entries
 };
 
 namespace packet {
 
+/// @brief DNS protocol layer class (placeholder).
+/// Future DNS packet handling will extend this class for query/response
+/// processing.
 class dns {};
 
 } // namespace packet

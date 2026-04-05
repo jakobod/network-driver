@@ -12,6 +12,9 @@
 #include "util/error_or.hpp"
 #include "util/format.hpp"
 
+#include <charconv>
+#include <string_view>
+
 namespace net::ip {
 
 bool operator==(const v4_address& lhs, const v4_address& rhs) {
@@ -30,16 +33,26 @@ std::string to_string(const v4_address& addr) {
                       static_cast<std::uint8_t>(addr.bytes()[3]));
 }
 
-util::error_or<v4_address> parse_v4_address(const std::string& str) {
+util::error_or<v4_address> parse_v4_address(std::string_view str) noexcept {
   v4_address::octet_array bytes;
   const auto parts = util::split(str, '.');
-  if (parts.size() != bytes.size())
+  if (parts.size() != bytes.size()) {
     return util::error{util::error_code::parser_error,
-                       "Parsing to v4_endpoint failed: needs exactly 4 octets"};
+                       "Parsing to v4_address failed: needs exactly 4 octets"};
+  }
   auto it = bytes.begin();
-  for (const auto& part : parts)
-    *it++ = std::byte{static_cast<std::uint8_t>(std::stoi(part))};
-  return {bytes};
+  for (const auto& part : parts) {
+    std::uint8_t value = 0;
+    if (util::parse(part, value)) {
+      *it++ = std::byte{value};
+    } else {
+      return util::error{
+        util::error_code::parser_error,
+        "Parsing to v4_address failed: failed to parse octet \'"
+          + std::string{part} + "\'"};
+    }
+  }
+  return v4_address{bytes};
 }
 
 } // namespace net::ip

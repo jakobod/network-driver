@@ -13,20 +13,37 @@
 
 namespace net {
 
+/// @brief Interface for application-level protocol implementations.
+/// Defines the contract for custom protocol handlers that operate above
+/// the transport layer, handling data production and consumption.
 struct application {
-  /// Initializes the application.
+  /// @brief Virtual destructor for proper cleanup in derived classes.
+  virtual ~application() = default;
+
+  /// @brief Initializes the application layer with configuration.
+  /// @param cfg The configuration object containing application settings.
+  /// @return An error if initialization fails, success otherwise.
   virtual util::error init(const util::config& cfg) = 0;
 
-  /// Checks wether the application has more data to send.
+  /// @brief Checks if the application has more data to send.
+  /// @return True if there is pending data waiting to be transmitted.
   virtual bool has_more_data() = 0;
 
-  /// Produces more data and enqueues it at their parent.
+  /// @brief Produces and sends more application data.
+  /// Called when the transport is ready to accept more bytes.
+  /// @return The result of the produce operation (ok, done, or error).
   virtual event_result produce() = 0;
 
-  /// Consumes previously received data.
+  /// @brief Consumes and processes received data.
+  /// Called when data arrives from the remote peer via the transport.
+  /// @param bytes The received data to process.
+  /// @return The result of consumption (ok, done, or error).
   virtual event_result consume(util::const_byte_span bytes) = 0;
 
-  /// Handles a timeout.
+  /// @brief Handles an application-level timeout.
+  /// Called when a timer previously registered by the application expires.
+  /// @param id The timeout identifier that triggered.
+  /// @return The result of timeout handling (ok, done, or error).
   virtual event_result handle_timeout(uint64_t id) = 0;
 };
 

@@ -8,7 +8,7 @@
 
 #include "net/tls.hpp"
 #include "net/layer.hpp"
-#include "net/multiplexer.hpp"
+// #include "net/multiplexer.hpp"
 #include "net/stream_transport.hpp"
 #include "net/transport.hpp"
 #include "net/transport_adaptor.hpp"
@@ -104,12 +104,14 @@ struct dummy_transport : transport {
   }
 
   util::error init(const util::config& cfg) override {
-    if (auto err = transport::init(cfg))
+    if (auto err = transport::init(cfg)) {
       return err;
-    if (!nonblocking(handle(), true))
+    }
+    if (!nonblocking(handle(), true)) {
       return {util::error_code::runtime_error,
               util::format("Failed to set nonblocking on sock={0}",
                            handle().id)};
+    }
     return next_layer_.init(cfg);
   }
 
@@ -171,8 +173,9 @@ struct dummy_application {
 
   event_result produce() {
     vars_.produce_called = true;
-    if (vars_.data.empty())
+    if (vars_.data.empty()) {
       return event_result::done;
+    }
     parent_.enqueue(vars_.data);
     vars_.data = vars_.data.subspan(vars_.data.size());
     return event_result::ok;
@@ -206,8 +209,9 @@ struct tls_test : public testing::Test {
       ctx.init(CERT_DIRECTORY "/server.crt", CERT_DIRECTORY "/server.key"));
 
     uint8_t b = 0;
-    for (auto& val : data)
+    for (auto& val : data) {
       val = std::byte{b++};
+    }
 
     client_application_vars_.data = util::const_byte_span{data};
     server_application_vars_.data = util::const_byte_span{data};

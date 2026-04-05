@@ -10,10 +10,12 @@
 
 #include "net/fwd.hpp"
 
+#include "net/transport.hpp"
+
+#include "net/detail/multiplexer_base.hpp"
 #include "net/event_result.hpp"
 #include "net/receive_policy.hpp"
 #include "net/socket/stream_socket.hpp"
-#include "net/transport.hpp"
 
 #include "util/config.hpp"
 #include "util/error.hpp"
@@ -24,29 +26,48 @@
 
 namespace net {
 
-/// Implements a stream oriented transport.
+/// @brief Layered stream (TCP) transport implementation.
+/// Provides a transport layer for stream-based protocols (TCP) with
+/// buffer management for reading and writing. Supports layering other
+/// protocol handlers on top through the NextLayer template parameter.
+/// @tparam NextLayer The upper protocol layer to stack on this transport.
 template <class NextLayer>
 class stream_transport : public transport {
 public:
+  /// @brief Constructs a stream transport layer.
+  /// @param handle The stream socket for this connection.
+  /// @param mpx The multiplexer managing this socket.
+  /// @param xs Constructor arguments forwarded to NextLayer.
   template <class... Ts>
-  stream_transport(stream_socket handle, multiplexer* mpx, Ts&&... xs)
+  stream_transport(stream_socket handle, detail::multiplexer_base* mpx,
+                   Ts&&... xs)
     : transport(handle, mpx), next_layer_(*this, std::forward<Ts>(xs)...) {
     LOG_DEBUG("Creating stream_transport with ", NET_ARG2("id", handle.id));
   }
 
+  /// @brief Initializes the transport with configuration.
+  /// Sets the socket to non-blocking mode and initializes the next layer.
+  /// @param cfg The configuration object.
+  /// @return An error if initialization fails, success otherwise.
   util::error init(const util::config& cfg) override {
     LOG_DEBUG("init stream_transport with ", NET_ARG2("socket", handle().id));
-    if (auto err = transport::init(cfg))
+    if (auto err = transport::init(cfg)) {
       return err;
-    if (!nonblocking(handle(), true))
+    }
+    if (!nonblocking(handle(), true)) {
       return {util::error_code::runtime_error,
               util::format("Failed to set nonblocking on sock={0}",
                            handle().id)};
+    }
     return next_layer_.init(cfg);
   }
 
   // -- socket_manager API -----------------------------------------------------
 
+  /// @brief Handles a read-ready event on the socket.
+  /// Reads available data from the socket into the read buffer and
+  /// forwards it to the next layer for processing.
+  /// @return event_result indicating success, error, or completion.
   event_result handle_read_event() override {
     LOG_TRACE();
     LOG_DEBUG("handle read_event on ", NET_ARG2("socket", handle().id));
@@ -61,18 +82,16 @@ public:
         if (received_ >= min_read_size_) {
           if (next_layer_.consume(
                 util::const_byte_span{read_buffer_.data(), received_})
-              == event_result::error)
+              == event_result::error) {
             return event_result::error;
-          else
+          } else {
             received_ = 0; // Data should be consumed completely
+          }
         }
       } else if (read_res == 0) {
         return event_result::error;
       } else if (read_res < 0) {
         if (!last_socket_error_is_temporary()) {
-          handle_error(util::error(util::error_code::socket_operation_failed,
-                                   "[socket_manager.read()] "
-                                     + last_socket_error_as_string()));
           return event_result::error;
         }
         return event_result::ok;
@@ -81,6 +100,10 @@ public:
     return event_result::ok;
   }
 
+  /// @brief Handles a write-ready event on the socket.
+  /// Sends buffered data to the remote endpoint and fetches more data
+  /// from the next layer if needed.
+  /// @return event_result indicating success, error, or completion.
   event_result handle_write_event() override {
     LOG_TRACE();
     LOG_DEBUG("handle write_event on ", NET_ARG2("socket", handle().id));
@@ -90,13 +113,16 @@ public:
     auto fetch = [&]() {
       for (size_t i = 0; next_layer_.has_more_data()
                          && (i < transport::max_consecutive_fetches_);
-           ++i)
+           ++i) {
         next_layer_.produce();
+      }
       return !write_buffer_.empty();
     };
-    if (write_buffer_.empty())
-      if (!fetch())
+    if (write_buffer_.empty()) {
+      if (!fetch()) {
         return event_result::done;
+      }
+    }
     for (size_t i = 0; i < transport::max_consecutive_writes_; ++i) {
       auto write_res = write(handle<stream_socket>(), write_buffer_);
       if (write_res > 0) {
@@ -104,16 +130,15 @@ public:
                   NET_ARG2("socket", handle().id));
         write_buffer_.erase(write_buffer_.begin(),
                             write_buffer_.begin() + write_res);
-        if (write_buffer_.empty())
-          if (!fetch())
+        if (write_buffer_.empty()) {
+          if (!fetch()) {
             return event_result::done;
+          }
+        }
       } else {
         if (last_socket_error_is_temporary()) {
           return event_result::ok;
         } else {
-          handle_error({util::error_code::socket_operation_failed,
-                        util::format("[stream::write()] errno = {0}: {1}",
-                                     errno, last_socket_error_as_string())});
           return event_result::error;
         }
       }
@@ -121,25 +146,28 @@ public:
     return done_writing() ? event_result::done : event_result::ok;
   }
 
-  event_result handle_timeout(uint64_t id) override {
-    return next_layer_.handle_timeout(id);
-  }
+  // event_result handle_timeout(uint64_t id) override {
+  //   return next_layer_.handle_timeout(id);
+  // }
 
   // -- public API -------------------------------------------------------------
 
-  /// Configures the amount to be read next
+  /// @brief Configures the read buffer for the next read operation.
+  /// Sets the minimum bytes to receive and resizes the buffer if needed.
+  /// @param policy The receive policy specifying min and max sizes.
   void configure_next_read(receive_policy policy) override {
     received_ = 0;
     min_read_size_ = policy.min_size;
-    if (read_buffer_.size() != policy.max_size)
+    if (read_buffer_.size() != policy.max_size) {
       read_buffer_.resize(policy.max_size);
+    }
     LOG_DEBUG("Configuring next read on ", NET_ARG2("socket", handle().id),
               ": ", NET_ARG(min_read_size_), ", ",
               NET_ARG2("max_read_size_", policy.max_size));
   }
 
 private:
-  NextLayer next_layer_;
+  NextLayer next_layer_; ///< The next protocol layer in the stack.
 };
 
 } // namespace net

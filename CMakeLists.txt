@@ -19,9 +19,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-add_compile_options(-Wall -Wextra -pedantic -fexperimental-library)
+add_compile_options(-Wall -Wextra -pedantic -Werror)
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# -- build type configuration --------------------------------------------------
 
 message (STATUS "Build type ${CMAKE_BUILD_TYPE}")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(LIB_NET_DEBUG TRUE)
+  add_compile_definitions(LIB_NET_DEBUG)
+endif()
 
 # -- find or fetch dependencies ------------------------------------------------
 
@@ -32,13 +40,21 @@ if (LIB_NET_ENABLE_TESTS)
   # Googletest
   FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
   )
   FetchContent_MakeAvailable(googletest)
 endif()
 
-# Threads
-find_package(OpenSSL REQUIRED)
+if(LIB_NET_ENABLE_URING)
+  if(LINUX)
+    find_package(IoUring REQUIRED)
+  else()
+    message(FATAL_ERROR "io_uring support is only available on Linux")
+  endif()
+endif()
+
+# OpenSSL
+# find_package(OpenSSL REQUIRED)
 
 # -- project files -------------------------------------------------------------
 
@@ -47,16 +63,22 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
-  src/net/acceptor.cpp
   src/net/event_result.cpp
+  src/net/multiplexer.cpp
+  src/net/operation.cpp
+  src/net/uri.cpp
+
+  src/net/detail/acceptor.cpp
+  src/net/detail/epoll_multiplexer.cpp
+  src/net/detail/kqueue_multiplexer.cpp
+  src/net/detail/manager_base.cpp
+  src/net/detail/multiplexer_base.cpp
+  src/net/detail/pollset_updater.cpp
+  src/net/detail/uring_manager.cpp
+  src/net/detail/uring_multiplexer.cpp
+
   src/net/ip/v4_address.cpp
   src/net/ip/v4_endpoint.cpp
-  src/net/multiplexer_impl.cpp
-  src/net/kqueue_multiplexer.cpp
-  src/net/operation.cpp
-  src/net/pollset_updater.cpp
-  src/net/socket_manager.cpp
-  src/net/uri.cpp
   
   src/openssl/tls_context.cpp
   src/openssl/tls_session.cpp
@@ -73,21 +95,37 @@ set(LIB_NET_SOURCES
   src/util/binary_serializer.cpp
   src/util/cli_parser.cpp
   src/util/config.cpp
-  src/util/error_code.cpp
   src/util/error.cpp
   src/util/format.cpp
 )
+
 
 # -- Object for different targets ----------------------------------------------
 
 add_library(net STATIC ${LIB_NET_HEADERS} ${LIB_NET_SOURCES})
 set_property(TARGET net PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(net PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")
-target_link_libraries(net Threads::Threads OpenSSL::Crypto OpenSSL::SSL)
+target_link_libraries(net Threads::Threads)
+
+if(LIB_NET_ENABLE_URING)
+  target_link_libraries(net IoUring::IoUring)
+  add_compile_definitions(LIB_NET_URING)
+endif()
 
 # Copy Dummy certs to build folder and set preprocessor definition to the folder
 file(COPY "${PROJECT_SOURCE_DIR}/certs" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 add_compile_definitions(CERT_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/certs")
+
+# -- assertion configuration ---------------------------------------------------
+
+option(LIB_NET_ENABLE_ASSERTIONS "Enable runtime assertions" OFF)
+
+if(LIB_NET_ENABLE_ASSERTIONS)
+  if(NOT LIB_NET_DEBUG) 
+    message(WARNING "This is a release build and assertions are enabled. Assertions have a significant impact on the runtime performance - Consider disabling them if not really necessary.")
+  endif()
+  add_compile_definitions(LIB_NET_ENABLE_ASSERTIONS)
+endif()
 
 # -- logging configuration -----------------------------------------------------
 
@@ -119,19 +157,21 @@ if (LIB_NET_ENABLE_TESTS)
     test/net_test_main.cpp
     test/net/acceptor.cpp
     test/net/datagram_socket.cpp
-    test/net/ip/v4_address.cpp
-    test/net/ip/v4_endpoint.cpp
-    test/net/kqueue_multiplexer.cpp
+    test/net/manager_base.cpp
+    test/net/multiplexer.cpp
     test/net/pollset_updater.cpp
     test/net/socket_guard.cpp
-    test/net/socket_manager.cpp
     test/net/stream_transport.cpp
     test/net/tcp_socket.cpp
-    test/net/tls.cpp
     test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    test/openssl/communication.cpp
+    test/net/uring_multiplexer.cpp
+
+    test/net/ip/v4_address.cpp
+    test/net/ip/v4_endpoint.cpp
+
+    test/util/assert.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp
@@ -141,6 +181,9 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/ref_counted.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
+  
+    # test/net/tls.cpp
+    # test/openssl/communication.cpp
   )
 
   target_include_directories(lib_net_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libnet")

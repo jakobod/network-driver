@@ -10,72 +10,50 @@
 
 #include "util/error.hpp"
 #include "util/error_or.hpp"
+#include "util/exception.hpp"
 #include "util/format.hpp"
 
+#include <ranges>
 #include <sstream>
+
+namespace {
+
+std::string_view extract_parts(std::vector<std::string_view>& dst,
+                               std::string_view source, auto delim) noexcept {
+  dst = util::split(source, delim);
+  const auto remainder = std::move(dst.front());
+  dst.erase(dst.begin());
+  return remainder;
+}
+
+} // namespace
 
 namespace net {
 
-uri::uri(std::string scheme, const ip::v4_endpoint& auth,
-         std::vector<std::string> path, std::vector<std::string> queries,
-         std::vector<std::string> fragments)
-  : scheme_{std::move(scheme)},
-    auth_{auth},
-    path_{std::move(path)},
-    queries_{std::move(queries)},
-    fragments_{std::move(fragments)} {
-  // nop
-}
-
-bool operator==(const uri& lhs, const uri& rhs) {
-  return (lhs.scheme() == rhs.scheme()) && (lhs.authority() == rhs.authority())
-         && (lhs.path() == rhs.path()) && (lhs.queries() == rhs.queries())
-         && (lhs.fragments() == rhs.fragments());
-}
-
-bool operator!=(const uri& lhs, const uri& rhs) {
-  return !(lhs == rhs);
-}
-
-std::string to_string(const uri& x) {
-  std::stringstream ss;
-  ss << x.scheme() << "://" << to_string(x.authority());
-  for (const auto& p : x.path()) ss << "/" << p;
-  for (const auto& q : x.queries()) ss << "?" << q;
-  for (const auto& f : x.fragments()) ss << "#" << f;
-  return ss.str();
-}
-
-util::error_or<uri> parse_uri(const std::string& str) {
+uri::uri(std::string uri_string) : original_{std::move(uri_string)} {
   // Get the scheme of the uri removing the slashes
-  auto parts = util::split(str, "://");
-  if (parts.size() > 2)
-    return util::error{util::error_code::parser_error,
-                       util::format("Failed to parse {0}", str)};
-  auto scheme = parts.front();
-  auto res = parts.back();
+  auto parts = util::split(original_, "://");
+  if (parts.size() > 2) {
+    throw util::exception{util::error_code::parser_error,
+                          util::format("Failed to parse {0}", original_)};
+  }
 
-  // Get fragements (if exist)
-  auto fragments = util::split(res, '#');
-  res = fragments.front();
-  fragments.erase(fragments.begin());
-
-  auto queries = util::split(res, '?');
-  res = queries.front();
-  queries.erase(queries.begin());
-
-  // Get the paths
-  auto path = util::split(res, '/');
-  auto auth_str = path.front();
-  path.erase(path.begin());
+  scheme_ = parts.front();
+  const auto fragments_remainder = extract_parts(fragments_, parts.back(), '#');
+  const auto queries_remainder = extract_parts(queries_, fragments_remainder,
+                                               '?');
+  const auto auth = extract_parts(path_, queries_remainder, '/');
 
   // Parse the authority
-  auto maybe_auth = net::ip::parse_v4_endpoint(auth_str);
-  if (auto err = util::get_error(maybe_auth))
-    return *err;
+  auto maybe_auth = net::ip::parse_v4_endpoint(auth);
+  if (auto err = util::get_error(maybe_auth)) {
+    throw util::exception{std::move(*err)};
+  }
+  auth_ = std::move(std::get<ip::v4_endpoint>(maybe_auth));
+}
 
-  return uri{std::move(scheme), std::get<net::ip::v4_endpoint>(maybe_auth),
-             std::move(path), std::move(queries), std::move(fragments)};
+std::string_view to_string(const uri& uri) noexcept {
+  return uri.original();
 }
 
 } // namespace net

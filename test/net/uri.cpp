@@ -9,7 +9,9 @@
 #include "net/uri.hpp"
 
 #include "util/error_or.hpp"
+#include "util/exception.hpp"
 
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -20,15 +22,19 @@ using namespace net;
 TEST(uri_test, parse) {
   const std::string uri_str{
     "https://127.0.0.1:21345/path/to/somewhere?query=value#fragment"};
-  auto maybe_uri = net::parse_uri(uri_str);
-  if (auto err = util::get_error(maybe_uri))
-    FAIL() << *err;
-  auto loc = std::get<net::uri>(maybe_uri);
-  ASSERT_EQ("https", loc.scheme());
+  ASSERT_NO_THROW(net::uri{uri_str});
+  net::uri uri{uri_str};
+  ASSERT_EQ(uri_str, uri.original());
+  ASSERT_EQ("https", uri.scheme());
+
   const std::vector<std::string> path{"path", "to", "somewhere"};
-  ASSERT_EQ(path, loc.path());
+  ASSERT_TRUE(std::equal(path.begin(), path.end(), uri.path().begin()));
+
   const std::vector<std::string> queries{"query=value"};
-  ASSERT_EQ(queries, loc.queries());
+  ASSERT_TRUE(
+    std::equal(queries.begin(), queries.end(), uri.queries().begin()));
+
   const std::vector<std::string> fragments{"fragment"};
-  ASSERT_EQ(fragments, loc.fragments());
+  ASSERT_TRUE(
+    std::equal(fragments.begin(), fragments.end(), uri.fragments().begin()));
 }
