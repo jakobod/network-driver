@@ -56,13 +56,13 @@ io_uring_sqe* prepare_sqe(io_uring& uring, net::detail::uring_manager& mgr,
   }
   switch (op) {
     case net::operation::read: {
-      auto buf = mgr.data_to_read();
+      auto buf = mgr.read_buffer();
       io_uring_prep_read(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
       break;
     }
 
     case net::operation::write: {
-      auto buf = mgr.data_to_write();
+      auto buf = mgr.write_buffer();
       io_uring_prep_write(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
       break;
     }
@@ -144,8 +144,7 @@ void uring_multiplexer::add(manager_base_ptr mgr, operation initial) {
   } else {
     LOG_DEBUG("Requesting to add socket_manager with ",
               NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
-    write_to_pipe(pollset_updater<uring_manager>::opcode::add, mgr.release(),
-                  initial);
+    write_to_pipe(pollset_opcode::add, mgr.release(), initial);
   }
 }
 
@@ -291,6 +290,7 @@ void uring_multiplexer::handle_events() {
       auto result = data->mgr->handle_completion(data->op, cqe->res);
       switch (result) {
         case event_result::ok:
+        case event_result::temporary_error:
           resubmit_operation(uring_, data);
           break;
         case event_result::done:

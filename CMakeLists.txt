@@ -63,7 +63,6 @@ file(GLOB_RECURSE LIB_NET_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/libnet/*.hpp")
 
 # New source files have to be added here
 set(LIB_NET_SOURCES
-  src/net/event_result.cpp
   src/net/multiplexer.cpp
   src/net/operation.cpp
   src/net/uri.cpp
@@ -155,23 +154,24 @@ if (LIB_NET_ENABLE_TESTS)
   add_executable(
     lib_net_test
     test/net_test_main.cpp
-    test/net/acceptor.cpp
     test/net/datagram_socket.cpp
-    test/net/manager_base.cpp
+    test/net/datagram_transport.cpp
     test/net/multiplexer.cpp
-    test/net/pollset_updater.cpp
     test/net/socket_guard.cpp
-    test/net/stream_transport.cpp
     test/net/tcp_socket.cpp
-    test/net/transport_adaptor.cpp
     test/net/udp_datagram_socket.cpp
     test/net/uri.cpp
-    test/net/uring_multiplexer.cpp
+
+    test/net/detail/acceptor.cpp
+    test/net/detail/manager_base.cpp
+    test/net/detail/pollset_updater.cpp
+    test/net/detail/stream_transport.cpp
+    test/net/detail/transport_adaptor.cpp
+    test/net/detail/uring_multiplexer.cpp
 
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
 
-    test/util/assert.cpp
     test/util/binary_deserializer.cpp
     test/util/binary_serializer.cpp
     test/util/cli_parser.cpp

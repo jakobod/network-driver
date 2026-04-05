@@ -79,4 +79,8 @@ event_result manager_base::handle_timeout(uint64_t) {
   return event_result::error;
 }
 
+void manager_base::handle_error(util::error err) const {
+  mpx()->handle_error(std::move(err));
+}
+
 } // namespace net::detail

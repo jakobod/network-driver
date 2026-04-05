@@ -97,10 +97,10 @@ public:
   // -- Event handling ---------------------------------------------------------
 
   /// @brief Registers this manager for read events on its socket.
-  void register_reading();
+  virtual void register_reading();
 
   /// @brief Registers this manager for write events on its socket.
-  void register_writing();
+  virtual void register_writing();
 
   // -- Timeout handling -------------------------------------------------------
 
@@ -120,6 +120,10 @@ public:
   /// @param timeout_id The identifier of the timeout that fired
   /// @return The result of handling the timeout event
   virtual event_result handle_timeout(uint64_t timeout_id);
+
+  // -- Error handling ---------------------------------------------------------
+
+  virtual void handle_error(util::error err) const;
 
 private:
   /// The managed socket handle

@@ -50,7 +50,9 @@ struct dummy_socket_manager : public net::detail::uring_manager {
   dummy_socket_manager(net::socket handle, detail::multiplexer_base* mpx,
                        test_state& state)
     : detail::uring_manager(handle, mpx), state_{state} {
-    configure_next_read(receive_policy::exactly(1024));
+    min_read_size_ = 1024;
+    received_ = 0;
+    read_buffer_.resize(1024);
   }
 
   /// Handle data from completed uring operations
@@ -73,6 +75,12 @@ struct dummy_socket_manager : public net::detail::uring_manager {
     return event_result::ok;
   }
 
+  util::const_byte_span write_buffer() const noexcept override {
+    return write_buffer_;
+  }
+
+  util::byte_span read_buffer() noexcept override { return read_buffer_; }
+
 private:
   event_result handle_read_completion(int res) {
     state_.read_event_handled = true;
@@ -85,11 +93,11 @@ private:
     received_ += res;
     if (received_ >= min_read_size_) {
       if (state_.register_for_writing) {
-        write_buffer().insert(write_buffer().end(), read_buffer().begin(),
-                              read_buffer().begin() + res);
+        write_buffer_.insert(write_buffer_.end(), read_buffer_.begin(),
+                             read_buffer_.begin() + res);
         register_writing();
       }
-      read_buffer().clear();
+      read_buffer_.clear();
     }
     return event_result::ok;
   }
@@ -99,9 +107,15 @@ private:
     if (res < 0) {
       return event_result::error;
     }
-    write_buffer().erase(write_buffer().begin(), write_buffer().begin() + res);
-    return write_buffer().empty() ? event_result::done : event_result::ok;
+    write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() + res);
+    return write_buffer_.empty() ? event_result::done : event_result::ok;
   }
+
+  util::byte_buffer read_buffer_;
+  util::byte_buffer write_buffer_;
+
+  std::size_t received_{0};
+  std::size_t min_read_size_{0};
 
   test_state& state_;
 };

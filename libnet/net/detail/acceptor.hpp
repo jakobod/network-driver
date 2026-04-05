@@ -65,7 +65,14 @@ public:
               NET_ARG2("accept_handle", accept_handle.id));
     const auto accepted = accept(accept_handle);
     if (accepted == invalid_socket) {
-      return event_result::ok;
+      if (net::last_socket_error_is_temporary()) {
+        return event_result::ok;
+      } else {
+        handle_error(util::error{util::error_code::socket_operation_failed,
+                                 "accept returned an invalid socket: "
+                                   + net::last_socket_error_as_string()});
+        return event_result::error;
+      }
     }
     LOG_DEBUG("event_acceptor connection ",
               NET_ARG2("new_handle", accepted.id));
@@ -98,8 +105,9 @@ public:
               NET_ARG2("handle", uring_manager::handle().id),
               NET_ARG2("new_handle", res));
 
-    if (res <= 0) {
-      LOG_ERROR("error with accepted connection");
+    if (res < 0) {
+      handle_error(util::error{util::error_code::socket_operation_failed,
+                               "accept returned an invalid socket"});
       return event_result::ok;
     }
     return base::handle_accepted(tcp_stream_socket{res});

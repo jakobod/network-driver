@@ -27,26 +27,21 @@ pollset_updater_base<ManagerBase>::pollset_updater_base(net::pipe_socket handle,
                                                         multiplexer_base* mpx)
   : ManagerBase{handle, mpx} {
   LOG_TRACE();
-#if defined(LIB_NET_URING)
-  if constexpr (std::is_same_v<ManagerBase, detail::uring_manager>) {
-    uring_manager::read_buffer().resize(10);
-  }
-#endif
 }
 
 template <class ManagerBase>
 event_result
-pollset_updater_base<ManagerBase>::handle_operation(opcode code,
+pollset_updater_base<ManagerBase>::handle_operation(pollset_opcode code,
                                                     ManagerBase* mgr,
                                                     operation op) {
   switch (code) {
-    case opcode::add:
+    case pollset_opcode::add:
       LOG_DEBUG("Received opcode::add for mgr with ",
                 NET_ARG2("id", mgr->handle().id), " with ", NET_ARG(op));
       ManagerBase::mpx()->add(util::make_intrusive(mgr, false), op);
       return event_result::ok;
 
-    case opcode::shutdown:
+    case pollset_opcode::shutdown:
       LOG_DEBUG("Received opcode::shutdown");
       ManagerBase::mpx()->shutdown();
       return event_result::done;
@@ -61,8 +56,7 @@ pollset_updater_base<ManagerBase>::handle_operation(opcode code,
 
 event_result pollset_updater<event_handler>::handle_read_event() {
   LOG_TRACE();
-  pollset_updater_base<event_handler>::opcode code
-    = pollset_updater_base<event_handler>::opcode::none;
+  auto code = pollset_opcode::none;
   event_handler* mgr = nullptr;
   operation op;
 
@@ -82,6 +76,12 @@ event_result pollset_updater<event_handler>::handle_read_event() {
 
 // -- pollset_updater<uring_manager> implementation (io_uring) -----------------
 
+pollset_updater<uring_manager>::pollset_updater(net::pipe_socket handle,
+                                                multiplexer_base* mpx)
+  : pollset_updater_base{handle, mpx} {
+  read_buffer_.resize(10);
+}
+
 event_result pollset_updater<uring_manager>::handle_completion(operation op,
                                                                int res) {
   if (op != operation::read) {
@@ -94,11 +94,10 @@ event_result pollset_updater<uring_manager>::handle_completion(operation op,
     return event_result::ok;
   }
 
-  pollset_updater_base<uring_manager>::opcode code
-    = pollset_updater_base<uring_manager>::opcode::none;
+  auto code = pollset_opcode::none;
   uring_manager* mgr = nullptr;
   operation op_result;
-  util::binary_deserializer deserializer(base::read_buffer());
+  util::binary_deserializer deserializer(read_buffer_);
   deserializer(code, mgr, op_result);
   return base::handle_operation(code, mgr, op_result);
 }

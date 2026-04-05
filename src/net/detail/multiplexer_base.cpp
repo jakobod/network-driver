@@ -69,8 +69,8 @@ void multiplexer_base::shutdown() {
     pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {
     LOG_DEBUG("requesting multiplexer shutdown");
-    auto res = write_to_pipe(pollset_updater<event_handler>::opcode::shutdown,
-                             nullptr, operation::none);
+    auto res = write_to_pipe(pollset_opcode::shutdown, nullptr,
+                             operation::none);
     if (res != 10) {
       LOG_ERROR("could not write shutdown code to pipe: ",
                 last_socket_error_as_string());
@@ -136,7 +136,7 @@ void multiplexer_base::handle_timeouts() {
 
 // -- Error handling -----------------------------------------------------------
 
-void multiplexer_base::handle_error([[maybe_unused]] const util::error& err) {
+void multiplexer_base::handle_error([[maybe_unused]] util::error err) {
   LOG_ERROR(err);
   shutdown();
 }

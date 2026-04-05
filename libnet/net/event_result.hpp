@@ -22,11 +22,27 @@ enum class event_result : std::uint8_t {
   done,
   /// Operation failed with an error condition.
   error,
+  /// Operation failed with a temporary error condition, i.e., EAGAIN,
+  /// EWOULDBLOCK, etc.
+  temporary_error,
 };
 
 /// @brief Converts an event result to its string representation.
 /// @param op The event_result to stringify.
 /// @return A string describing the result ("ok", "done", or "error").
-std::string to_string(event_result op);
+constexpr std::string_view to_string(event_result res) noexcept {
+  switch (res) {
+    case event_result::ok:
+      return "event_result::ok";
+    case event_result::done:
+      return "event_result::done";
+    case event_result::error:
+      return "event_result::error";
+    case event_result::temporary_error:
+      return "event_result::temporary_error";
+    default:
+      return "event_result::unknown";
+  }
+}
 
 } // namespace net

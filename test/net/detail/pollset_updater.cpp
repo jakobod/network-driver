@@ -39,7 +39,7 @@ using namespace net;
 namespace {
 
 struct dummy_multiplexer : public multiplexer_mock {
-  void handle_error(const util::error& err) override { last_error = err; }
+  void handle_error(util::error err) override { last_error = std::move(err); }
 
   void add(detail::manager_base_ptr mgr, operation initial) override {
     add_called = true;
@@ -86,8 +86,7 @@ TEST_F(pollset_updater_test, init) {
 TEST_F(pollset_updater_test, handle_shutdown) {
   event_pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
-  write_to_pipe(event_pollset_updater::opcode::shutdown, nullptr,
-                operation::none);
+  write_to_pipe(detail::pollset_opcode::shutdown, nullptr, operation::none);
   updater.handle_read_event();
   EXPECT_EQ(mpx.last_error, util::none);
   EXPECT_TRUE(mpx.shutdown_called);
@@ -101,7 +100,7 @@ TEST_F(pollset_updater_test, handle_add) {
     stream_socket_pair.first, &mpx);
   mgr->ref();
   EXPECT_EQ(mgr->ref_count(), 2);
-  write_to_pipe(event_pollset_updater::opcode::add, mgr.get(), operation::read);
+  write_to_pipe(detail::pollset_opcode::add, mgr.get(), operation::read);
   updater.handle_read_event();
   EXPECT_EQ(mgr->ref_count(), 2);
   EXPECT_EQ(mpx.last_error, util::none);

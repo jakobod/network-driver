@@ -10,6 +10,7 @@
 
 #include "net/event_result.hpp"
 #include "net/operation.hpp"
+#include "net/socket_guard.hpp"
 
 #include "net/detail/event_handler.hpp"
 
@@ -35,7 +36,7 @@ struct dummy_multiplexer : public multiplexer_mock {
     mgr = std::move(new_mgr);
   }
 
-  void handle_error(const util::error& err) override { last_error = err; }
+  void handle_error(util::error err) override { last_error = std::move(err); }
 
   util::error last_error;
   detail::manager_base_ptr mgr;
@@ -43,7 +44,8 @@ struct dummy_multiplexer : public multiplexer_mock {
 
 struct acceptor_test : public testing::Test {
   acceptor_test() {
-    auto sock_pair = UNPACK_EXPRESSION(make_tcp_accept_socket({net::ip::v4_address::localhost, 0}));
+    auto sock_pair = UNPACK_EXPRESSION(
+      make_tcp_accept_socket({net::ip::v4_address::localhost, 0}));
     auto factory = [this](net::socket handle) -> detail::manager_base_ptr {
       factory_called = true;
       return util::make_intrusive<detail::event_handler>(handle, &mpx);
@@ -66,9 +68,14 @@ struct acceptor_test : public testing::Test {
 
 TEST_F(acceptor_test, handle_read_event) {
   const v4_endpoint ep{v4_address::localhost, port};
-  auto sock = make_connected_tcp_stream_socket(ep);
-  EXPECT_EQ(acc->handle_read_event(), event_result::ok);
-  EXPECT_EQ(mpx.last_error, util::none);
+  net::socket_guard sock{
+    UNPACK_EXPRESSION(net::make_connected_tcp_stream_socket(ep))};
+  std::size_t num_triggers = 0;
+  const std::size_t max_num_triggers = 10;
+  do {
+    EXPECT_EQ(acc->handle_read_event(), event_result::ok);
+    EXPECT_EQ(mpx.last_error, util::none);
+  } while ((num_triggers++ < max_num_triggers) && (mpx.mgr == nullptr));
   EXPECT_NE(mpx.mgr, nullptr);
   EXPECT_TRUE(factory_called);
 }

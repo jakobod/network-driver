@@ -10,17 +10,9 @@
 
 #if defined(LIB_NET_ENABLE_ASSERTIONS)
 
+#  include <cstdlib>
+#  include <iostream>
 #  include <sstream>
-
-#  ifndef ABORT_FUNCTION
-#    include <cstdlib>
-#    define ABORT_FUNCTION std::abort
-#  endif
-
-#  ifndef ASSERTION_OUTPUT_STREAM
-#    include <iostream>
-#    define ASSERTION_OUTPUT_STREAM std::cerr
-#  endif
 
 // -- Assertion implementation -------------------------------------------------
 
@@ -32,12 +24,12 @@ namespace util::detail {
 /// @param file The source file where assertion occurred
 /// @param line The line number where assertion occurred
 inline void assert_fail(const char* condition, const char* file, int line) {
-  ASSERTION_OUTPUT_STREAM << "\n=== ASSERTION FAILED ===\n"
-                          << "File: " << file << ":" << line << "\n"
-                          << "Condition: " << condition << "\n"
-                          << "======================\n"
-                          << std::endl;
-  ABORT_FUNCTION();
+  std::cerr << "\n=== ASSERTION FAILED ===\n"
+            << "File: " << file << ":" << line << "\n"
+            << "Condition: " << condition << "\n"
+            << "======================\n"
+            << std::endl;
+  std::abort();
 }
 
 /// @brief Assertion failure handler function with custom message.
@@ -48,13 +40,13 @@ inline void assert_fail(const char* condition, const char* file, int line) {
 /// @param message Debug information message to display
 inline void assert_fail(const char* condition, const char* file, int line,
                         const char* message) {
-  ASSERTION_OUTPUT_STREAM << "\n=== ASSERTION FAILED ===\n"
-                          << "File: " << file << ":" << line << "\n"
-                          << "Condition: " << condition << "\n"
-                          << "Message: " << message << "\n"
-                          << "======================\n"
-                          << std::endl;
-  ABORT_FUNCTION();
+  std::cerr << "\n=== ASSERTION FAILED ===\n"
+            << "File: " << file << ":" << line << "\n"
+            << "Condition: " << condition << "\n"
+            << "Message: " << message << "\n"
+            << "======================\n"
+            << std::endl;
+  std::abort();
 }
 
 } // namespace util::detail

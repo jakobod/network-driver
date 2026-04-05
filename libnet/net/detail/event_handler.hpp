@@ -33,10 +33,18 @@ public:
   event_handler(net::socket handle, multiplexer_base* mpx)
     : manager_base{handle, mpx} {
     LOG_TRACE();
-    if (!nonblocking(handle, true)) {
-      throw util::exception{util::error_code::runtime_error,
-                            "Failed to set nonblocking"};
+  }
+
+  util::error init(const util::config& cfg) override {
+    LOG_TRACE();
+    if (auto err = manager_base::init(cfg)) {
+      return err;
     }
+    if (!nonblocking(handle(), true)) {
+      return util::error{util::error_code::runtime_error,
+                         "Failed to set nonblocking"};
+    }
+    return util::none;
   }
 
   // -- Event handling ---------------------------------------------------------
