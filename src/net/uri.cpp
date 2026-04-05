@@ -52,17 +52,6 @@ uri::uri(std::string uri_string) : original_{std::move(uri_string)} {
   auth_ = std::move(std::get<ip::v4_endpoint>(maybe_auth));
 }
 
-bool operator==(const uri& lhs, const uri& rhs) {
-  return (lhs.scheme() == rhs.scheme()) && (lhs.authority() == rhs.authority())
-         && std::ranges::equal(lhs.path(), rhs.path())
-         && std::ranges::equal(lhs.queries(), rhs.queries())
-         && std::ranges::equal(lhs.fragments(), rhs.fragments());
-}
-
-bool operator!=(const uri& lhs, const uri& rhs) {
-  return !(lhs == rhs);
-}
-
 std::string_view to_string(const uri& uri) noexcept {
   return uri.original();
 }

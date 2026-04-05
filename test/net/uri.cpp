@@ -26,10 +26,15 @@ TEST(uri_test, parse) {
   net::uri uri{uri_str};
   ASSERT_EQ(uri_str, uri.original());
   ASSERT_EQ("https", uri.scheme());
+
   const std::vector<std::string> path{"path", "to", "somewhere"};
-  ASSERT_TRUE(std::ranges::equal(path, uri.path()));
+  ASSERT_TRUE(std::equal(path.begin(), path.end(), uri.path().begin()));
+
   const std::vector<std::string> queries{"query=value"};
-  ASSERT_TRUE(std::ranges::equal(queries, uri.queries()));
+  ASSERT_TRUE(
+    std::equal(queries.begin(), queries.end(), uri.queries().begin()));
+
   const std::vector<std::string> fragments{"fragment"};
-  ASSERT_TRUE(std::ranges::equal(fragments, uri.fragments()));
+  ASSERT_TRUE(
+    std::equal(fragments.begin(), fragments.end(), uri.fragments().begin()));
 }

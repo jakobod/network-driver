@@ -55,6 +55,10 @@ public:
     return fragments_;
   }
 
+  friend bool operator==(const uri& lhs, const uri& rhs) noexcept = default;
+
+  friend bool operator!=(const uri& lhs, const uri& rhs) noexcept = default;
+
 private:
   std::string original_;
 
