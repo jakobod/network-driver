@@ -58,9 +58,7 @@ struct dummy_multiplexer : public multiplexer_mock {
 
 struct pollset_updater_test : public ::testing::Test {
   pollset_updater_test() {
-    auto pipe_res = make_pipe();
-    EXPECT_EQ(util::get_error(pipe_res), nullptr);
-    auto [reader, writer] = std::get<pipe_socket_pair>(pipe_res);
+    auto [reader, writer] = UNPACK_EXPRESSION(make_pipe());
     pipe_reader = reader;
     pipe_writer = writer;
   }

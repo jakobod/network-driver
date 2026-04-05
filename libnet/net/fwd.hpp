@@ -19,8 +19,7 @@
 #include <memory>
 #include <utility>
 
-// -- net namespace forward declarations
-// ----------------------------------------
+// -- net namespace forward declarations ---------------------------------------
 
 namespace net {
 

@@ -20,8 +20,7 @@
 
 namespace net::detail {
 
-// -- pollset_updater_base implementation
-// -----------------------------------------------
+// -- pollset_updater_base implementation --------------------------------------
 
 template <class ManagerBase>
 pollset_updater_base<ManagerBase>::pollset_updater_base(net::pipe_socket handle,
@@ -81,7 +80,7 @@ event_result pollset_updater<event_handler>::handle_read_event() {
 
 #if defined(LIB_NET_URING)
 
-// -- pollset_updater<uring_manager> implementation (io_uring) ----------------
+// -- pollset_updater<uring_manager> implementation (io_uring) -----------------
 
 event_result pollset_updater<uring_manager>::handle_completion(operation op,
                                                                int res) {
@@ -106,8 +105,7 @@ event_result pollset_updater<uring_manager>::handle_completion(operation op,
 
 #endif // LIB_NET_URING
 
-// -- Explicit template instantiations
-// ------------------------------------------
+// -- Explicit template instantiations -----------------------------------------
 
 /// @brief Instantiate pollset_updater_base for event_handler (epoll/kqueue)
 template class pollset_updater_base<event_handler>;

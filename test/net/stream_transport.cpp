@@ -70,9 +70,7 @@ struct stream_transport_test : public testing::Test {
   stream_transport_test()
     : sockets{stream_socket{invalid_socket_id},
               stream_socket{invalid_socket_id}} {
-    auto socket_res = make_stream_socket_pair();
-    EXPECT_EQ(get_error(socket_res), nullptr);
-    sockets = std::get<stream_socket_pair>(socket_res);
+    sockets = UNPACK_EXPRESSION(make_stream_socket_pair());
     uint8_t b = 0;
     for (auto& val :
          std::span{reinterpret_cast<uint8_t*>(data.data()), data.size()}) {

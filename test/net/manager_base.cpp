@@ -31,9 +31,7 @@ struct manager_base_test : public testing::Test {
   manager_base_test()
     : sockets{stream_socket{invalid_socket_id},
               stream_socket{invalid_socket_id}} {
-    const auto socket_res = net::make_stream_socket_pair();
-    EXPECT_EQ(util::get_error(socket_res), nullptr);
-    sockets = std::get<stream_socket_pair>(socket_res);
+    sockets = UNPACK_EXPRESSION(net::make_stream_socket_pair());
     EXPECT_TRUE(nonblocking(sockets.first, true));
     EXPECT_TRUE(nonblocking(sockets.second, true));
   }

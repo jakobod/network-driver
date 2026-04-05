@@ -6,6 +6,8 @@
  *             the GNU GPL3 License.
  */
 
+#pragma once
+
 #include "net/detail/multiplexer_base.hpp"
 
 #include "util/error.hpp"

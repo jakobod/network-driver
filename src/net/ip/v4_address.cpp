@@ -38,13 +38,18 @@ util::error_or<v4_address> parse_v4_address(std::string_view str) noexcept {
   const auto parts = util::split(str, '.');
   if (parts.size() != bytes.size()) {
     return util::error{util::error_code::parser_error,
-                       "Parsing to v4_endpoint failed: needs exactly 4 octets"};
+                       "Parsing to v4_address failed: needs exactly 4 octets"};
   }
   auto it = bytes.begin();
   for (const auto& part : parts) {
     std::uint8_t value = 0;
     if (util::parse(part, value)) {
       *it++ = std::byte{value};
+    } else {
+      return util::error{
+        util::error_code::parser_error,
+        "Parsing to v4_address failed: failed to parse octet \'"
+          + std::string{part} + "\'"};
     }
   }
   return v4_address{bytes};

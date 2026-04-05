@@ -68,30 +68,27 @@ TEST(cli_parser, register_option) {
 }
 
 TEST(cli_parser, parse_longform_options) {
-  // {
-  //   cli_parser parser;
-  //   ASSERT_NO_THROW(parser.register_option(id_opt1.data(), "option",
-  //                                          cli_parser::no_shortform,
-  //                                          false));
-  //   std::vector<const char*> args{"./program", "--option"};
-  //   ASSERT_NO_THROW(parser.parse(args));
-  //   EXPECT_EQ(parser.program_name(), "./program"sv);
-  //   EXPECT_TRUE(parser.contains_option(id_opt1.data()));
-  //   EXPECT_EQ(parser.num_option_values(id_opt1.data()), std::size_t{0});
-  // }
-  // {
-  //   cli_parser parser;
-  //   ASSERT_NO_THROW(parser.register_option(id_opt1.data(), "option",
-  //                                          cli_parser::no_shortform,
-  //                                          true));
-  //   std::vector<const char*> args{"./program", "--option=argument"};
-  //   ASSERT_NO_THROW(parser.parse(args));
-  //   EXPECT_EQ(parser.program_name(), "./program"sv);
-  //   EXPECT_TRUE(parser.contains_option(id_opt1.data()));
-  //   EXPECT_EQ(parser.num_option_values(id_opt1.data()), std::size_t{1});
-  //   EXPECT_EQ(parser.option_value<std::string>(id_opt1.data()),
-  //   "argument");
-  // }
+  {
+    cli_parser parser;
+    ASSERT_NO_THROW(parser.register_option(id_opt1.data(), "option",
+                                           cli_parser::no_shortform, false));
+    std::vector<const char*> args{"./program", "--option"};
+    ASSERT_NO_THROW(parser.parse(args));
+    EXPECT_EQ(parser.program_name(), "./program"sv);
+    EXPECT_TRUE(parser.contains_option(id_opt1.data()));
+    EXPECT_EQ(parser.num_option_values(id_opt1.data()), std::size_t{0});
+  }
+  {
+    cli_parser parser;
+    ASSERT_NO_THROW(parser.register_option(id_opt1.data(), "option",
+                                           cli_parser::no_shortform, true));
+    std::vector<const char*> args{"./program", "--option=argument"};
+    ASSERT_NO_THROW(parser.parse(args));
+    EXPECT_EQ(parser.program_name(), "./program"sv);
+    EXPECT_TRUE(parser.contains_option(id_opt1.data()));
+    EXPECT_EQ(parser.num_option_values(id_opt1.data()), std::size_t{1});
+    EXPECT_EQ(parser.option_value<std::string>(id_opt1.data()), "argument");
+  }
 
   {
     cli_parser parser;
@@ -106,14 +103,13 @@ TEST(cli_parser, parse_longform_options) {
     EXPECT_EQ(parser.option_value<std::string>(id_opt1.data(), 0), "argument1");
     EXPECT_EQ(parser.option_value<std::string>(id_opt1.data(), 1), "argument2");
   }
-  // {
-  //   cli_parser parser;
-  //   ASSERT_NO_THROW(parser.register_option(id_opt1.data(), "option",
-  //                                          cli_parser::no_shortform,
-  //                                          true));
-  //   std::vector<const char*> args{"./program", "--option"};
-  //   EXPECT_THROW(parser.parse(args), std::runtime_error);
-  // }
+  {
+    cli_parser parser;
+    ASSERT_NO_THROW(parser.register_option(id_opt1.data(), "option",
+                                           cli_parser::no_shortform, true));
+    std::vector<const char*> args{"./program", "--option"};
+    EXPECT_THROW(parser.parse(args), std::runtime_error);
+  }
 }
 
 TEST(cli_parser, parse_shortform_options) {

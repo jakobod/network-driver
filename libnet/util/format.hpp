@@ -15,11 +15,14 @@
 #include <charconv>
 #include <cstdint>
 #include <regex>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
-namespace {
+namespace util {
+
+namespace detail {
 
 template <std::size_t i>
 std::string format_helper(std::string form, std::string arg) {
@@ -45,9 +48,7 @@ std::string unpack(std::string form, T arg, Ts... args) {
   return unpack<i + 1>(std::move(res), std::move(args)...);
 }
 
-} // namespace
-
-namespace util {
+} // namespace detail
 
 /// @brief Formats a string using positional placeholders and arguments.
 /// Supports printf-like formatting using {0}, {1}, etc. placeholders.
@@ -58,7 +59,7 @@ namespace util {
 /// @return The formatted string.
 template <class... Ts>
 std::string format(std::string form, Ts... args) {
-  return unpack<0>(std::move(form), std::move(args)...);
+  return detail::unpack<0>(std::move(form), std::move(args)...);
 }
 
 /// @brief Splits a string by a delimiter string.
@@ -81,7 +82,7 @@ std::vector<std::string_view> split(std::string_view str, const char delim);
 /// @param strings The strings to join.
 /// @param delim The character to insert between strings.
 /// @return The joined string.
-std::string join(const std::vector<std::string>& strings, const char delim);
+std::string join(std::span<const std::string> strings, const char delim);
 
 /// @brief Removes all occurrences of a character from a string.
 /// @param str The string to process.
@@ -93,11 +94,13 @@ std::string remove(std::string str, char unwanted);
 /// @tparam T The type of the value to parse to
 /// @param str The string to parse
 /// @param t The value to parse to
-/// @return true if successful, false otherwise
+/// @return true if successful and entire string was consumed, false otherwise
 template <class T>
 bool parse(std::string_view str, T& t) {
-  return std::from_chars(str.data(), str.data() + str.size(), t).ec
-         == std::errc{};
+  auto result = std::from_chars(str.data(), str.data() + str.size(), t);
+  // Check that there was no error and the complete input string was consumed
+  return (result.ec == std::errc{})
+         && (result.ptr == (str.data() + str.size()));
 }
 
 } // namespace util

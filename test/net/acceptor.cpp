@@ -43,9 +43,7 @@ struct dummy_multiplexer : public multiplexer_mock {
 
 struct acceptor_test : public testing::Test {
   acceptor_test() {
-    auto res = make_tcp_accept_socket({net::ip::v4_address::localhost, 0});
-    EXPECT_EQ(util::get_error(res), nullptr);
-    auto sock_pair = std::get<acceptor_pair>(res);
+    auto sock_pair = UNPACK_EXPRESSION(make_tcp_accept_socket({net::ip::v4_address::localhost, 0}));
     auto factory = [this](net::socket handle) -> detail::manager_base_ptr {
       factory_called = true;
       return util::make_intrusive<detail::event_handler>(handle, &mpx);

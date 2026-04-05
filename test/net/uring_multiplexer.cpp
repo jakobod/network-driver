@@ -119,10 +119,8 @@ struct uring_multiplexer_test : public testing::Test {
   }
 
   tcp_stream_socket connect_to_mpx() {
-    auto sock_res = make_connected_tcp_stream_socket(
-      v4_endpoint{v4_address::localhost, mpx.port()});
-    EXPECT_EQ(util::get_error(sock_res), nullptr);
-    auto sock = std::get<tcp_stream_socket>(sock_res);
+    auto sock = UNPACK_EXPRESSION(make_connected_tcp_stream_socket(
+      v4_endpoint{v4_address::localhost, mpx.port()}));
     return sock;
   }
 
@@ -234,9 +232,7 @@ TEST_F(uring_multiplexer_test, event_handling) {
 
 TEST_F(uring_multiplexer_test, resetting_timeout) {
   const std::vector<uint64_t> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-  auto res = make_stream_socket_pair();
-  ASSERT_EQ(get_error(res), nullptr);
-  auto sockets = std::get<stream_socket_pair>(res);
+  auto sockets = UNPACK_EXPRESSION(make_stream_socket_pair());
   enable_reconfigure_timeouts();
   auto mgr = util::make_intrusive<dummy_socket_manager>(sockets.first, &mpx,
                                                         state);
@@ -250,9 +246,7 @@ TEST_F(uring_multiplexer_test, resetting_timeout) {
 
 TEST_F(uring_multiplexer_test, multiple_timeouts) {
   const std::vector<uint64_t> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-  auto res = make_stream_socket_pair();
-  ASSERT_EQ(get_error(res), nullptr);
-  auto sockets = std::get<stream_socket_pair>(res);
+  auto sockets = UNPACK_EXPRESSION(make_stream_socket_pair());
   auto mgr = util::make_intrusive<dummy_socket_manager>(sockets.first, &mpx,
                                                         state);
   mpx.add(mgr, operation::read);

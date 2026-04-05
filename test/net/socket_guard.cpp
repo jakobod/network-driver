@@ -22,9 +22,7 @@ struct socket_guard_test : public testing::Test {
   socket_guard_test()
     : sockets{stream_socket{invalid_socket_id},
               stream_socket{invalid_socket_id}} {
-    auto socket_res = make_stream_socket_pair();
-    EXPECT_EQ(get_error(socket_res), nullptr);
-    sockets = std::get<stream_socket_pair>(socket_res);
+    sockets = UNPACK_EXPRESSION(make_stream_socket_pair());
   }
 
   stream_socket_pair sockets;

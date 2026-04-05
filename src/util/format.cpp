@@ -38,12 +38,14 @@ std::vector<std::string_view> split(std::string_view str, const char delim) {
   return split_impl(str, delim, 1);
 }
 
-std::string join(const std::vector<std::string>& strings, const char delim) {
-  return std::accumulate(std::next(strings.begin()), strings.end(),
-                         strings.front(),
-                         [delim](const std::string& a, const std::string& b) {
-                           return a + delim + b;
-                         });
+std::string join(std::span<const std::string> strings, const char delim) {
+  std::string res = strings.front();
+  strings = strings.subspan(1);
+  for (const auto& s : strings) {
+    res += delim;
+    res += s;
+  }
+  return res;
 }
 
 std::string remove(std::string str, char unwanted) {

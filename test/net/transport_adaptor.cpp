@@ -148,9 +148,7 @@ struct transport_adaptor_test : public testing::Test {
   using stack_type = dummy_transport<transport_adaptor<dummy_application>>;
 
   transport_adaptor_test() {
-    auto maybe_sockets = make_stream_socket_pair();
-    EXPECT_EQ(nullptr, util::get_error(maybe_sockets));
-    sockets = std::get<stream_socket_pair>(maybe_sockets);
+    sockets = UNPACK_EXPRESSION(make_stream_socket_pair());
 
     uint8_t b = 0;
     for (auto& val : data) {
