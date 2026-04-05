@@ -18,24 +18,37 @@
 
 namespace net {
 
-/// A unidirectional communication endpoint for inter-process communication.
+/// @brief Unidirectional communication endpoint for inter-process
+/// communication.
 struct pipe_socket : socket {
   using super = socket;
 
   using super::super;
 };
 
-/// A pair of pipe sockets
+/// @brief A pair of connected pipe sockets.
+/// The first socket is for reading, the second for writing.
 using pipe_socket_pair = std::pair<pipe_socket, pipe_socket>;
 
-/// Creates two connected sockets. The first socket is the read handle and the
-/// second socket is the write handle.
+/// @brief Creates a pair of connected unidirectional pipe sockets.
+/// The returned pair contains a read socket (first) and a write socket
+/// (second). They are connected such that data written to the second can be
+/// read from the first.
+/// @return Either a pipe_socket_pair with connected sockets or an error.
 [[nodiscard]] util::error_or<pipe_socket_pair> make_pipe();
 
-/// Transmits data from `x` to its peer.
+/// @brief Writes data to a pipe socket (sending side).
+/// Transmits the contents of the buffer to the connected peer.
+/// @param x The pipe socket to write to (must be the write end of a pipe).
+/// @param buf The data to transmit.
+/// @return The number of bytes written, or a negative value on error.
 [[nodiscard]] std::ptrdiff_t write(pipe_socket x, util::const_byte_span buf);
 
-/// Receives data from `x`.
+/// @brief Reads data from a pipe socket (receiving side).
+/// Retrieves data sent to this pipe from its peer.
+/// @param x The pipe socket to read from (must be the read end of a pipe).
+/// @param buf The buffer to receive data into.
+/// @return The number of bytes read, or a negative value on error.
 [[nodiscard]] std::ptrdiff_t read(pipe_socket x, util::byte_span buf);
 
 } // namespace net

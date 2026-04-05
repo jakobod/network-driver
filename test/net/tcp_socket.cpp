@@ -20,14 +20,11 @@ using namespace net;
 using namespace net::ip;
 
 TEST(tcp_socket_test, accept) {
-  auto acc_res = make_tcp_accept_socket({v4_address::localhost, 0});
-  ASSERT_EQ(util::get_error(acc_res), nullptr);
-  auto acc_pair = std::get<acceptor_pair>(acc_res);
+  auto acc_pair
+    = UNPACK_EXPRESSION(make_tcp_accept_socket({v4_address::localhost, 0}));
   // Connect to the accept socket
   const v4_endpoint ep{v4_address::localhost, acc_pair.second};
-  auto conn_res = make_connected_tcp_stream_socket(ep);
-  ASSERT_EQ(util::get_error(conn_res), nullptr);
-  auto sock = std::get<tcp_stream_socket>(conn_res);
+  auto sock = UNPACK_EXPRESSION(make_connected_tcp_stream_socket(ep));
   ASSERT_NE(sock, invalid_socket);
   // Accept the connection
   auto accepted = accept(acc_pair.first);

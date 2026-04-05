@@ -31,8 +31,9 @@ constexpr const v4_address localhost{util::make_byte_array(127, 0, 0, 1)};
 struct udp_datagram_socket_test : public testing::Test {
   udp_datagram_socket_test() {
     std::uint8_t i = 0;
-    for (auto& v : data)
+    for (auto& v : data) {
       v = std::byte{i++};
+    }
   }
 
   util::byte_array<1024> data;
@@ -42,18 +43,12 @@ struct udp_datagram_socket_test : public testing::Test {
 
 TEST_F(udp_datagram_socket_test, write) {
   // Create send socket
-  auto maybe_recv_socket_res = make_udp_datagram_socket(0);
-  ASSERT_EQ(nullptr, util::get_error(maybe_recv_socket_res));
-  auto [send_sock, send_port]
-    = std::get<udp_datagram_socket_result>(maybe_recv_socket_res);
+  auto [send_sock, send_port] = UNPACK_EXPRESSION(make_udp_datagram_socket(0));
   auto send_guard = net::make_socket_guard(send_sock);
   ASSERT_TRUE(nonblocking(send_sock, true));
   const v4_endpoint src_ep{localhost, send_port};
   // Create send socket
-  auto maybe_send_socket_res = make_udp_datagram_socket(0);
-  ASSERT_EQ(nullptr, util::get_error(maybe_send_socket_res));
-  auto [recv_sock, recv_port]
-    = std::get<udp_datagram_socket_result>(maybe_send_socket_res);
+  auto [recv_sock, recv_port] = UNPACK_EXPRESSION(make_udp_datagram_socket(0));
   auto recv_guard = net::make_socket_guard(recv_sock);
   const v4_endpoint dst_ep{localhost, recv_port};
   // Write the testdata

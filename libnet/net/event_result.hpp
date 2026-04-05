@@ -13,13 +13,20 @@
 
 namespace net {
 
-/// Event results after handling events
+/// @brief Result type for I/O event handling operations.
+/// Indicates the outcome of handling a socket event (read/write).
 enum class event_result : std::uint8_t {
+  /// Operation succeeded and can continue.
   ok = 0,
+  /// Operation completed successfully and handler is done (no more work).
   done,
+  /// Operation failed with an error condition.
   error,
 };
 
+/// @brief Converts an event result to its string representation.
+/// @param op The event_result to stringify.
+/// @return A string describing the result ("ok", "done", or "error").
 std::string to_string(event_result op);
 
 } // namespace net

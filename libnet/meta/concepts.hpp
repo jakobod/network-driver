@@ -17,81 +17,90 @@ namespace meta {
 
 // -- basic Constraints --------------------------------------------------------
 
-/// Concept for checking that type is integral
+/// @brief Concept: type is an integral type (int, char, etc.).
 template <class T>
 concept integral = std::is_integral_v<T>;
 
-/// Concept for checking that type is floating point
+/// @brief Concept: type is a floating-point type (float, double).
 template <class T>
 concept floating = std::is_floating_point_v<T>;
 
-/// Concept for checking that type is an enumeration
+/// @brief Concept: type is an enumeration.
 template <class T>
 concept enumeration = std::is_enum_v<T>;
 
-/// Concept for checking that type is a pointer
+/// @brief Concept: type is a pointer type.
 template <class T>
 concept pointer = std::is_pointer_v<T>;
 
+/// @brief Concept: To* is convertible to From*.
 template <class To, class From>
 concept convertible_to = std::is_convertible_v<To*, From*>;
 
-/// Constrains a template to `T`s derived from `Base`
+/// @brief Concept: T is derived from (or is the same as) Base.
 template <class Base, class T>
 concept derived_from = std::is_base_of_v<T, Base>;
 
-/// Constrains a template to `T`s that are equal to `U`.
+/// @brief Concept: T is the same type as U.
 template <class T, class U>
 concept same_as = std::is_same_v<T, U>;
 
-/// Constrains a template to `U` that is equal to one of `Ts`
+/// @brief Concept: U is one of the types Ts.
 template <class U, class... Ts>
 concept one_of = (std::is_same_v<Ts, U> || ...);
 
 // -- compositions of Constraints ----------------------------------------------
 
-// Concept that requires types that are trivially serializable
+/// @brief Concept: type can be trivially serialized using memcpy.
+/// Includes integral types, enumerations, pointers, and nullptr.
 template <class T>
 concept trivially_serializable = integral<T> || enumeration<T> || pointer<T>
                                  || std::is_null_pointer_v<T>;
 
-// Concept that requires types that are not trivially serializable
+/// @brief Concept: type cannot be trivially serialized (inverse of
+/// trivially_serializable).
 template <class T>
 concept not_trivially_serializable = (!trivially_serializable<T>);
 
-/// Constrains a template to simple (eg. flat types) that allow simple sizeof
-/// operations
+/// @brief Concept: simple/flat type suitable for sizeof operations.
+/// Includes integrals, floating-point, enums, and pointers with no indirection.
 template <class T>
 concept flat_type = integral<T> || floating<T> || enumeration<T> || pointer<T>
                     || std::is_null_pointer_v<T>;
 
-/// Constrains a template to complex (e.g. non-flat types) types such as
-/// integral, floating points, or enums
+/// @brief Concept: complex (non-flat) type requiring custom serialization.
 template <class T>
 concept complex_type = (!flat_type<T>);
 
 // -- Concepts -----------------------------------------------------------------
 
-/// Constrains a template to resizable types
+/// @brief Concept: type supports resize() method.
+/// Indicates a container that can be resized to given capacity.
 template <class T>
 concept resizable = requires(T t) { t.resize(std::declval<std::size_t>()); };
 
-/// Constrains a template to container types
+/// @brief Concept: type is a container.
+/// Must support begin(), end(), data(), and size() methods.
 template <class T>
 concept container = requires(T t) {
-                      t.begin();
-                      t.end();
-                      t.data();
-                      t.size();
-                    };
+  t.begin();
+  t.end();
+  t.data();
+  t.size();
+};
 
 // -- Visitable concept --------------------------------------------------------
 
+/// @brief Helper type for visitable concept detection.
 struct visitable_helper {
+  /// @brief Dummy template for matching visit() calls.
   template <class T, class... Ts>
   auto operator()(const T&, const Ts&...) {}
 };
 
+/// @brief Concept: type is visitable (supports visit() method).
+/// Types that provide a visit() method for custom operations like
+/// serialization, deserialization, or introspection.
 template <class T>
 concept visitable
   = requires(T t) { t.visit(std::declval<visitable_helper&>()); };

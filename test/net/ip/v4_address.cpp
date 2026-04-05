@@ -77,10 +77,14 @@ TEST(v4_address_test, parse) {
 TEST(v4_address_test, parsing_fails) {
   {
     auto maybe_addr = parse_v4_address("0.0.0");
-    ASSERT_NE(nullptr, get_error(maybe_addr));
+    ASSERT_NE(nullptr, util::get_error(maybe_addr));
   }
   {
     auto maybe_addr = parse_v4_address("0:0:0:674");
-    ASSERT_NE(nullptr, get_error(maybe_addr));
+    ASSERT_NE(nullptr, util::get_error(maybe_addr));
+  }
+  {
+    auto maybe_addr = parse_v4_address("0:agge:0:0");
+    ASSERT_NE(nullptr, util::get_error(maybe_addr));
   }
 }

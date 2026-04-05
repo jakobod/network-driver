@@ -17,23 +17,37 @@
 
 namespace net {
 
-/// Represents a TCP connection.
+/// @brief TCP socket for accepting incoming connections.
 struct tcp_accept_socket : socket {
   using super = socket;
 
   using super::super;
 };
 
-/// A pair containing a tcp_accept_socket and its bound port
+/// @brief Pair containing a listening TCP socket and its bound port.
+/// Returned when creating a listening socket to provide both the socket
+/// and the actual port it was bound to.
 using acceptor_pair = std::pair<tcp_accept_socket, uint16_t>;
 
-/// Sets `sock` to listen for incoming connections
+/// @brief Configures a TCP socket to listen for incoming connections.
+/// Must be called before accepting connections on the socket.
+/// @param sock The TCP accept socket to configure.
+/// @param conn_backlog The maximum number of pending connections allowed.
+/// @return An error if the operation fails, or success otherwise.
 util::error listen(tcp_accept_socket sock, int conn_backlog);
 
-/// Accepts an incoming connection from sock
+/// @brief Accepts an incoming TCP connection from a listening socket.
+/// Blocks until a client connection is available. The returned socket
+/// represents the new client connection.
+/// @param sock The listening TCP accept socket.
+/// @return A new tcp_stream_socket representing the accepted client connection.
 tcp_stream_socket accept(tcp_accept_socket sock);
 
-/// Creates a tcp_accept_socket that is bound to `port`
+/// @brief Creates and listens on a TCP socket bound to the specified endpoint.
+/// The socket is automatically set to listen mode with the specified backlog.
+/// @param ep The IPv4 endpoint (address and port) to bind and listen on.
+/// @param conn_backlog The maximum number of pending connections (default: 10).
+/// @return Either an acceptor_pair (socket and bound port) or an error.
 util::error_or<acceptor_pair>
 make_tcp_accept_socket(const ip::v4_endpoint& ep, const int conn_backlog = 10);
 

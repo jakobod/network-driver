@@ -16,7 +16,10 @@
 
 namespace net::ip {
 
-/// IPv4 Address representation.
+/// @brief Represents an IPv4 address with octet-based storage.
+/// Provides both byte-oriented and bitwise access to the IPv4 address in
+/// network-byte-order. Includes predefined constants for common addresses
+/// (any, localhost, broadcast).
 class v4_address {
   /// Number of octets required to represent an ipv4 address.
   static constexpr const std::size_t num_octets = 4;
@@ -25,63 +28,91 @@ public:
   /// Array type for representing a ipv4 address as bytes.
   using octet_array = util::byte_array<num_octets>;
 
-  /// Predefined any address
+  /// Predefined any address (0.0.0.0)
   static constexpr const octet_array any = util::make_byte_array(0, 0, 0, 0);
-  /// Predefined localhost address
+  /// Predefined localhost address (127.0.0.1)
   static constexpr const octet_array localhost = util::make_byte_array(127, 0,
                                                                        0, 1);
-  /// Predefined local broadcast address
+  /// Predefined local broadcast address (255.255.255.255)
   static constexpr const octet_array local_broadcast
     = util::make_byte_array(255, 255, 255, 255);
 
-  /// Default initialization of an address
+  /// @brief Default constructs an IPv4 address initialized to 0.0.0.0 (any
+  /// address).
   constexpr v4_address() : bytes_{any} {
     // nop
   }
 
-  /// Constructs an ipv4 address from bytes.
+  /// @brief Constructs an IPv4 address from individual octets.
+  /// @param bytes A byte array containing the four octets in
+  /// network-byte-order.
   constexpr v4_address(octet_array bytes) : bytes_{bytes} {
     // nop
   }
 
-  /// Constructs an ipv4 address from bits in network-byte-order.
+  /// @brief Constructs an IPv4 address from a 32-bit integer.
+  /// @param bits The address represented as a 32-bit value in
+  /// network-byte-order.
   constexpr v4_address(std::uint32_t bits) : bits_(bits) {
     // nop
   }
 
-  /// Move constructor
-  v4_address(v4_address&& ep) noexcept = default;
+  /// @brief Copy constructor.
+  constexpr v4_address(const v4_address& ep) = default;
 
-  /// Default copy constructor
-  v4_address(const v4_address& ep) = default;
+  /// @brief Move constructor.
+  constexpr v4_address(v4_address&& ep) noexcept = default;
+
+  /// @brief Copy assignment
+  constexpr v4_address& operator=(const v4_address&) = default;
+
+  /// @brief Move assignment
+  constexpr v4_address& operator=(v4_address&&) noexcept = default;
 
   // -- Members ----------------------------------------------------------------
 
-  /// returns the address in bitwise representation in network-byte-order.
+  /// @brief Returns the address as a 32-bit integer in network-byte-order.
+  /// @return The bitwise representation of the address.
   constexpr std::uint32_t bits() const noexcept { return bits_; }
 
-  /// returns the address in bytewise representation in network-byte-order.
+  /// @brief Returns the address as individual octets in network-byte-order.
+  /// @return Reference to the byte array containing the four octets.
   constexpr const octet_array& bytes() const noexcept { return bytes_; }
 
 private:
   /// Union for either representing the address in bitwise or bytewise
   /// representation.
   union {
-    const uint32_t bits_;
-    const octet_array bytes_;
+    uint32_t bits_;     ///<< 32-bit representation
+    octet_array bytes_; ///<< Octet array representation
   };
 };
 
-/// Compares two v4_addresses for equality.
+/// @relates v4_address
+/// @brief Compares two IPv4 addresses for equality.
+/// @param lhs The left operand.
+/// @param rhs The right operand.
+/// @return True if both addresses are identical.
 bool operator==(const v4_address& lhs, const v4_address& rhs);
 
-/// Compares two v4_addresses for inequality.
+/// @relates v4_address
+/// @brief Compares two IPv4 addresses for inequality.
+/// @param lhs The left operand.
+/// @param rhs The right operand.
+/// @return True if the addresses differ.
 bool operator!=(const v4_address& lhs, const v4_address& rhs);
 
-/// Returns a v4_address as string.
+/// @relates v4_address
+/// @brief Converts an IPv4 address to its string representation.
+/// Produces a dotted-decimal notation (e.g., "192.168.1.1").
+/// @param addr The address to convert.
+/// @return The string representation of the address.
 std::string to_string(const v4_address& addr);
 
-/// parses a v4_address from string.
-util::error_or<v4_address> parse_v4_address(const std::string& str);
+/// @relates v4_address
+/// @brief Parses an IPv4 address from a string in dotted-decimal notation.
+/// @param str The string to parse (e.g., "192.168.1.1").
+/// @return The parsed address on success, or an error on failure.
+util::error_or<v4_address> parse_v4_address(std::string_view str) noexcept;
 
 } // namespace net::ip
