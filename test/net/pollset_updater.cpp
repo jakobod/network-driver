@@ -12,7 +12,9 @@
 
 #include "net/event_result.hpp"
 #include "net/operation.hpp"
+
 #include "net/socket/pipe_socket.hpp"
+#include "net/socket/stream_socket.hpp"
 
 #include "util/binary_serializer.hpp"
 #include "util/byte_buffer.hpp"
@@ -96,7 +98,9 @@ TEST_F(pollset_updater_test, handle_shutdown) {
 TEST_F(pollset_updater_test, handle_add) {
   event_pollset_updater updater{pipe_reader, &mpx};
   EXPECT_EQ(updater.init(util::config{}), util::none);
-  auto mgr = util::make_intrusive<detail::event_handler>(invalid_socket, &mpx);
+  auto stream_socket_pair = UNPACK_EXPRESSION(net::make_stream_socket_pair());
+  auto mgr = util::make_intrusive<detail::event_handler>(
+    stream_socket_pair.first, &mpx);
   mgr->ref();
   EXPECT_EQ(mgr->ref_count(), 2);
   write_to_pipe(event_pollset_updater::opcode::add, mgr.get(), operation::read);

@@ -75,7 +75,7 @@ manager_base::set_timeout_at(std::chrono::steady_clock::time_point when) {
 
 event_result manager_base::handle_timeout(uint64_t) {
   LOG_ERROR("Default implementation, should never be called");
-  ASSERT(false) << "Timeout set without overriding the default timeout handler";
+  ASSERT(false, "Timeout set without overriding the default timeout handler");
   return event_result::error;
 }
 

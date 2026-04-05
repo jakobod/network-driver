@@ -44,4 +44,24 @@ const error* get_error(const error_or<T>& maybe_error) {
   return std::get_if<error>(&maybe_error);
 }
 
+/// @brief Extracts the value from an error_or variant.
+/// Asserts that the variant holds a value, not an error (in debug builds).
+/// @tparam T The value type in the error_or variant.
+/// @param maybe_error The variant to extract from.
+/// @return Const reference to the value.
+template <class T>
+const T& get_value(const error_or<T>& maybe_error) {
+  return std::get<T>(maybe_error);
+}
+
+/// @brief Extracts the value from an error_or variant (mutable version).
+/// Asserts that the variant holds a value, not an error (in debug builds).
+/// @tparam T The value type in the error_or variant.
+/// @param maybe_error The variant to extract from.
+/// @return Reference to the value.
+template <class T>
+T& get_value(error_or<T>& maybe_error) {
+  return std::get<T>(maybe_error);
+}
+
 } // namespace util

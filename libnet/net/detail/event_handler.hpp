@@ -15,6 +15,7 @@
 
 #include "net/detail/manager_base.hpp"
 
+#include "util/exception.hpp"
 #include "util/logger.hpp"
 
 namespace net::detail {
@@ -32,7 +33,10 @@ public:
   event_handler(net::socket handle, multiplexer_base* mpx)
     : manager_base{handle, mpx} {
     LOG_TRACE();
-    nonblocking(handle, true);
+    if (!nonblocking(handle, true)) {
+      throw util::exception{util::error_code::runtime_error,
+                            "Failed to set nonblocking"};
+    }
   }
 
   // -- Event handling ---------------------------------------------------------

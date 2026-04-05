@@ -12,14 +12,6 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace {
-
-std::stringstream test_stream;
-void test_abort();
-#define ABORT_FUNCTION test_abort
-#define ASSERTION_OUTPUT_STREAM test_stream
-#include "util/assert.hpp"
-
 // Custom exception for testing assertion failures
 struct AssertionFailed : public std::exception {
   explicit AssertionFailed(std::string message)
@@ -38,7 +30,13 @@ void test_abort() {
   throw AssertionFailed{"Assertion Failed"};
 }
 
-} // namespace
+std::stringstream test_stream;
+
+// Define macros before including assert.hpp (outside the anonymous namespace
+// to avoid nested namespace issues)
+#define ABORT_FUNCTION ::test_abort
+#define ASSERTION_OUTPUT_STREAM ::test_stream
+#include "util/assert.hpp"
 
 #if defined(LIB_NET_ENABLE_ASSERTIONS)
 
@@ -66,9 +64,9 @@ TEST_F(AssertTest, false_condition_fails) {
   EXPECT_NE(output.find("1 > 2"), std::string::npos);
 }
 
-TEST_F(AssertTest, assert_with_streamed_message) {
-  // Assertion with streamed message should throw and capture message
-  EXPECT_THROW(ASSERT(false) << "custom error message", AssertionFailed);
+TEST_F(AssertTest, assert_with_message) {
+  // Assertion with message should throw and capture message
+  EXPECT_THROW(ASSERT(false, "custom error message"), AssertionFailed);
 
   // Verify that both condition and message were output
   const auto output = test_stream.str();
@@ -76,15 +74,13 @@ TEST_F(AssertTest, assert_with_streamed_message) {
   EXPECT_NE(output.find("custom error message"), std::string::npos);
 }
 
-TEST_F(AssertTest, assert_with_multiple_streamed_values) {
+TEST_F(AssertTest, assert_with_formatted_message) {
   const int value = 42;
-  // Multiple values streamed to assertion message
-  EXPECT_THROW(ASSERT(value < 10) << "value=" << value << " is too large",
-               AssertionFailed);
+  // Assertion with formatted message
+  EXPECT_THROW(ASSERT(value < 10, "value=42 is too large"), AssertionFailed);
 
   const auto output = test_stream.str();
-  EXPECT_NE(output.find("value=42"), std::string::npos);
-  EXPECT_NE(output.find("is too large"), std::string::npos);
+  EXPECT_NE(output.find("value=42 is too large"), std::string::npos);
 }
 
 TEST_F(AssertTest, debug_only_assert_in_debug_build) {

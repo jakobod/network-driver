@@ -46,29 +46,29 @@ struct submission_data {
   net::operation op;
 };
 
-io_uring_sqe* prepare_sqe(io_uring& uring, net::detail::uring_manager_ptr& mgr,
+io_uring_sqe* prepare_sqe(io_uring& uring, net::detail::uring_manager& mgr,
                           net::operation op) {
   auto* sqe = io_uring_get_sqe(&uring);
   if (!sqe) {
     LOG_ERROR("SQ ring full, cannot submit read operation for fd=",
-              mgr->handle().id);
+              mgr.handle().id);
     return nullptr;
   }
   switch (op) {
     case net::operation::read: {
-      auto buf = mgr->data_to_read();
-      io_uring_prep_read(sqe, mgr->handle().id, buf.data(), buf.size(), 0);
+      auto buf = mgr.data_to_read();
+      io_uring_prep_read(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
       break;
     }
 
     case net::operation::write: {
-      auto buf = mgr->data_to_write();
-      io_uring_prep_write(sqe, mgr->handle().id, buf.data(), buf.size(), 0);
+      auto buf = mgr.data_to_write();
+      io_uring_prep_write(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
       break;
     }
 
     case net::operation::accept: {
-      io_uring_prep_accept(sqe, mgr->handle().id, nullptr, nullptr, 0);
+      io_uring_prep_accept(sqe, mgr.handle().id, nullptr, nullptr, 0);
       break;
     }
     default:
@@ -77,15 +77,19 @@ io_uring_sqe* prepare_sqe(io_uring& uring, net::detail::uring_manager_ptr& mgr,
   return sqe;
 }
 
-void submit_operation(io_uring& uring, net::detail::uring_manager_ptr mgr,
+void submit_operation(io_uring& uring, net::detail::uring_manager& mgr,
                       net::operation op) {
+  if (!mgr.mask_add(op)) {
+    return;
+  }
   if (auto* sqe = prepare_sqe(uring, mgr, op)) {
-    io_uring_sqe_set_data(sqe, new submission_data{std::move(mgr), op});
+    io_uring_sqe_set_data(sqe,
+                          new submission_data{util::intrusive_ptr(&mgr), op});
   }
 }
 
 void resubmit_operation(io_uring& uring, submission_data* data) {
-  if (auto* sqe = prepare_sqe(uring, data->mgr, data->op)) {
+  if (auto* sqe = prepare_sqe(uring, *data->mgr, data->op)) {
     io_uring_sqe_set_data(sqe, data);
   }
 }
@@ -161,20 +165,17 @@ void uring_multiplexer::enable(manager_base& mgr, operation op) {
   LOG_DEBUG("Enabling mgr with ", NET_ARG2("id", mgr->handle().id),
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
             " for ", NET_ARG2("new_event", to_string(op)));
-  if (!mgr.mask_add(op)) {
-    return;
-  }
-  auto& uring_mgr = dynamic_cast<uring_manager&>(mgr);
+  auto& uring_mgr = static_cast<uring_manager&>(mgr);
   if ((op & operation::read) == operation::read) {
-    submit_operation(uring_, &uring_mgr, operation::read);
+    submit_operation(uring_, uring_mgr, operation::read);
   }
 
   if ((op & operation::write) == operation::write) {
-    submit_operation(uring_, &uring_mgr, operation::write);
+    submit_operation(uring_, uring_mgr, operation::write);
   }
 
   if ((op & operation::accept) == operation::accept) {
-    submit_operation(uring_, &uring_mgr, operation::accept);
+    submit_operation(uring_, uring_mgr, operation::accept);
   }
 }
 
