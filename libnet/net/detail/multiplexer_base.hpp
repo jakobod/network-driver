@@ -34,6 +34,7 @@
 
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <set>
 #include <thread>
 #include <unordered_map>
@@ -322,5 +323,7 @@ private:
 protected:
   optional_timepoint current_timeout_{std::nullopt}; ///< Next timeout
 };
+
+using multiplexer_base_ptr = std::shared_ptr<multiplexer_base>;
 
 } // namespace net::detail

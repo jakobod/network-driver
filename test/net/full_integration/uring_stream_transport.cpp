@@ -6,33 +6,35 @@
  *             the GNU GPL3 License.
  */
 
+#include "net_test.hpp"
+
+#include "net/detail/manager_base.hpp"
+#include "net/detail/stream_transport.hpp"
 #if defined(LIB_NET_URING)
-
-#  include "net_test.hpp"
-
-#  include "net/detail/manager_base.hpp"
-#  include "net/detail/stream_transport.hpp"
 #  include "net/detail/uring_manager.hpp"
 #  include "net/detail/uring_multiplexer.hpp"
+#endif
 
-#  include "net/ip/v4_address.hpp"
-#  include "net/ip/v4_endpoint.hpp"
+#include "net/multiplexer.hpp"
 
-#  include "net/event_result.hpp"
-#  include "net/socket/stream_socket.hpp"
-#  include "net/socket/tcp_stream_socket.hpp"
-#  include "net/socket_guard.hpp"
+#include "net/ip/v4_address.hpp"
+#include "net/ip/v4_endpoint.hpp"
 
-#  include "util/byte_literals.hpp"
-#  include "util/config.hpp"
-#  include "util/error.hpp"
-#  include "util/error_or.hpp"
-#  include "util/intrusive_ptr.hpp"
+#include "net/event_result.hpp"
+#include "net/socket/stream_socket.hpp"
+#include "net/socket/tcp_stream_socket.hpp"
+#include "net/socket_guard.hpp"
 
-#  include <chrono>
-#  include <memory>
-#  include <thread>
-#  include <tuple>
+#include "util/byte_literals.hpp"
+#include "util/config.hpp"
+#include "util/error.hpp"
+#include "util/error_or.hpp"
+#include "util/intrusive_ptr.hpp"
+
+#include <chrono>
+#include <memory>
+#include <thread>
+#include <tuple>
 
 using namespace net;
 using namespace net::ip;
@@ -75,22 +77,13 @@ private:
 
 // -- Test fixture -------------------------------------------------------------
 
-struct uring_stream_transport_full_integration : public testing::Test {
-  using stack_type = detail::uring_stream_transport<mirror_application>;
-
-  uring_stream_transport_full_integration() {
-    auto factory
-      = [this](net::socket handle,
-               detail::uring_multiplexer* mpx) -> detail::uring_manager_ptr {
-      return util::make_intrusive<stack_type>(
-        socket_cast<stream_socket>(handle), mpx);
-    };
-    mpx = UNPACK_EXPRESSION(
-      detail::make_uring_multiplexer(std::move(factory), cfg));
-    default_num_socket_managers = mpx->num_socket_managers();
+template <typename FactoryCreator>
+struct stream_transport_full_integration : public testing::Test {
+  stream_transport_full_integration() {
     for (std::size_t i = 0; i < data.size(); ++i) {
       data[i] = static_cast<std::byte>(i);
     }
+    FactoryCreator::create_multiplexer(cfg, mpx, default_num_socket_managers);
   }
 
   void SetUp() override {
@@ -127,7 +120,7 @@ struct uring_stream_transport_full_integration : public testing::Test {
     return predicate();
   }
 
-  detail::uring_multiplexer_ptr mpx;
+  detail::multiplexer_base_ptr mpx;
   net::socket_guard<tcp_stream_socket> socket;
   std::size_t default_num_socket_managers{0};
   util::config cfg;
@@ -136,27 +129,78 @@ struct uring_stream_transport_full_integration : public testing::Test {
 
 } // namespace
 
-TEST_F(uring_stream_transport_full_integration, mirror) {
+// -- Factory creators --------------------------------------------------------
+
+struct event_based {
+  static void create_multiplexer(util::config& cfg,
+                                 detail::multiplexer_base_ptr& mpx,
+                                 std::size_t& num_managers) {
+    auto factory
+      = [](net::socket handle,
+           detail::multiplexer_base* mpx) -> detail::event_handler_ptr {
+      return util::make_intrusive<
+        detail::event_stream_transport<mirror_application>>(
+        socket_cast<stream_socket>(handle), mpx);
+    };
+    mpx = UNPACK_EXPRESSION(net::make_multiplexer(std::move(factory), cfg));
+    num_managers = mpx->num_socket_managers();
+  }
+};
+
+#if defined(LIB_NET_URING)
+
+struct uring_based {
+  static void create_multiplexer(util::config& cfg,
+                                 detail::multiplexer_base_ptr& mpx,
+                                 std::size_t& num_managers) {
+    auto factory
+      = [](net::socket handle,
+           detail::uring_multiplexer* mpx) -> detail::uring_manager_ptr {
+      return util::make_intrusive<
+        detail::uring_stream_transport<mirror_application>>(
+        socket_cast<stream_socket>(handle), mpx);
+    };
+    mpx = UNPACK_EXPRESSION(
+      detail::make_uring_multiplexer(std::move(factory), cfg));
+    num_managers = mpx->num_socket_managers();
+  }
+};
+
+#endif
+
+// -- Parameterized fixture ---------------------------------------------------
+
+using FactoryCreators = ::testing::Types<event_based
+#if defined(LIB_NET_URING)
+                                         ,
+                                         uring_based
+#endif
+                                         >;
+
+TYPED_TEST_SUITE(stream_transport_full_integration, FactoryCreators);
+
+TYPED_TEST(stream_transport_full_integration, mirror) {
   {
     std::size_t written = 0;
-    for (std::size_t i = 0; (i < 10) && written < data.size(); ++i) {
-      const auto [event_res, num_bytes_written] = test::write(
-        *socket, std::span{(data.data() + written), (data.size() - written)});
+    for (std::size_t i = 0; (i < 10) && written < this->data.size(); ++i) {
+      const auto [event_res, num_bytes_written]
+        = test::write(*this->socket, std::span{(this->data.data() + written),
+                                               (this->data.size() - written)});
       ASSERT_NE(event_res, event_result::error);
       if (event_res == event_result::temporary_error) {
         std::this_thread::sleep_for(10ms);
       }
       written += num_bytes_written;
     }
-    ASSERT_EQ(written, data.size());
+    ASSERT_EQ(written, this->data.size());
   }
   util::byte_array<10_KB> receive_buffer = {};
   {
     std::size_t received = 0;
     for (std::size_t i = 0; (i < 10) && (received < 10_KB); ++i) {
-      const auto [event_res, num_bytes_received]
-        = test::read(*socket, std::span{(receive_buffer.data() + received),
-                                        (receive_buffer.size() - received)});
+      const auto [event_res, num_bytes_received] = test::read(
+        *this->socket, std::span{(receive_buffer.data() + received),
+                                 (receive_buffer.size() - received)});
       ASSERT_NE(event_res, event_result::error);
       if (event_res == event_result::temporary_error) {
         std::this_thread::sleep_for(10ms);
@@ -165,7 +209,5 @@ TEST_F(uring_stream_transport_full_integration, mirror) {
     }
     ASSERT_EQ(received, 10_KB);
   }
-  EXPECT_EQ(data, receive_buffer);
+  EXPECT_EQ(this->data, receive_buffer);
 }
-
-#endif

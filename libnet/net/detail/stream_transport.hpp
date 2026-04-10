@@ -244,6 +244,9 @@ public:
   }
 };
 
+template <class NextLayer>
+using event_stream_transport = stream_transport<event_handler, NextLayer>;
+
 #if defined(LIB_NET_URING)
 
 /// @brief Specialization for uring_manager (io_uring).
