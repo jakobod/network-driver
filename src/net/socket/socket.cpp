@@ -8,6 +8,8 @@
 
 #include "net/socket/socket.hpp"
 
+#include "net/operation.hpp"
+
 #include "net/ip/v4_endpoint.hpp"
 
 #include "util/error.hpp"
@@ -28,10 +30,24 @@ void close(socket hdl) {
   }
 }
 
-void shutdown(socket hdl, int how) {
+void shutdown(socket hdl, operation how) {
   LOG_DEBUG("shutdown ", NET_ARG2("socket", hdl.id), ", ", NET_ARG(how));
-  if (hdl != invalid_socket) {
-    ::shutdown(hdl.id, how);
+  static constexpr auto to_shutdown_flag = [](operation how) {
+    switch (how) {
+      case operation::read:
+      case operation::accept:
+        return SHUT_RD;
+      case operation::write:
+        return SHUT_WR;
+      case operation::read_write:
+      default:
+        return SHUT_RDWR;
+    }
+  };
+  if ((hdl != invalid_socket) && (how != operation::read)
+      && (how != operation::write) && (how != operation::read_write)
+      && (how != operation::accept)) {
+    ::shutdown(hdl.id, to_shutdown_flag(how));
   }
 }
 

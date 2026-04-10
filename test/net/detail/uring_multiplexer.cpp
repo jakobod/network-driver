@@ -10,6 +10,8 @@
 
 #  include "net_test.hpp"
 
+#  include "net/detail/manager_base.hpp"
+#  include "net/detail/stream_transport.hpp"
 #  include "net/detail/uring_manager.hpp"
 #  include "net/detail/uring_multiplexer.hpp"
 
@@ -46,7 +48,7 @@ struct test_state {
   bool reset_timeouts{false};
 };
 
-struct dummy_socket_manager : public net::detail::uring_manager {
+struct dummy_socket_manager : public detail::uring_manager {
   dummy_socket_manager(net::socket handle, detail::multiplexer_base* mpx,
                        test_state& state)
     : detail::uring_manager(handle, mpx), state_{state} {
@@ -75,8 +77,8 @@ struct dummy_socket_manager : public net::detail::uring_manager {
     return event_result::ok;
   }
 
-  util::const_byte_span write_buffer() const noexcept override {
-    return write_buffer_;
+  std::span<iovec> write_buffer() const noexcept override {
+    return std::span{&iovec_, 1};
   }
 
   util::byte_span read_buffer() noexcept override { return read_buffer_; }
@@ -95,10 +97,13 @@ private:
       if (state_.register_for_writing) {
         write_buffer_.insert(write_buffer_.end(), read_buffer_.begin(),
                              read_buffer_.begin() + res);
-        register_writing();
+        iovec_.iov_base = write_buffer_.data();
+        iovec_.iov_len = write_buffer_.size();
+        submit(operation::write);
       }
       read_buffer_.clear();
     }
+    submit(operation::read);
     return event_result::ok;
   }
 
@@ -108,11 +113,16 @@ private:
       return event_result::error;
     }
     write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() + res);
-    return write_buffer_.empty() ? event_result::done : event_result::ok;
+    if (!write_buffer_.empty()) {
+      submit(operation::write);
+      return event_result::ok;
+    }
+    return event_result::done;
   }
 
   util::byte_buffer read_buffer_;
   util::byte_buffer write_buffer_;
+  mutable iovec iovec_;
 
   std::size_t received_{0};
   std::size_t min_read_size_{0};
@@ -161,30 +171,6 @@ struct uring_multiplexer_test : public testing::Test {
   util::config cfg;
 };
 
-bool write_all(net::tcp_stream_socket handle, util::byte_span data) {
-  while (!data.empty()) {
-    const auto res = write(handle, data);
-    if (res > 0) {
-      data = data.subspan(res);
-    } else if (!net::last_socket_error_is_temporary()) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool read_all(net::tcp_stream_socket handle, util::byte_span data) {
-  while (!data.empty()) {
-    const auto res = read(handle, data);
-    if (res > 0) {
-      data = data.subspan(res);
-    } else if (!net::last_socket_error_is_temporary()) {
-      return false;
-    }
-  }
-  return true;
-}
-
 } // namespace
 
 TEST_F(uring_multiplexer_test, mpx_shuts_down_correctly) {
@@ -229,19 +215,28 @@ TEST_F(uring_multiplexer_test, manager_removed_after_disconnect) {
 TEST_F(uring_multiplexer_test, event_handling) {
   // Connect to the multiplexer and trigger it for accepting the connection
   const socket_guard guard{connect_to_mpx()};
+  ASSERT_TRUE(nonblocking(guard.get(), true));
   enable_register_for_writing();
   ASSERT_TRUE(poll_until([this] {
     return (mpx.num_socket_managers() == (default_num_socket_managers + 1));
   }));
   // Write all data and check if it will be received by the mpx
   util::byte_array<1024> buf;
-  ASSERT_TRUE(write_all(guard.get(), buf));
+  {
+    const auto [result, num_bytes] = test::write(guard.get(), buf);
+    ASSERT_EQ(result, event_result::ok);
+    ASSERT_EQ(num_bytes, buf.size());
+  }
   ASSERT_TRUE(poll_until([this] { return has_handled_read_event(); }));
   ASSERT_FALSE(has_handled_write_event());
   // Check the mgr was enabled for writing, trigger it and read from the
   ASSERT_EQ(mpx.num_socket_managers(), default_num_socket_managers + 1);
   ASSERT_TRUE(poll_until([this] { return has_handled_write_event(); }));
-  ASSERT_TRUE(read_all(guard.get(), buf));
+  {
+    const auto [result, num_bytes] = test::read(guard.get(), buf);
+    ASSERT_EQ(result, event_result::ok);
+    ASSERT_EQ(num_bytes, buf.size());
+  }
 }
 
 TEST_F(uring_multiplexer_test, resetting_timeout) {

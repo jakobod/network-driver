@@ -21,6 +21,7 @@
 #include <utility>
 
 #include <sys/socket.h>
+#include <sys/uio.h>
 
 namespace {
 
@@ -62,6 +63,22 @@ ptrdiff_t write(stream_socket hdl, util::const_byte_span buf) {
             NET_ARG2("fd", hdl.id));
   return ::send(hdl.id, reinterpret_cast<const void*>(buf.data()), buf.size(),
                 no_sigpipe_io_flag);
+}
+
+ptrdiff_t readv(stream_socket hdl, std::span<iovec> iovs) {
+  LOG_DEBUG("Reading from stream_socket with ", NET_ARG2("fd", hdl.id));
+  msghdr msg{};
+  msg.msg_iov = iovs.data();
+  msg.msg_iovlen = static_cast<int>(iovs.size());
+  return ::recvmsg(hdl.id, &msg, no_sigpipe_io_flag);
+}
+
+ptrdiff_t writev(stream_socket hdl, std::span<iovec> iovs) {
+  LOG_DEBUG("Writing to stream_socket with ", NET_ARG2("fd", hdl.id));
+  msghdr msg{};
+  msg.msg_iov = iovs.data();
+  msg.msg_iovlen = static_cast<int>(iovs.size());
+  return ::sendmsg(hdl.id, &msg, no_sigpipe_io_flag);
 }
 
 } // namespace net

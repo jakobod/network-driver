@@ -16,6 +16,10 @@
 
 #  include "net/detail/manager_base.hpp"
 
+#  include <utility>
+
+struct iovec;
+
 namespace net::detail {
 
 /// @brief Socket manager specialized for io_uring operations.
@@ -69,8 +73,11 @@ public:
 
   /// @brief Returns the data ready to be written to the socket.
   /// Used by the uring multiplexer for submission queue entry preparation.
-  /// @return A const span of data to write.
-  virtual util::const_byte_span write_buffer() const noexcept;
+  /// @return A span of data to write.
+  virtual std::span<iovec> write_buffer() const noexcept;
+
+protected:
+  void submit(operation op);
 };
 
 /// @brief Shared pointer type for uring managers.

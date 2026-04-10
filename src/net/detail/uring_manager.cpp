@@ -10,20 +10,27 @@
 #if defined(LIB_NET_URING)
 
 #  include "net/detail/uring_manager.hpp"
+#  include "net/detail/uring_multiplexer.hpp"
 
 #  include "util/assert.hpp"
 #  include "util/byte_span.hpp"
 
+#  include <sys/uio.h>
+
 namespace net::detail {
 
-util::const_byte_span uring_manager::write_buffer() const noexcept {
+std::span<iovec> uring_manager::write_buffer() const noexcept {
   ASSERT(false, "This is a default impl");
-  return util::const_byte_span{};
+  return std::span<iovec>{};
 }
 
 util::byte_span uring_manager::read_buffer() noexcept {
   ASSERT(false, "This is a default impl");
   return util::byte_span{};
+}
+
+void uring_manager::submit(operation op) {
+  manager_base::mpx<uring_multiplexer>()->submit(this, op);
 }
 
 } // namespace net::detail

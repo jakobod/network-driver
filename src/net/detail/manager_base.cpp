@@ -30,7 +30,7 @@ util::error manager_base::init(const util::config&) {
 
 manager_base::~manager_base() {
   LOG_TRACE();
-  shutdown(handle_, SHUT_RDWR);
+  shutdown(handle_, operation::read_write);
   close(handle_);
 }
 
@@ -48,6 +48,10 @@ bool manager_base::mask_del(operation flag) noexcept {
   }
   mask_set(mask() & ~flag);
   return true;
+}
+
+bool manager_base::mask_contains(operation flag) const noexcept {
+  return contains(mask(), flag);
 }
 
 void manager_base::register_reading() {

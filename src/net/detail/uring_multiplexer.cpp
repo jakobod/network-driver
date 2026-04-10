@@ -11,9 +11,6 @@
 
 #  include "net/detail/uring_multiplexer.hpp"
 
-#  include "net/detail/acceptor.hpp"
-#  include "net/detail/pollset_updater.hpp"
-
 #  include "net/socket/socket.hpp"
 #  include "net/socket/tcp_accept_socket.hpp"
 
@@ -22,6 +19,7 @@
 #  include "net/ip/v4_endpoint.hpp"
 #  include "net/operation.hpp"
 
+#  include "util/assert.hpp"
 #  include "util/binary_serializer.hpp"
 #  include "util/byte_span.hpp"
 #  include "util/config.hpp"
@@ -35,6 +33,7 @@
 #  include <csignal>
 #  include <cstring>
 #  include <iostream>
+#  include <poll.h>
 #  include <sys/socket.h>
 #  include <unistd.h>
 #  include <utility>
@@ -44,55 +43,8 @@ namespace {
 struct submission_data {
   net::detail::uring_manager_ptr mgr;
   net::operation op;
+  std::uint64_t id;
 };
-
-io_uring_sqe* prepare_sqe(io_uring& uring, net::detail::uring_manager& mgr,
-                          net::operation op) {
-  auto* sqe = io_uring_get_sqe(&uring);
-  if (!sqe) {
-    LOG_ERROR("SQ ring full, cannot submit read operation for fd=",
-              mgr.handle().id);
-    return nullptr;
-  }
-  switch (op) {
-    case net::operation::read: {
-      auto buf = mgr.read_buffer();
-      io_uring_prep_read(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
-      break;
-    }
-
-    case net::operation::write: {
-      auto buf = mgr.write_buffer();
-      io_uring_prep_write(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
-      break;
-    }
-
-    case net::operation::accept: {
-      io_uring_prep_accept(sqe, mgr.handle().id, nullptr, nullptr, 0);
-      break;
-    }
-    default:
-      break;
-  }
-  return sqe;
-}
-
-void submit_operation(io_uring& uring, net::detail::uring_manager& mgr,
-                      net::operation op) {
-  if (!mgr.mask_add(op)) {
-    return;
-  }
-  if (auto* sqe = prepare_sqe(uring, mgr, op)) {
-    io_uring_sqe_set_data(sqe,
-                          new submission_data{util::intrusive_ptr(&mgr), op});
-  }
-}
-
-void resubmit_operation(io_uring& uring, submission_data* data) {
-  if (auto* sqe = prepare_sqe(uring, *data->mgr, data->op)) {
-    io_uring_sqe_set_data(sqe, data);
-  }
-}
 
 } // namespace
 
@@ -100,9 +52,7 @@ namespace net::detail {
 
 uring_multiplexer::~uring_multiplexer() {
   LOG_TRACE();
-  if (initialized_) {
-    io_uring_queue_exit(&uring_);
-  }
+  io_uring_queue_exit(&uring_);
 }
 
 util::error uring_multiplexer::init(manager_factory factory,
@@ -126,9 +76,53 @@ util::error uring_multiplexer::init(manager_factory factory,
     return err;
   }
 
-  initialized_ = true;
   set_thread_id();
   return util::none;
+}
+
+std::pair<bool, uint64_t> uring_multiplexer::submit(uring_manager_ptr mgr,
+                                                    operation op) {
+  mgr->mask_add(op);
+
+  auto* sqe = io_uring_get_sqe(&uring_);
+  if (!sqe) {
+    LOG_ERROR("SQ ring full, cannot submit read operation for fd=",
+              mgr.handle().id);
+    return std::make_pair(false, 0);
+  }
+  switch (op) {
+    case operation::read: {
+      auto read_buffer = mgr->read_buffer();
+      io_uring_prep_read(sqe, mgr->handle().id, read_buffer.data(),
+                         read_buffer.size(), 0);
+    } break;
+
+    case operation::write: {
+      auto write_buffer = mgr->write_buffer();
+      io_uring_prep_writev(sqe, mgr->handle().id, write_buffer.data(),
+                           write_buffer.size(), 0);
+    } break;
+
+    case operation::accept:
+      io_uring_prep_accept(sqe, mgr->handle().id, nullptr, nullptr, 0);
+      break;
+
+    case operation::poll_read:
+
+      io_uring_prep_poll_add(sqe, mgr->handle().id, POLLIN);
+      break;
+
+    case operation::poll_write:
+      io_uring_prep_poll_add(sqe, mgr->handle().id, POLLOUT);
+      break;
+
+    default:
+      ASSERT(false, "unhandled operation");
+      break;
+  }
+  io_uring_sqe_set_data(sqe, new submission_data{std::move(mgr), op,
+                                                 current_submission_id_});
+  return std::make_pair(true, current_submission_id_++);
 }
 
 void uring_multiplexer::add(manager_base_ptr mgr, operation initial) {
@@ -165,39 +159,29 @@ void uring_multiplexer::enable(manager_base& mgr, operation op) {
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
             " for ", NET_ARG2("new_event", to_string(op)));
   auto& uring_mgr = static_cast<uring_manager&>(mgr);
-  if ((op & operation::read) == operation::read) {
-    submit_operation(uring_, uring_mgr, operation::read);
+
+  if (contains(op, operation::read)) {
+    submit(&uring_mgr, operation::read);
   }
 
-  if ((op & operation::write) == operation::write) {
-    submit_operation(uring_, uring_mgr, operation::write);
+  if (contains(op, operation::write)) {
+    submit(&uring_mgr, operation::write);
   }
 
-  if ((op & operation::accept) == operation::accept) {
-    submit_operation(uring_, uring_mgr, operation::accept);
+  if (contains(op, operation::accept)) {
+    submit(&uring_mgr, operation::accept);
+  }
+
+  if (contains(op, operation::poll_read)) {
+    submit(&uring_mgr, operation::poll_read);
+  }
+
+  if (contains(op, operation::poll_write)) {
+    submit(&uring_mgr, operation::poll_write);
   }
 }
 
 void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
-  static const auto to_shutdown_type = [](operation op) {
-    switch (op) {
-      case operation::read:
-      case operation::accept:
-      case operation::read_accept:
-        return SHUT_RD;
-
-      case operation::write:
-        return SHUT_WR;
-
-      case operation::read_write:
-        return SHUT_RDWR;
-
-      default:
-        std::abort();
-        return SHUT_RDWR;
-    }
-  };
-
   LOG_TRACE();
   LOG_DEBUG("Disabling mgr with ", NET_ARG2("id", mgr->handle().id),
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
@@ -205,7 +189,7 @@ void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
   if (!mgr.mask_del(op)) {
     return;
   }
-  ::net::shutdown(mgr.handle(), to_shutdown_type(op));
+  ::net::shutdown(mgr.handle(), op);
   if (remove && (mgr.mask() == operation::none)) {
     multiplexer_base::del(mgr.handle());
   }
@@ -214,12 +198,6 @@ void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
 util::error uring_multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   LOG_TRACE();
-
-  if (!initialized_) {
-    LOG_ERROR("uring_multiplexer not initialized, cannot poll");
-    return {util::error_code::runtime_error,
-            "[uring_multiplexer]: not initialized"};
-  }
 
   // Submit any pending operations
   int submit_res = io_uring_submit(&uring_);
@@ -281,29 +259,21 @@ void uring_multiplexer::handle_events() {
     LOG_DEBUG("Handling CQE for fd=", data->mgr->handle().id,
               " op=", to_string(data->op), " res=", cqe->res);
 
-    // Handle the completion based on operation type
-    if (cqe->res < 0) {
-      LOG_ERROR("I/O operation failed: ", util::last_error_as_string());
-      multiplexer_base::del(data->mgr->handle());
-    } else {
-      // Successful completion - pass to manager
-      auto result = data->mgr->handle_completion(data->op, cqe->res);
-      switch (result) {
-        case event_result::ok:
-        case event_result::temporary_error:
-          resubmit_operation(uring_, data);
-          break;
-        case event_result::done:
-          disable(*data->mgr, data->op, true);
-          delete data;
-          break;
-        case event_result::error:
-          multiplexer_base::del(data->mgr->handle());
-          delete data;
-          break;
-      }
+    auto result = data->mgr->handle_completion(data->op, cqe->res);
+    switch (result) {
+      case event_result::ok:
+        break;
+      case event_result::temporary_error:
+      case event_result::done:
+        disable(*data->mgr, data->op, true);
+        break;
+      case event_result::error:
+        multiplexer_base::del(data->mgr->handle());
+        delete data;
+        break;
     }
 
+    delete data;
     count++;
   }
 

@@ -16,6 +16,7 @@
 
 #if defined(LIB_NET_URING)
 #  include "net/detail/uring_manager.hpp"
+#  include "net/detail/uring_multiplexer.hpp"
 #endif
 
 namespace net::detail {
@@ -99,7 +100,11 @@ event_result pollset_updater<uring_manager>::handle_completion(operation op,
   operation op_result;
   util::binary_deserializer deserializer(read_buffer_);
   deserializer(code, mgr, op_result);
-  return base::handle_operation(code, mgr, op_result);
+  const auto handle_res = base::handle_operation(code, mgr, op_result);
+  if (handle_res == event_result::ok) {
+    manager_base::mpx<uring_multiplexer>()->submit(this, operation::read);
+  }
+  return handle_res;
 }
 
 #endif // LIB_NET_URING

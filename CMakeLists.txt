@@ -166,6 +166,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/detail/manager_base.cpp
     test/net/detail/pollset_updater.cpp
     test/net/detail/stream_transport.cpp
+    test/net/detail/datagram_transport.cpp
     test/net/detail/transport_adaptor.cpp
     test/net/detail/uring_multiplexer.cpp
 
@@ -181,6 +182,8 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/ref_counted.cpp
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
+
+    test/net/full_integration/uring_stream_transport.cpp
   
     # test/net/tls.cpp
     # test/openssl/communication.cpp

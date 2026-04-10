@@ -94,6 +94,8 @@ public:
   /// @return true if the mask was modified, false otherwise
   bool mask_del(operation flag) noexcept;
 
+  bool mask_contains(operation flag) const noexcept;
+
   // -- Event handling ---------------------------------------------------------
 
   /// @brief Registers this manager for read events on its socket.

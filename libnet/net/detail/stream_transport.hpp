@@ -11,9 +11,12 @@
 #include "net/fwd.hpp"
 
 #include "net/detail/event_handler.hpp"
-#include "net/detail/transport_base.hpp"
-
 #include "net/detail/multiplexer_base.hpp"
+#include "net/detail/transport_base.hpp"
+#if defined(LIB_NET_URING)
+#  include "net/detail/uring_manager.hpp"
+#  include "net/detail/uring_multiplexer.hpp"
+#endif
 
 #include "net/event_result.hpp"
 #include "net/receive_policy.hpp"
@@ -24,6 +27,7 @@
 #include "util/format.hpp"
 #include "util/logger.hpp"
 
+#include <sys/uio.h>
 #include <utility>
 
 namespace net::detail {
@@ -83,8 +87,18 @@ public:
 
   // -- stream_transport specific API ------------------------------------------
 
-  void enqueue(util::const_byte_span data) override {
-    write_buffer_.insert(write_buffer_.end(), data.begin(), data.end());
+  void enqueue(util::byte_buffer&& bytes) override {
+    write_queue_.push_back(std::move(bytes));
+    auto& buf = write_queue_.back();
+    iovecs_.emplace_back(buf.data(), buf.size());
+    num_enqueued_bytes_ += buf.size();
+    manager_base::register_writing();
+  }
+
+  void enqueue(util::const_byte_span bytes) override {
+    auto buf = transport_base::get_buffer();
+    buf.assign(bytes.begin(), bytes.end());
+    enqueue(std::move(buf));
   }
 
 protected:
@@ -111,19 +125,58 @@ protected:
     }
   }
 
-  void fetch_more_data() const {
-    for (size_t i = 0; i < max_consecutive_fetches_; ++i) {
+  event_result handle_write_result(int write_res) {
+    if (write_res < 0) {
+      if (last_socket_error_is_temporary()) {
+        return event_result::temporary_error;
+      } else {
+        return event_result::error;
+      }
+    }
+    LOG_DEBUG("Wrote ", write_res, " bytes to ",
+              NET_ARG2("socket", handle().id));
+    num_enqueued_bytes_ -= write_res;
+
+    // Remove all written data, cycle the empty buffers
+    std::size_t num_empty_buffers = 0;
+    for (auto& buf : write_queue_) {
+      if (write_res <= 0) {
+        break;
+      }
+      const auto to_remove = std::min(buf.size(),
+                                      static_cast<size_t>(write_res));
+      buf.erase(buf.begin(), buf.begin() + to_remove);
+      write_res -= to_remove;
+      if (buf.empty()) {
+        transport_base::return_buffer(std::move(buf));
+        ++num_empty_buffers;
+      }
+    }
+    write_queue_.erase(write_queue_.begin(),
+                       write_queue_.begin() + num_empty_buffers);
+    iovecs_.erase(iovecs_.begin(), iovecs_.begin() + num_empty_buffers);
+    return event_result::ok;
+  }
+
+  bool done_writing() const noexcept {
+    return (write_queue_.empty() && !next_layer_.has_more_data());
+  }
+
+  event_result fetch_more_data() const {
+    size_t i = 0;
+    while ((num_enqueued_bytes_ < transport_base::max_enqueued_bytes_)
+           && (i < transport_base::max_consecutive_fetches_)) {
       if (next_layer_.has_more_data()) {
         next_layer_.produce();
+        ++i;
       } else {
         break;
       }
     }
+    return done_writing() ? event_result::done : event_result::ok;
   }
 
-  bool done_writing() const noexcept {
-    return (write_buffer_.empty() && !next_layer_.has_more_data());
-  }
+  std::span<iovec> iovecs() const noexcept { return iovecs_; }
 
   mutable NextLayer next_layer_; // The next protocol layer in the stack.
 
@@ -131,8 +184,11 @@ protected:
   size_t written_{0};
   size_t min_read_size_{0};
 
+  size_t num_enqueued_bytes_{0};
+
   util::byte_buffer read_buffer_;
-  mutable util::byte_buffer write_buffer_;
+  mutable std::deque<util::byte_buffer> write_queue_;
+  mutable std::vector<iovec> iovecs_;
 };
 
 template <class ManagerBase, class NextLayer>
@@ -172,25 +228,17 @@ public:
     size_t num_consecutive_writes = 0;
     do {
       // Trigger the next layers to generate some data to write
-      base::fetch_more_data();
-      if (base::done_writing()) {
+      if (base::fetch_more_data() == event_result::done) {
         return event_result::done;
       }
-
-      const auto write_res = write(base::template handle<stream_socket>(),
-                                   base::write_buffer_);
-      if (write_res < 0) {
-        if (last_socket_error_is_temporary()) {
-          return event_result::ok;
-        } else {
-          return event_result::error;
-        }
+      const auto iovs = base::iovecs();
+      const auto write_res = writev(base::template handle<stream_socket>(),
+                                    iovs);
+      const auto verdict = base::handle_write_result(write_res);
+      if ((verdict == event_result::error)
+          || (verdict == event_result::temporary_error)) {
+        return verdict;
       }
-
-      LOG_DEBUG("Wrote ", write_res, " bytes to ",
-                NET_ARG2("socket", handle().id));
-      base::write_buffer_.erase(base::write_buffer_.begin(),
-                                base::write_buffer_.begin() + write_res);
     } while (num_consecutive_writes++ < base::max_consecutive_writes_);
     return base::done_writing() ? event_result::done : event_result::ok;
   }
@@ -214,27 +262,34 @@ public:
     switch (op) {
       case operation::read: {
         const auto verdict = base::handle_read_result(res);
+        if (verdict == event_result::temporary_error) {
+          uring_manager::submit(operation::poll_read);
+        }
         if (verdict != event_result::ok) {
           return verdict;
         }
-        return event_result::ok;
       }
+        [[fallthrough]];
+      case operation::poll_read:
+        uring_manager::submit(operation::read);
+        return event_result::ok;
 
-      case operation::write:
-        if (res < 0) {
-          if (last_socket_error_is_temporary()) {
-            return event_result::temporary_error;
-          } else {
-            return event_result::error;
-          }
+      case operation::write: {
+        const auto verdict = base::handle_write_result(res);
+        if (verdict == event_result::temporary_error) {
+          uring_manager::submit(operation::poll_write);
+          return event_result::done;
+        } else if (verdict != event_result::ok) {
+          return verdict;
         }
-        submittable_write_buffer_.erase(submittable_write_buffer_.begin(),
-                                        submittable_write_buffer_.begin()
-                                          + res);
-        prepare_next_write();
-        if (submittable_write_buffer_.empty()) {
+      }
+        [[fallthrough]];
+      case operation::poll_write:
+        base::fetch_more_data();
+        if (base::done_writing()) {
           return event_result::done;
         }
+        uring_manager::submit(operation::write);
         return event_result::ok;
 
       default:
@@ -245,40 +300,20 @@ public:
 
   /// @brief Returns the buffer space available for reading.
   /// @return A span of the available buffer space.
-  util::byte_span read_buffer() noexcept override { return base::read_buffer_; }
+  util::byte_span read_buffer() noexcept override {
+    return std::span{base::read_buffer_.data() + base::received_,
+                     base::read_buffer_.size() - base::received_};
+  }
 
   /// @brief Returns the buffer with the data currently queued for writing.
   /// @return A span of the data queued for writing.
-  util::const_byte_span write_buffer() const noexcept override {
-    return submittable_write_buffer_;
+  std::span<iovec> write_buffer() const noexcept override {
+    return base::iovecs();
   }
-
-  void register_writing() override {
-    if ((manager_base::mask() & operation::write) == operation::none) {
-      prepare_next_write();
-    }
-    manager_base::register_writing();
-  }
-
-private:
-  void prepare_next_write() const {
-    // TODO: a triple buffer aproach could potentially be more performant?
-    // One for filling by the user,
-    // one that contains the partially written data,
-    // one that contains new data just being created
-    // Could save on syscalls and unnecessary copies
-    if (submittable_write_buffer_.empty()) {
-      base::fetch_more_data();
-      if (!base::write_buffer_.empty()) {
-        std::swap(submittable_write_buffer_, base::write_buffer_);
-      }
-    }
-  }
-
-  // Second buffer is needed to prevent invalidating of pointers that are
-  // currently submitted in SQE's in uring
-  mutable util::byte_buffer submittable_write_buffer_;
 };
+
+template <class NextLayer>
+using uring_stream_transport = stream_transport<uring_manager, NextLayer>;
 
 #endif
 

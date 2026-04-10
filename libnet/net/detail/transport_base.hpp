@@ -17,9 +17,11 @@
 
 #include "util/assert.hpp"
 #include "util/byte_buffer.hpp"
-#include "util/byte_span.hpp"
+#include "util/byte_literals.hpp"
 #include "util/config.hpp"
 #include "util/error.hpp"
+
+#include <deque>
 
 namespace net::detail {
 
@@ -46,6 +48,10 @@ public:
                                         std::int64_t{20});
     max_consecutive_writes_ = cfg.get_or("transport.max-consecutive-writes",
                                          std::int64_t{20});
+    max_enqueued_bytes_ = cfg.get_or("transport.max-enqueued-bytes",
+                                     std::int64_t{10'000});
+    max_cached_write_buffers_ = cfg.get_or("transport.max-cached-write-buffers",
+                                           std::int64_t{10});
     return util::none;
   }
 
@@ -53,18 +59,38 @@ public:
   /// @param policy The receive policy specifying min and max read sizes.
   virtual void configure_next_read(receive_policy policy) noexcept = 0;
 
+  virtual void enqueue(util::byte_buffer&&) {
+    ASSERT(false, "This is a default implementation");
+  }
+
   virtual void enqueue(util::const_byte_span) {
     ASSERT(false, "This is a default implementation");
   }
 
-  virtual void enqueue(util::const_byte_span, net::ip::v4_endpoint) {
-    ASSERT(false, "This is a default implementation");
+protected:
+  util::byte_buffer get_buffer() {
+    if (buffer_cache_.empty()) {
+      return util::byte_buffer{};
+    }
+    auto buf = std::move(buffer_cache_.front());
+    buffer_cache_.pop_front();
+    return buf; // RVO?
   }
 
-protected:
+  void return_buffer(util::byte_buffer&& buf) {
+    DEBUG_ONLY_ASSERT(buf.empty());
+    if (buffer_cache_.size() < max_enqueued_bytes_) {
+      buffer_cache_.push_back(std::move(buf));
+    }
+  }
+
   size_t max_consecutive_fetches_ = 10;
   size_t max_consecutive_reads_ = 20;
   size_t max_consecutive_writes_ = 20;
+  size_t max_enqueued_bytes_ = 10'000; // 10kB
+  size_t max_cached_write_buffers_ = 10;
+
+  mutable std::deque<util::byte_buffer> buffer_cache_;
 };
 
 } // namespace net::detail

@@ -8,6 +8,12 @@
 
 #pragma once
 
+#include "net/event_result.hpp"
+
+#include "net/socket/socket.hpp"
+#include "net/socket/tcp_stream_socket.hpp"
+
+#include "util/byte_span.hpp"
 #include "util/error_or.hpp"
 
 #include <gtest/gtest.h>
@@ -15,7 +21,9 @@
 #include <iostream>
 #include <utility>
 
-namespace net::test::detail {
+namespace net::test {
+
+namespace detail {
 
 /// @brief Helper to extract and validate error_or values in tests.
 /// Unpacks an error_or<T> variant, asserting the value exists and fails
@@ -52,7 +60,60 @@ private:
   T value_;
 };
 
-} // namespace net::test::detail
+} // namespace detail
+
+template <class Socket>
+std::pair<event_result, std::size_t>
+write(Socket handle, util::const_byte_span buf) {
+  auto ev_result = event_result::ok;
+  std::size_t written = 0;
+
+  while (written != buf.size()) {
+    auto* data = buf.data() + written;
+    const auto size = buf.size() - written;
+    const auto res = net::write(handle, {data, size});
+
+    if (res >= 0) {
+      written += res;
+    } else {
+      ev_result = last_socket_error_is_temporary()
+                    ? event_result::temporary_error
+                    : event_result::error;
+      break;
+    }
+  }
+
+  return std::make_pair(ev_result, written);
+}
+
+template <class Socket>
+std::pair<event_result, std::size_t> read(Socket handle, util::byte_span buf) {
+  auto ev_result = event_result::ok;
+  std::size_t received = 0;
+
+  while (received != buf.size()) {
+    auto* data = buf.data() + received;
+    const auto size = buf.size() - received;
+    const auto res = net::read(handle, std::span{data, size});
+
+    if (res > 0) {
+      received += res;
+    } else {
+      if (res == 0) {
+        ev_result = event_result::done;
+      } else {
+        ev_result = last_socket_error_is_temporary()
+                      ? event_result::temporary_error
+                      : event_result::error;
+      }
+      break;
+    }
+  }
+
+  return std::make_pair(ev_result, received);
+}
+
+} // namespace net::test
 
 // -- Helper macros for tests --------------------------------------------------
 

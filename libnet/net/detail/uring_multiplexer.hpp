@@ -57,6 +57,8 @@ public:
 
   // -- Interface functions --------------------------------------------------
 
+  std::pair<bool, uint64_t> submit(uring_manager_ptr mgr, operation op);
+
   /// @brief Registers a socket manager for io_uring event monitoring.
   /// @param mgr The manager to register.
   /// @param initial The initial operations to monitor.
@@ -92,7 +94,8 @@ private:
 
   // Multiplexing variables
   struct io_uring uring_ {}; ///< The io_uring instance
-  bool initialized_{false};  ///< Initialization flag
+
+  std::uint64_t current_submission_id_{0};
 };
 
 /// @brief Shared pointer type for uring multiplexers.

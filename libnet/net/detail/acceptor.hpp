@@ -58,26 +58,7 @@ public:
   using base::base;
 
   /// @brief Handles incoming connection on read event (epoll/kqueue).
-  event_result handle_read_event() {
-    auto accept_handle = handle<tcp_accept_socket>();
-    LOG_TRACE();
-    LOG_DEBUG("event_acceptor handling read event ",
-              NET_ARG2("accept_handle", accept_handle.id));
-    const auto accepted = accept(accept_handle);
-    if (accepted == invalid_socket) {
-      if (net::last_socket_error_is_temporary()) {
-        return event_result::ok;
-      } else {
-        handle_error(util::error{util::error_code::socket_operation_failed,
-                                 "accept returned an invalid socket: "
-                                   + net::last_socket_error_as_string()});
-        return event_result::error;
-      }
-    }
-    LOG_DEBUG("event_acceptor connection ",
-              NET_ARG2("new_handle", accepted.id));
-    return base::handle_accepted(accepted);
-  }
+  event_result handle_read_event();
 };
 
 #if defined(LIB_NET_URING)
@@ -91,27 +72,10 @@ public:
 
   /// @brief Overrides the default operation for this acceptor
   /// @returns operation::accept
-  operation initial_operation() const noexcept override {
-    return operation::accept;
-  }
+  operation initial_operation() const noexcept override;
 
   /// @brief Handles incoming connection on io_uring completion event.
-  event_result handle_completion(operation op, int res) {
-    if (op != operation::accept) {
-      LOG_ERROR("acceptor called for operation != accept");
-      return event_result::error;
-    }
-    LOG_DEBUG("acceptor handling accepted connection on ",
-              NET_ARG2("handle", uring_manager::handle().id),
-              NET_ARG2("new_handle", res));
-
-    if (res < 0) {
-      handle_error(util::error{util::error_code::socket_operation_failed,
-                               "accept returned an invalid socket"});
-      return event_result::ok;
-    }
-    return base::handle_accepted(tcp_stream_socket{res});
-  }
+  event_result handle_completion(operation op, int res);
 };
 
 #endif // LIB_NET_URING

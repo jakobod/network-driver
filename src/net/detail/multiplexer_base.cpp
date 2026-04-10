@@ -50,6 +50,7 @@ void multiplexer_base::shutdown() {
   LOG_TRACE();
   if (is_multiplexer_thread()) {
     LOG_DEBUG("multiplexer shutting down");
+    shutting_down_ = true;
     auto it = managers_.begin();
     while (it != managers_.end()) {
       auto& mgr = it->second;
@@ -64,7 +65,6 @@ void multiplexer_base::shutdown() {
         ++it;
       }
     }
-    shutting_down_ = true;
     close(pipe_writer_);
     pipe_writer_ = pipe_socket{};
   } else if (!shutting_down_) {

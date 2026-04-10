@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstring>
 #include <numeric>
+#include <ranges>
 #include <thread>
 
 using namespace net;
@@ -40,6 +41,8 @@ struct test_data {
 };
 
 struct dummy_application {
+  static constexpr std::size_t min_read_size = 1024;
+
   dummy_application(detail::transport_base& parent, test_data& data)
     : parent_{parent}, data_(data) {
     // nop
@@ -61,7 +64,7 @@ struct dummy_application {
 
   event_result consume(util::const_byte_span data) {
     data_.received.insert(data_.received.end(), data.begin(), data.end());
-    parent_.configure_next_read(receive_policy::exactly(1024));
+    parent_.configure_next_read(receive_policy::exactly(min_read_size));
     return event_result::ok;
   }
 
@@ -93,7 +96,10 @@ struct event_stream_transport_test : public testing::Test, public test_data {
     close(sockets.second);
   }
 
-  void SetUp() override { ASSERT_EQ(mgr.init(cfg), util::none); }
+  void SetUp() override {
+    ASSERT_TRUE(nonblocking(sockets.second, true));
+    ASSERT_EQ(mgr.init(cfg), util::none);
+  }
 
   util::byte_array<32768> data_buffer;
   util::config cfg;
@@ -102,57 +108,53 @@ struct event_stream_transport_test : public testing::Test, public test_data {
   event_stream_transport mgr;
 };
 
-void write_all(net::stream_socket sock, util::const_byte_span data) {
-  while (!data.empty()) {
-    const auto res = write(sock, data);
-    if (res > 0) {
-      data = data.subspan(res);
-    } else if (!last_socket_error_is_temporary()) {
-      FAIL() << "Socket error";
-      return;
-    }
-  }
-}
-
-std::size_t read_all(net::stream_socket sock, util::byte_span buf) {
-  std::size_t received = 0;
-  while (received != buf.size()) {
-    auto* data = buf.data() + received;
-    const auto size = buf.size() - received;
-    const auto res = read(sock, {data, size});
-    if (res > 0) {
-      received += res;
-    } else if (res == 0) {
-      break;
-    } else if (!last_socket_error_is_temporary()) {
-      break;
-    }
-  }
-  return received;
-}
-
 } // namespace
 
 TEST_F(event_stream_transport_test, handle_read_event) {
-  std::thread writer([this] { write_all(sockets.second, data); });
+  std::thread writer{[this] { test::write(sockets.second, data); }};
   while (received.size() < data.size()) {
+    data = data.subspan(dummy_application::min_read_size);
     const auto read_res = mgr.handle_read_event();
     ASSERT_NE(read_res, event_result::done);
     ASSERT_NE(read_res, event_result::error);
   }
-  EXPECT_TRUE(std::equal(received.begin(), received.end(), data.begin()));
   if (writer.joinable()) {
     writer.join();
   }
+  EXPECT_TRUE(
+    std::equal(received.begin(), received.end(), data_buffer.begin()));
+}
+
+TEST_F(event_stream_transport_test, partial_read) {
+  while (received.size() < data.size()) {
+    const auto [ev_res, written] = test::write(
+      sockets.second,
+      data.subspan(0, std::min(data.size(),
+                               (dummy_application::min_read_size / 2))));
+    EXPECT_NE(ev_res, event_result::done);
+    EXPECT_NE(ev_res, event_result::error);
+    data = data.subspan(written);
+    const auto read_res = mgr.handle_read_event();
+    ASSERT_NE(read_res, event_result::done);
+    ASSERT_NE(read_res, event_result::error);
+  }
+  EXPECT_TRUE(
+    std::equal(received.begin(), received.end(), data_buffer.begin()));
 }
 
 TEST_F(event_stream_transport_test, handle_write_event) {
   size_t received = 0;
   util::byte_array<32768> buf;
-  while (mgr.handle_write_event() == event_result::ok) {
-    received += read_all(sockets.second, buf);
+
+  while (received < buf.size()) {
+    while (mgr.handle_write_event() == event_result::ok)
+      ;
+    const auto [ev_res, read_bytes] = test::read(
+      sockets.second, std::span{buf.data() + received, buf.size() - received});
+    EXPECT_NE(ev_res, event_result::done);
+    EXPECT_NE(ev_res, event_result::error);
+    received += read_bytes;
   }
-  received += read_all(sockets.second, buf);
   ASSERT_EQ(received, data_buffer.size());
   EXPECT_EQ(memcmp(data_buffer.data(), this->received.data(),
                    this->received.size()),
@@ -215,18 +217,40 @@ TEST_F(uring_stream_transport_test, handles_received_data) {
     std::equal(received.begin(), received.end(), data_buffer.begin()));
 }
 
+TEST_F(uring_stream_transport_test, partial_reads) {
+  // Continuously fill the buffer of the uring_manager with the desired number
+  // of bytes and trigger handling
+  while (!data.empty()) {
+    auto read_buffer = mgr.read_buffer();
+    const auto* ptr = data.data();
+    const auto size = std::min(data.size(),
+                               (dummy_application::min_read_size / 2));
+    std::memcpy(read_buffer.data(), ptr, size);
+    data = data.subspan(size);
+    ASSERT_EQ(mgr.handle_completion(operation::read, static_cast<int>(size)),
+              event_result::ok);
+  }
+  // After writing all data, the application should have consumed all data
+  EXPECT_TRUE(
+    std::equal(received.begin(), received.end(), data_buffer.begin()));
+}
+
 TEST_F(uring_stream_transport_test, prepares_data_to_write) {
   static constexpr std::size_t max_retries = 20;
   size_t received = 0;
   util::byte_buffer buf;
 
-  mgr.register_writing();
   for (std::size_t i = 0; i < max_retries; ++i) {
-    auto write_buffer = mgr.write_buffer();
-    buf.insert(buf.begin(), write_buffer.begin(), write_buffer.end());
-    received += write_buffer.size();
+    std::size_t num_bytes_this_try = 0;
+    for (const auto& iov : mgr.write_buffer()) {
+      util::const_byte_span rng{static_cast<const std::byte*>(iov.iov_base),
+                                iov.iov_len};
+      buf.insert(buf.end(), rng.begin(), rng.end());
+      num_bytes_this_try += iov.iov_len;
+    }
+    received += num_bytes_this_try;
     const auto res = mgr.handle_completion(operation::write,
-                                           write_buffer.size());
+                                           num_bytes_this_try);
     ASSERT_NE(res, event_result::error);
     ASSERT_NE(res, event_result::temporary_error);
     if (res == event_result::done) {

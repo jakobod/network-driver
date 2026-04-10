@@ -89,8 +89,7 @@ void kqueue_multiplexer::add(manager_base_ptr mgr, operation initial) {
     LOG_DEBUG("Requesting to add socket_manager with ",
               NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
     mgr->ref();
-    write_to_pipe(pollset_updater<event_handler>::opcode::add, mgr.get(),
-                  initial);
+    write_to_pipe(pollset_opcode::add, mgr.get(), initial);
   }
 }
 
