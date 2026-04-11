@@ -184,6 +184,11 @@ intrusive_ptr<T> make_intrusive(T* raw_ptr, bool add_ref = true) {
   return intrusive_ptr<T>(raw_ptr, add_ref);
 }
 
+template <meta::derived_from<util::ref_counted> T>
+intrusive_ptr<T> as_intrusive_ptr(T& ref, bool add_ref = true) {
+  return intrusive_ptr<T>(&ref, add_ref);
+}
+
 // -- Raw pointer comparisons --------------------------------------------------
 
 /// @brief Equality comparison with raw pointer.

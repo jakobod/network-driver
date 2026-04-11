@@ -30,17 +30,17 @@ acceptor_base<ManagerBase>::acceptor_base(tcp_accept_socket handle,
 }
 
 template <class ManagerBase>
-event_result
+manager_result
 acceptor_base<ManagerBase>::handle_accepted(tcp_stream_socket accepted) {
   auto mgr = factory_(accepted);
   const auto initial = mgr->initial_operation();
   ManagerBase::mpx()->add(std::move(mgr), initial);
-  return event_result::ok;
+  return manager_result::ok;
 }
 
 // -- acceptor<event_handler> implementation (epoll/kqueue) -------------------
 
-event_result acceptor<event_handler>::handle_read_event() {
+manager_result acceptor<event_handler>::handle_read_event() {
   auto accept_handle = handle<tcp_accept_socket>();
   LOG_TRACE();
   LOG_DEBUG("event_acceptor handling read event ",
@@ -48,12 +48,12 @@ event_result acceptor<event_handler>::handle_read_event() {
   const auto accepted = accept(accept_handle);
   if (accepted == invalid_socket) {
     if (net::last_socket_error_is_temporary()) {
-      return event_result::ok;
+      return manager_result::ok;
     } else {
       handle_error(util::error{util::error_code::socket_operation_failed,
                                "accept returned an invalid socket: "
                                  + net::last_socket_error_as_string()});
-      return event_result::error;
+      return manager_result::error;
     }
   }
   LOG_DEBUG("event_acceptor connection ", NET_ARG2("new_handle", accepted.id));
@@ -62,16 +62,26 @@ event_result acceptor<event_handler>::handle_read_event() {
 
 #if defined(LIB_NET_URING)
 
-// -- acceptor<uring_manager> implementation (io_uring) -----------------------
+// -- acceptor<uring_manager> implementation (io_uring) ------------------------
 
-operation acceptor<uring_manager>::initial_operation() const noexcept {
-  return operation::accept;
+manager_result acceptor<uring_manager>::enable(operation op) {
+  if (op != operation::accept) {
+    LOG_ERROR("Acceptor enabled for operation other than operation::accept");
+    return manager_result::error;
+  }
+  static constexpr auto multishot_enabled = true;
+  mask_add(operation::accept);
+  auto [success, submission_id]
+    = manager_base::mpx<uring_multiplexer>()->submit_accept(*this,
+                                                            multishot_enabled);
+  return success ? manager_result::ok : manager_result::error;
 }
 
-event_result acceptor<uring_manager>::handle_completion(operation op, int res) {
+manager_result acceptor<uring_manager>::handle_completion(operation op,
+                                                          int res) {
   if (op != operation::accept) {
-    LOG_ERROR("acceptor called for operation != accept");
-    return event_result::error;
+    LOG_ERROR("Acceptor called for op other than operation::accept");
+    return manager_result::error;
   }
   LOG_DEBUG("acceptor handling accepted connection on ",
             NET_ARG2("handle", uring_manager::handle().id),
@@ -80,10 +90,9 @@ event_result acceptor<uring_manager>::handle_completion(operation op, int res) {
   if (res < 0) {
     handle_error(util::error{util::error_code::socket_operation_failed,
                              "accept returned an invalid socket"});
-    return event_result::ok;
+    return manager_result::error;
   }
   const auto handle_res = base::handle_accepted(tcp_stream_socket{res});
-  manager_base::mpx<uring_multiplexer>()->submit(this, operation::accept);
   return handle_res;
 }
 

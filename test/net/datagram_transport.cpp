@@ -45,24 +45,24 @@
 //     return util::none;
 //   }
 
-//   event_result produce() {
+//   manager_result produce() {
 //     auto size = std::min(size_t{1024}, data_.size());
 //     parent_.enqueue({data_.data(), size});
 //     data_ = data_.subspan(size);
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
 //   bool has_more_data() { return !data_.empty(); }
 
-//   event_result consume(util::const_byte_span data) {
+//   manager_result consume(util::const_byte_span data) {
 //     received_.insert(received_.end(), data.begin(), data.end());
 //     parent_.configure_next_read(receive_policy::exactly(1024));
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
-//   event_result handle_timeout(uint64_t id) {
+//   manager_result handle_timeout(uint64_t id) {
 //     last_timeout_id_ = id;
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
 // private:
@@ -116,7 +116,7 @@
 //   ASSERT_EQ(mgr.init(cfg), util::none);
 //   std::thread writer([this] { write_all_data(sockets.second, data); });
 //   while (received_data.size() < data.size()) {
-//     ASSERT_EQ(mgr.handle_read_event(), event_result::ok);
+//     ASSERT_EQ(mgr.handle_read_event(), manager_result::ok);
 //   }
 //   EXPECT_TRUE(
 //     std::equal(received_data.begin(), received_data.end(), data.begin()));
@@ -142,7 +142,7 @@
 //     }
 //     received += res;
 //   };
-//   while (mgr.handle_write_event() == event_result::ok) {
+//   while (mgr.handle_write_event() == manager_result::ok) {
 //     read_some();
 //   }
 //   read_some();
@@ -156,12 +156,12 @@
 //                    last_timeout_id);
 //   ASSERT_EQ(mgr.init(cfg), util::none);
 //   close(sockets.second);
-//   EXPECT_EQ(mgr.handle_read_event(), event_result::done);
+//   EXPECT_EQ(mgr.handle_read_event(), manager_result::done);
 // }
 
 // TEST_F(datagram_transport_test, timeout_handling) {
 //   manager_type mgr(sockets.first, &mpx, std::span{data}, received_data,
 //                    last_timeout_id);
 //   ASSERT_NO_ERROR(mgr.init(cfg));
-//   EXPECT_EQ(mgr.handle_timeout(42), event_result::ok);
+//   EXPECT_EQ(mgr.handle_timeout(42), manager_result::ok);
 // }

@@ -183,7 +183,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/util/scope_guard.cpp
     test/util/serialized_size.cpp
 
-    test/net/full_integration/uring_stream_transport.cpp
+    test/net/full_integration/stream_transport.cpp
   
     # test/net/tls.cpp
     # test/openssl/communication.cpp
@@ -196,6 +196,7 @@ if (LIB_NET_ENABLE_TESTS)
     lib_net_test
     net
     gtest
+    gmock
   )
 
   gtest_discover_tests(lib_net_test)

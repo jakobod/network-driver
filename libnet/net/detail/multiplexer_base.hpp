@@ -248,12 +248,14 @@ private:
   /// @param remove If true, delete the manager when no operations remain.
   virtual void disable(manager_base& mgr, operation op, bool remove) = 0;
 
+public:
   /// @brief Performs a single event polling iteration.
   /// Subclasses implement backend-specific event retrieval and dispatch.
   /// @param blocking If true, wait for events; if false, return immediately.
   /// @return Error on failure, none on success.
   virtual util::error poll_once(bool blocking) = 0;
 
+private:
   // -- Timeout management -----------------------------------------------------
 
   /// @brief Schedules a timeout callback for a manager at a specific time

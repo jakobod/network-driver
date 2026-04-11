@@ -51,24 +51,24 @@
 //     return util::none;
 //   }
 
-//   event_result produce() {
+//   manager_result produce() {
 //     auto size = std::min(size_t{1024}, data_.data.size());
 //     parent_.enqueue({data_.data.data(), size});
 //     data_.data = data_.data.subspan(size);
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
 //   bool has_more_data() const noexcept { return !data_.data.empty(); }
 
-//   event_result consume(util::const_byte_span data) {
+//   manager_result consume(util::const_byte_span data) {
 //     data_.received.insert(data_.received.end(), data.begin(), data.end());
 //     parent_.configure_next_read(receive_policy::exactly(1024));
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
-//   event_result handle_timeout(uint64_t id) {
+//   manager_result handle_timeout(uint64_t id) {
 //     data_.last_timeout_id = id;
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
 // private:
@@ -128,7 +128,7 @@
 //     std::memcpy(read_buffer.data(), ptr, size);
 //     data = data.subspan(size);
 //     ASSERT_EQ(mgr.handle_completion(operation::read, static_cast<int>(size)),
-//               event_result::ok);
+//               manager_result::ok);
 //   }
 //   // After writing all data, the application should have consumed all data
 //   EXPECT_TRUE(
@@ -147,9 +147,9 @@
 //     received += write_buffer.size();
 //     const auto res = mgr.handle_completion(operation::write,
 //                                            write_buffer.size());
-//     ASSERT_NE(res, event_result::error);
-//     ASSERT_NE(res, event_result::temporary_error);
-//     if (res == event_result::done) {
+//     ASSERT_NE(res, manager_result::error);
+//     ASSERT_NE(res, manager_result::temporary_error);
+//     if (res == manager_result::done) {
 //       break;
 //     }
 //   }
@@ -158,11 +158,11 @@
 // }
 
 // TEST_F(uring_stream_transport_test, disconnect) {
-//   EXPECT_EQ(mgr.handle_completion(operation::read, 0), event_result::done);
+//   EXPECT_EQ(mgr.handle_completion(operation::read, 0), manager_result::done);
 // }
 
 // TEST_F(uring_stream_transport_test, timeout_handling) {
-//   ASSERT_EQ(mgr.handle_timeout(42), event_result::ok);
+//   ASSERT_EQ(mgr.handle_timeout(42), manager_result::ok);
 //   EXPECT_EQ(last_timeout_id, 42);
 // }
 

@@ -10,8 +10,9 @@
 
 #include "net/detail/event_handler.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 #include "net/operation.hpp"
+#include "net/socket_guard.hpp"
 
 #include "net/socket/pipe_socket.hpp"
 #include "net/socket/stream_socket.hpp"
@@ -22,14 +23,16 @@
 #include "util/error.hpp"
 #include "util/error_or.hpp"
 
-#include "multiplexer_mock.hpp"
 #include "net_test.hpp"
+
+#include <gmock/gmock.h>
 
 #include "net/detail/uring_manager.hpp"
 using event_pollset_updater
   = net::detail::pollset_updater<net::detail::event_handler>;
 #if defined(LIB_NET_URING)
 #  include "net/detail/uring_manager.hpp"
+#  include "net/detail/uring_multiplexer.hpp"
 using uring_pollset_updater
   = net::detail::pollset_updater<net::detail::uring_manager>;
 #endif
@@ -38,75 +41,185 @@ using namespace net;
 
 namespace {
 
-struct dummy_multiplexer : public multiplexer_mock {
-  void handle_error(util::error err) override { last_error = std::move(err); }
+class multiplexer_mock : public detail::multiplexer_base {
+public:
+  MOCK_METHOD(void, add, (detail::manager_base_ptr, operation), (override));
 
-  void add(detail::manager_base_ptr mgr, operation initial) override {
-    add_called = true;
-    last_manager = std::move(mgr);
-    initial_operation = initial;
-  }
+private:
+  MOCK_METHOD(manager_map::iterator, del, (manager_map::iterator), (override));
 
-  void shutdown() override { shutdown_called = true; }
-
-  util::error last_error;
-  bool shutdown_called{false};
-  bool add_called{false};
-  operation initial_operation{operation::none};
-  detail::manager_base_ptr last_manager;
+public:
+  MOCK_METHOD(void, enable, (detail::manager_base&, operation), (override));
+  MOCK_METHOD(void, disable, (detail::manager_base&, operation, bool),
+              (override));
+  MOCK_METHOD(util::error, poll_once, (bool), (override));
+  MOCK_METHOD(void, handle_error, (util::error), (override));
+  MOCK_METHOD(void, shutdown, (), (override));
 };
 
-struct pollset_updater_test : public ::testing::Test {
-  pollset_updater_test() {
+struct event_pollset_updater_test : public ::testing::Test {
+  event_pollset_updater_test() {
     auto [reader, writer] = UNPACK_EXPRESSION(make_pipe());
-    pipe_reader = reader;
     pipe_writer = writer;
+    updater = std::make_unique<event_pollset_updater>(reader, &mpx);
+  }
+
+  void SetUp() override {
+    EXPECT_EQ(updater->init(util::config{}), util::none);
   }
 
   template <class... Ts>
-  void write_to_pipe(Ts&&... ts) {
+  void write(pipe_socket handle, Ts&&... ts) {
     util::byte_buffer buf;
     util::binary_serializer sink{buf};
     sink(std::forward<Ts>(ts)...);
-    EXPECT_EQ(write(pipe_writer, buf), static_cast<ptrdiff_t>(buf.size()));
+    EXPECT_EQ(net::write(handle, buf), static_cast<ptrdiff_t>(buf.size()));
   }
 
-  pipe_socket pipe_reader;
-  pipe_socket pipe_writer;
-  dummy_multiplexer mpx;
+  socket_guard<pipe_socket> pipe_writer;
+  multiplexer_mock mpx;
+  std::unique_ptr<event_pollset_updater> updater;
 };
 
 } // namespace
 
-TEST_F(pollset_updater_test, init) {
-  event_pollset_updater updater{pipe_reader, &mpx};
-  EXPECT_EQ(updater.init(util::config{}), util::none);
+TEST_F(event_pollset_updater_test, init) {
+  EXPECT_CALL(mpx, add).Times(0);
+  EXPECT_CALL(mpx, enable).Times(0);
+  EXPECT_CALL(mpx, disable).Times(0);
+  EXPECT_CALL(mpx, poll_once).Times(0);
+  EXPECT_CALL(mpx, handle_error).Times(0);
+  EXPECT_CALL(mpx, shutdown).Times(0);
+  // The updater is created and initialized in the fixture
 }
 
-TEST_F(pollset_updater_test, handle_shutdown) {
-  event_pollset_updater updater{pipe_reader, &mpx};
-  EXPECT_EQ(updater.init(util::config{}), util::none);
-  write_to_pipe(detail::pollset_opcode::shutdown, nullptr, operation::none);
-  updater.handle_read_event();
-  EXPECT_EQ(mpx.last_error, util::none);
-  EXPECT_TRUE(mpx.shutdown_called);
+TEST_F(event_pollset_updater_test, handle_shutdown) {
+  EXPECT_CALL(mpx, add).Times(0);
+  EXPECT_CALL(mpx, enable).Times(0);
+  EXPECT_CALL(mpx, disable).Times(0);
+  EXPECT_CALL(mpx, poll_once).Times(0);
+  EXPECT_CALL(mpx, handle_error).Times(0);
+  EXPECT_CALL(mpx, shutdown).Times(1);
+
+  write(*pipe_writer, detail::pollset_opcode::shutdown, nullptr,
+        operation::none);
+  EXPECT_EQ(updater->handle_read_event(), manager_result::done);
 }
 
-TEST_F(pollset_updater_test, handle_add) {
-  event_pollset_updater updater{pipe_reader, &mpx};
-  EXPECT_EQ(updater.init(util::config{}), util::none);
-  auto stream_socket_pair = UNPACK_EXPRESSION(net::make_stream_socket_pair());
-  auto mgr = util::make_intrusive<detail::event_handler>(
-    stream_socket_pair.first, &mpx);
+TEST_F(event_pollset_updater_test, handle_add) {
+  EXPECT_CALL(mpx, add(testing::NotNull(), operation::read)).Times(1);
+  EXPECT_CALL(mpx, enable).Times(0);
+  EXPECT_CALL(mpx, disable).Times(0);
+  EXPECT_CALL(mpx, poll_once).Times(0);
+  EXPECT_CALL(mpx, handle_error).Times(0);
+  EXPECT_CALL(mpx, shutdown).Times(0);
+
+  auto [sock1, sock2] = UNPACK_EXPRESSION(net::make_stream_socket_pair());
+  const net::socket_guard guard{sock1};
+  auto mgr = util::make_intrusive<detail::event_handler>(sock2, &mpx);
   mgr->ref();
   EXPECT_EQ(mgr->ref_count(), 2);
-  write_to_pipe(detail::pollset_opcode::add, mgr.get(), operation::read);
-  updater.handle_read_event();
-  EXPECT_EQ(mgr->ref_count(), 2);
-  EXPECT_EQ(mpx.last_error, util::none);
-  EXPECT_TRUE(mpx.add_called);
-  EXPECT_EQ(mpx.last_manager, mgr);
-  mpx.last_manager.reset();
+  write(*pipe_writer, detail::pollset_opcode::add, mgr.get(), operation::read);
+  EXPECT_EQ(updater->handle_read_event(), manager_result::ok);
   EXPECT_EQ(mgr->ref_count(), 1);
-  EXPECT_EQ(mpx.initial_operation, operation::read);
 }
+
+#if defined(LIB_NET_URING)
+
+namespace {
+
+class uring_multiplexer_mock : public detail::uring_multiplexer {
+public:
+  MOCK_METHOD(void, add, (detail::manager_base_ptr, operation), (override));
+
+private:
+  MOCK_METHOD(manager_map::iterator, del, (manager_map::iterator), (override));
+
+public:
+  MOCK_METHOD(void, enable, (detail::manager_base&, operation), (override));
+  MOCK_METHOD(void, disable, (detail::manager_base&, operation, bool),
+              (override));
+  MOCK_METHOD(void, handle_error, (util::error), (override));
+  MOCK_METHOD(void, shutdown, (), (override));
+};
+
+struct uring_pollset_updater_test : public ::testing::Test {
+  uring_pollset_updater_test() {
+    auto [reader, writer] = UNPACK_EXPRESSION(make_pipe());
+    pipe_writer = writer;
+    updater = std::make_unique<uring_pollset_updater>(reader, &mpx);
+  }
+
+  void SetUp() override {
+    EXPECT_EQ(updater->init(util::config{}), util::none);
+  }
+
+  template <class... Ts>
+  void write(pipe_socket handle, Ts&&... ts) {
+    util::byte_buffer buf;
+    util::binary_serializer sink{buf};
+    sink(std::forward<Ts>(ts)...);
+    EXPECT_EQ(net::write(handle, buf), static_cast<ptrdiff_t>(buf.size()));
+  }
+
+  socket_guard<pipe_socket> pipe_writer;
+  uring_multiplexer_mock mpx;
+  std::unique_ptr<uring_pollset_updater> updater;
+};
+
+} // namespace
+
+TEST_F(uring_pollset_updater_test, init) {
+  EXPECT_CALL(mpx, add).Times(0);
+  EXPECT_CALL(mpx, enable).Times(0);
+  EXPECT_CALL(mpx, disable).Times(0);
+  EXPECT_CALL(mpx, handle_error).Times(0);
+  EXPECT_CALL(mpx, shutdown).Times(0);
+  // The updater is created and initialized in the fixture
+}
+
+TEST_F(uring_pollset_updater_test, handle_shutdown) {
+  // Adding of pollset_updater and acceptor during init of mpx
+  EXPECT_CALL(mpx, add).Times(2);
+  EXPECT_CALL(mpx, enable).Times(0);
+  EXPECT_CALL(mpx, disable).Times(1); // Disabling the pollset_updater
+  EXPECT_CALL(mpx, handle_error).Times(0);
+  EXPECT_CALL(mpx, shutdown).Times(1); // The actually expected operation
+
+  EXPECT_EQ(mpx.init(detail::uring_multiplexer::manager_factory{},
+                     util::config{}),
+            util::none);
+  mpx.set_thread_id(std::this_thread::get_id());
+  EXPECT_EQ(updater->enable(operation::read), manager_result::ok);
+  write(*pipe_writer, detail::pollset_opcode::shutdown, nullptr,
+        operation::none);
+  EXPECT_EQ(mpx.poll_once(false), util::none);
+}
+
+TEST_F(uring_pollset_updater_test, handle_add) {
+  EXPECT_CALL(mpx, add(testing::NotNull(), operation::read)).Times(2);
+  EXPECT_CALL(mpx, add(testing::NotNull(), operation::accept)).Times(1);
+  EXPECT_CALL(mpx, enable).Times(0);
+  EXPECT_CALL(mpx, disable).Times(0);
+  EXPECT_CALL(mpx, handle_error).Times(0);
+  EXPECT_CALL(mpx, shutdown).Times(0);
+
+  EXPECT_EQ(mpx.init(detail::uring_multiplexer::manager_factory{},
+                     util::config{}),
+            util::none);
+  mpx.set_thread_id(std::this_thread::get_id());
+
+  EXPECT_EQ(updater->enable(operation::read), manager_result::ok);
+  EXPECT_TRUE(updater->mask_contains(operation::read));
+
+  auto [sock1, sock2] = UNPACK_EXPRESSION(net::make_stream_socket_pair());
+  const net::socket_guard guard{sock1};
+  auto mgr = util::make_intrusive<detail::event_handler>(sock2, &mpx);
+  mgr->ref();
+  EXPECT_EQ(mgr->ref_count(), 2);
+  write(*pipe_writer, detail::pollset_opcode::add, mgr.get(), operation::read);
+  mpx.set_thread_id(std::this_thread::get_id());
+  EXPECT_EQ(mpx.poll_once(false), util::none);
+}
+
+#endif

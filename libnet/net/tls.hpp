@@ -10,8 +10,8 @@
 
 #include "net/fwd.hpp"
 
-#include "net/event_result.hpp"
 #include "net/layer.hpp"
+#include "net/manager_result.hpp"
 #include "net/receive_policy.hpp"
 
 #include "openssl/tls_context.hpp"
@@ -89,19 +89,20 @@ public:
     return (!encrypt_buf_.empty() || next_layer_.has_more_data());
   }
 
-  event_result produce() override {
-    if (next_layer_.produce() == event_result::error) {
-      return event_result::error;
+  manager_result produce() override {
+    if (next_layer_.produce() == manager_result::error) {
+      return manager_result::error;
     }
     if (auto err = encrypt()) {
       parent_.handle_error(err);
-      return event_result::error;
+      return manager_result::error;
     }
-    return !next_layer_.has_more_data() ? event_result::done : event_result::ok;
+    return !next_layer_.has_more_data() ? manager_result::done
+                                        : manager_result::ok;
   }
 
   /// Takes received data from the transport and consumes it
-  event_result consume(util::const_byte_span bytes) override {
+  manager_result consume(util::const_byte_span bytes) override {
     while (!bytes.empty()) {
       auto write_res = BIO_write(rbio_,
                                  reinterpret_cast<const void*>(bytes.data()),
@@ -109,17 +110,17 @@ public:
       if (write_res <= 0) {
         parent_.handle_error(
           util::error{util::error_code::openssl_error, "BIO_read failed"});
-        return event_result::error;
+        return manager_result::error;
       }
       bytes = bytes.subspan(write_res);
 
       if (!handshake_done()) {
         if (auto err = handle_handshake()) {
           parent_.handle_error(err);
-          return event_result::error;
+          return manager_result::error;
         }
         if (!handshake_done()) {
-          return event_result::ok;
+          return manager_result::ok;
         }
       }
 
@@ -138,23 +139,23 @@ public:
         case want_io:
           if (auto err = read_all_from_ssl()) {
             parent_.handle_error(err);
-            return event_result::error;
+            return manager_result::error;
           }
-          return event_result::ok;
+          return manager_result::ok;
 
         case fail:
           parent_.handle_error(
             util::error{util::error_code::openssl_error, "SSL_read failed"});
-          return event_result::error;
+          return manager_result::error;
 
         default:
-          return event_result::ok;
+          return manager_result::ok;
       }
     }
-    return event_result::ok;
+    return manager_result::ok;
   }
 
-  event_result handle_timeout(uint64_t id) override {
+  manager_result handle_timeout(uint64_t id) override {
     return next_layer_.handle_timeout(id);
   }
 

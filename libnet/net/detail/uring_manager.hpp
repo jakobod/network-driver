@@ -57,27 +57,14 @@ public:
 
   // -- Event handling ---------------------------------------------------------
 
+  virtual manager_result enable(operation op) = 0;
+
   /// @brief Handles a completed io_uring operation.
   /// Subclasses override this to process completion results.
   /// @param op The operation that completed (read/write/accept).
   /// @param res The IO result (number of bytes or error code).
-  /// @return event_result indicating handler status (ok/done/error).
-  virtual event_result handle_completion(operation op, int res) = 0;
-
-  // -- uring_mpx access -------------------------------------------------------
-
-  /// @brief Returns the buffer space available for reading.
-  /// Accounts for data already received into the buffer.
-  /// @return A span of the available buffer space.
-  virtual util::byte_span read_buffer() noexcept;
-
-  /// @brief Returns the data ready to be written to the socket.
-  /// Used by the uring multiplexer for submission queue entry preparation.
-  /// @return A span of data to write.
-  virtual std::span<iovec> write_buffer() const noexcept;
-
-protected:
-  void submit(operation op);
+  /// @return manager_result indicating handler status (ok/done/error).
+  virtual manager_result handle_completion(operation op, int res) = 0;
 };
 
 /// @brief Shared pointer type for uring managers.

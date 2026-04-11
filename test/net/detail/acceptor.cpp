@@ -8,7 +8,7 @@
 
 #include "net/detail/acceptor.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 #include "net/operation.hpp"
 #include "net/socket_guard.hpp"
 
@@ -73,7 +73,7 @@ TEST_F(acceptor_test, handle_read_event) {
   std::size_t num_triggers = 0;
   const std::size_t max_num_triggers = 10;
   do {
-    EXPECT_EQ(acc->handle_read_event(), event_result::ok);
+    EXPECT_EQ(acc->handle_read_event(), manager_result::ok);
     EXPECT_EQ(mpx.last_error, util::none);
   } while ((num_triggers++ < max_num_triggers) && (mpx.mgr == nullptr));
   EXPECT_NE(mpx.mgr, nullptr);

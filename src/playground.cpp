@@ -18,7 +18,7 @@
 
 #include "net/socket/stream_socket.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 
 #include "net/detail/event_handler.hpp"
 
@@ -35,13 +35,14 @@ struct dummy_manager : public net::detail::event_handler {
     // nop
   }
 
-  net::event_result handle_read_event() override {
+  net::manager_result handle_read_event() override {
     register_writing();
     num_bytes_ = net::read(handle<net::stream_socket>(), buf_);
-    return (num_bytes_ > 0) ? net::event_result::ok : net::event_result::error;
+    return (num_bytes_ > 0) ? net::manager_result::ok
+                            : net::manager_result::error;
   }
 
-  net::event_result handle_write_event() override {
+  net::manager_result handle_write_event() override {
     const auto res = net::write(handle<net::stream_socket>(),
                                 {buf_.data(), num_bytes_});
     if (res > 0) {
@@ -49,7 +50,8 @@ struct dummy_manager : public net::detail::event_handler {
     } else {
       LOG_ERROR(net::last_socket_error_as_string());
     }
-    return (num_bytes_ == 0) ? net::event_result::done : net::event_result::ok;
+    return (num_bytes_ == 0) ? net::manager_result::done
+                             : net::manager_result::ok;
   }
 
 private:

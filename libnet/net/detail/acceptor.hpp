@@ -16,7 +16,7 @@
 #  include "net/detail/uring_manager.hpp"
 #endif
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 
 #include "net/socket/tcp_accept_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
@@ -39,7 +39,7 @@ public:
 
 protected:
   /// @brief Common handler for accepted connections.
-  event_result handle_accepted(tcp_stream_socket accepted);
+  manager_result handle_accepted(tcp_stream_socket accepted);
 
 private:
   acceptor_factory factory_;
@@ -58,7 +58,7 @@ public:
   using base::base;
 
   /// @brief Handles incoming connection on read event (epoll/kqueue).
-  event_result handle_read_event();
+  manager_result handle_read_event();
 };
 
 #if defined(LIB_NET_URING)
@@ -70,12 +70,14 @@ class acceptor<uring_manager> : public acceptor_base<uring_manager> {
 public:
   using base::base;
 
-  /// @brief Overrides the default operation for this acceptor
-  /// @returns operation::accept
-  operation initial_operation() const noexcept override;
+  operation initial_operation() const noexcept override {
+    return operation::accept;
+  }
+
+  manager_result enable(operation op) override;
 
   /// @brief Handles incoming connection on io_uring completion event.
-  event_result handle_completion(operation op, int res);
+  manager_result handle_completion(operation op, int res) override;
 };
 
 #endif // LIB_NET_URING

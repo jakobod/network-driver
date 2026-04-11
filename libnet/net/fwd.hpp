@@ -66,7 +66,7 @@ struct timeout_entry;
 // -- enums --------------------------------------------------------------------
 
 /// @brief Forward declaration of event result enumeration.
-enum class event_result : std::uint8_t;
+enum class manager_result : std::uint8_t;
 
 /// @brief Forward declaration of socket operation enumeration.
 enum class operation : std::uint8_t;

@@ -73,12 +73,12 @@
 //     return next_layer_.init(cfg);
 //   }
 
-//   event_result handle_read_event() override {
+//   manager_result handle_read_event() override {
 //     next_layer_.consume(vars_.data);
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
-//   event_result handle_write_event() override {
+//   manager_result handle_write_event() override {
 //     auto done_writing = [&]() {
 //       return !next_layer_.has_more_data() && write_buffer_.empty();
 //     };
@@ -93,10 +93,10 @@
 //       write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() +
 //       res);
 //     }
-//     return done_writing() ? event_result::done : event_result::ok;
+//     return done_writing() ? manager_result::done : manager_result::ok;
 //   }
 
-//   // event_result handle_timeout(uint64_t id) override {
+//   // manager_result handle_timeout(uint64_t id) override {
 //   //   return next_layer_.handle_timeout(id);
 //   // }
 
@@ -121,25 +121,25 @@
 //     return util::none;
 //   }
 
-//   event_result produce() {
+//   manager_result produce() {
 //     if (vars_.data.empty()) {
-//       return event_result::done;
+//       return manager_result::done;
 //     }
 //     parent_.enqueue(vars_.data);
 //     vars_.data = vars_.data.subspan(vars_.data.size());
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
 //   bool has_more_data() const { return !vars_.data.empty(); }
 
-//   event_result consume(util::const_byte_span bytes) {
+//   manager_result consume(util::const_byte_span bytes) {
 //     vars_.received.insert(vars_.received.begin(), bytes.begin(),
-//     bytes.end()); return event_result::ok;
+//     bytes.end()); return manager_result::ok;
 //   }
 
-//   event_result handle_timeout(uint64_t id) {
+//   manager_result handle_timeout(uint64_t id) {
 //     vars_.handled_timeout = id;
-//     return event_result::ok;
+//     return manager_result::ok;
 //   }
 
 // private:
@@ -184,7 +184,7 @@
 //   application_vars_}; EXPECT_NO_ERROR(stack.init(util::config{}));
 //   EXPECT_EQ(data.size(), write(sockets.second, data));
 //   while (application_vars_.received.size() < data.size()) {
-//     ASSERT_EQ(stack.handle_read_event(), event_result::ok);
+//     ASSERT_EQ(stack.handle_read_event(), manager_result::ok);
 //   }
 //   EXPECT_EQ(data.size(), application_vars_.received.size());
 //   EXPECT_TRUE(
@@ -195,7 +195,7 @@
 // TEST_F(transport_adaptor_test, handle_write_event) {
 //   stack_type stack{sockets.first, nullptr, transport_vars_,
 //   application_vars_}; EXPECT_NO_ERROR(stack.init(util::config{})); while
-//   (stack.handle_write_event() == event_result::ok)
+//   (stack.handle_write_event() == manager_result::ok)
 //     ;
 //   util::byte_array<1024> receive_buffer;
 //   util::byte_span free_space{receive_buffer};
@@ -218,6 +218,6 @@
 // // TEST_F(transport_adaptor_test, handle_timeout) {
 // //   stack_type stack{sockets.first, nullptr, transport_vars_,
 // //   application_vars_}; EXPECT_NO_ERROR(stack.init(util::config{}));
-// //   EXPECT_EQ(stack.handle_timeout(42), event_result::ok);
+// //   EXPECT_EQ(stack.handle_timeout(42), manager_result::ok);
 // //   EXPECT_EQ(application_vars_.handled_timeout, 42);
 // // }

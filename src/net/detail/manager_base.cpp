@@ -10,7 +10,7 @@
 
 #include "net/detail/multiplexer_base.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 
 #include "util/assert.hpp"
 #include "util/error.hpp"
@@ -77,10 +77,10 @@ manager_base::set_timeout_at(std::chrono::steady_clock::time_point when) {
   return mpx()->set_timeout(*this, when);
 }
 
-event_result manager_base::handle_timeout(uint64_t) {
+manager_result manager_base::handle_timeout(uint64_t) {
   LOG_ERROR("Default implementation, should never be called");
   ASSERT(false, "Timeout set without overriding the default timeout handler");
-  return event_result::error;
+  return manager_result::error;
 }
 
 void manager_base::handle_error(util::error err) const {

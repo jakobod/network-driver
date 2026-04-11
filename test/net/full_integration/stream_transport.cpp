@@ -20,7 +20,7 @@
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 #include "net/socket/stream_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
 #include "net/socket_guard.hpp"
@@ -58,18 +58,18 @@ struct mirror_application {
     return util::none;
   }
 
-  event_result produce() { return event_result::ok; }
+  manager_result produce() { return manager_result::ok; }
 
   bool has_more_data() const noexcept { return false; }
 
-  event_result consume(util::const_byte_span data) {
+  manager_result consume(util::const_byte_span data) {
     parent_.enqueue(data);
     parent_.configure_next_read(
       receive_policy::between(min_read_size, max_read_size));
-    return event_result::ok;
+    return manager_result::ok;
   }
 
-  event_result handle_timeout(uint64_t) { return event_result::ok; }
+  manager_result handle_timeout(uint64_t) { return manager_result::ok; }
 
 private:
   detail::transport_base& parent_;
@@ -89,7 +89,7 @@ struct stream_transport_full_integration : public testing::Test {
   void SetUp() override {
     mpx->start();
     socket = connect_to_mpx();
-    const auto res = wait_for([this] {
+    const auto res = test::wait_for([this] {
       return mpx->num_socket_managers() >= (default_num_socket_managers + 1);
     });
     ASSERT_TRUE(res);
@@ -105,19 +105,6 @@ struct stream_transport_full_integration : public testing::Test {
     auto sock = UNPACK_EXPRESSION(make_connected_tcp_stream_socket(
       v4_endpoint{v4_address::localhost, mpx->port()}));
     return sock;
-  }
-
-  bool
-  wait_for(std::function<bool()> predicate, std::size_t max_retries = 10,
-           std::chrono::steady_clock::duration sleep_interval = 100ms) const {
-    for (std::size_t i = 0; i < max_retries; ++i) {
-      if (predicate()) {
-        break;
-      } else {
-        std::this_thread::sleep_for(sleep_interval);
-      }
-    }
-    return predicate();
   }
 
   detail::multiplexer_base_ptr mpx;
@@ -180,20 +167,22 @@ using FactoryCreators = ::testing::Types<event_based
 TYPED_TEST_SUITE(stream_transport_full_integration, FactoryCreators);
 
 TYPED_TEST(stream_transport_full_integration, mirror) {
+  // Send 10kB
   {
     std::size_t written = 0;
     for (std::size_t i = 0; (i < 10) && written < this->data.size(); ++i) {
       const auto [event_res, num_bytes_written]
         = test::write(*this->socket, std::span{(this->data.data() + written),
                                                (this->data.size() - written)});
-      ASSERT_NE(event_res, event_result::error);
-      if (event_res == event_result::temporary_error) {
+      ASSERT_NE(event_res, manager_result::error);
+      if (event_res == manager_result::temporary_error) {
         std::this_thread::sleep_for(10ms);
       }
       written += num_bytes_written;
     }
     ASSERT_EQ(written, this->data.size());
   }
+  // receive it all
   util::byte_array<10_KB> receive_buffer = {};
   {
     std::size_t received = 0;
@@ -201,8 +190,8 @@ TYPED_TEST(stream_transport_full_integration, mirror) {
       const auto [event_res, num_bytes_received] = test::read(
         *this->socket, std::span{(receive_buffer.data() + received),
                                  (receive_buffer.size() - received)});
-      ASSERT_NE(event_res, event_result::error);
-      if (event_res == event_result::temporary_error) {
+      ASSERT_NE(event_res, manager_result::error);
+      if (event_res == manager_result::temporary_error) {
         std::this_thread::sleep_for(10ms);
       }
       received += num_bytes_received;
