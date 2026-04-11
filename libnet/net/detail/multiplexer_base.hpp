@@ -34,6 +34,7 @@
 
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <set>
 #include <thread>
 #include <unordered_map>
@@ -60,7 +61,7 @@ protected:
   using timeout_entry_set = std::set<timeout_entry>;
 
 public:
-  // -- constructors, destructors, initialization ----------------------------
+  // -- constructors, destructors, initialization ------------------------------
 
   /// @brief Default constructs a multiplexer base.
   multiplexer_base() = default;
@@ -129,7 +130,7 @@ public:
     return util::none;
   }
 
-  // -- Thread functions ----------------------------------------------------
+  // -- Thread functions -------------------------------------------------------
 
   /// @brief Creates and starts a thread running the multiplexer event loop
   /// indefinitely.
@@ -155,7 +156,7 @@ public:
   /// @param tid The thread ID; defaults to empty/unset.
   void set_thread_id(std::thread::id tid = {}) noexcept;
 
-  // -- members -------------------------------------------------------------
+  // -- members ----------------------------------------------------------------
 
   /// @brief Returns the current number of active socket managers.
   /// @return The count of managed sockets.
@@ -225,7 +226,7 @@ protected:
   bool has_managers() const noexcept { return !managers_.empty(); }
 
 public:
-  // -- Event handling interface -------------------------------------------
+  // -- Event handling interface -----------------------------------------------
 
   /// @brief Registers a socket manager and enables initial operations.
   /// Concrete subclasses implement backend-specific registration logic.
@@ -247,13 +248,15 @@ private:
   /// @param remove If true, delete the manager when no operations remain.
   virtual void disable(manager_base& mgr, operation op, bool remove) = 0;
 
+public:
   /// @brief Performs a single event polling iteration.
   /// Subclasses implement backend-specific event retrieval and dispatch.
   /// @param blocking If true, wait for events; if false, return immediately.
   /// @return Error on failure, none on success.
   virtual util::error poll_once(bool blocking) = 0;
 
-  // -- Timeout management -------------------------------------------------
+private:
+  // -- Timeout management -----------------------------------------------------
 
   /// @brief Schedules a timeout callback for a manager at a specific time
   /// point.
@@ -267,13 +270,13 @@ protected:
   /// @brief Processes all timeouts that have expired.
   void handle_timeouts();
 
-  // -- Error handling ---------------------------------------------------
+  // -- Error handling ---------------------------------------------------------
 
   /// @brief Handles errors from event processing.
   /// Called when event operations fail; subclasses may override for custom
   /// handling.
   /// @param err The error that occurred.
-  virtual void handle_error(const util::error& err);
+  virtual void handle_error(util::error err);
 
   /// @brief Checks whether the current thread is the multiplexer thread.
   /// @return True if running in the multiplexer thread.
@@ -320,7 +323,9 @@ private:
   std::uint64_t current_timeout_id_{0}; ///< Next timeout ID
 
 protected:
-  optional_timepoint current_timeout_{std::nullopt}; ///< Nearest timeout
+  optional_timepoint current_timeout_{std::nullopt}; ///< Next timeout
 };
+
+using multiplexer_base_ptr = std::shared_ptr<multiplexer_base>;
 
 } // namespace net::detail

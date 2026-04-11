@@ -32,19 +32,19 @@ struct application {
   /// @brief Produces and sends more application data.
   /// Called when the transport is ready to accept more bytes.
   /// @return The result of the produce operation (ok, done, or error).
-  virtual event_result produce() = 0;
+  virtual manager_result produce() = 0;
 
   /// @brief Consumes and processes received data.
   /// Called when data arrives from the remote peer via the transport.
   /// @param bytes The received data to process.
   /// @return The result of consumption (ok, done, or error).
-  virtual event_result consume(util::const_byte_span bytes) = 0;
+  virtual manager_result consume(util::const_byte_span bytes) = 0;
 
   /// @brief Handles an application-level timeout.
   /// Called when a timer previously registered by the application expires.
   /// @param id The timeout identifier that triggered.
   /// @return The result of timeout handling (ok, done, or error).
-  virtual event_result handle_timeout(uint64_t id) = 0;
+  virtual manager_result handle_timeout(uint64_t id) = 0;
 };
 
 } // namespace net

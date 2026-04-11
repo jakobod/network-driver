@@ -12,7 +12,7 @@
 
 #  include "net/detail/event_handler.hpp"
 
-#  include "net/event_result.hpp"
+#  include "net/manager_result.hpp"
 #  include "net/operation.hpp"
 
 #  include "util/binary_serializer.hpp"
@@ -166,11 +166,11 @@ util::error epoll_multiplexer::poll_once(bool blocking) {
 }
 
 void epoll_multiplexer::handle_events(event_span events) {
-  auto handle_result = [&](manager_base& mgr, event_result res,
+  auto handle_result = [&](manager_base& mgr, manager_result res,
                            operation op) -> bool {
-    if (res == event_result::done) {
+    if (res == manager_result::done) {
       disable(mgr, op, true);
-    } else if (res == event_result::error) {
+    } else if (res == manager_result::error) {
       del(mgr.handle());
       return false;
     }

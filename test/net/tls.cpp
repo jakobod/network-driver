@@ -115,7 +115,7 @@ struct dummy_transport : transport {
     return next_layer_.init(cfg);
   }
 
-  event_result handle_read_event() override {
+  manager_result handle_read_event() override {
     for (size_t i = 0; i < transport::max_consecutive_reads_; ++i) {
       auto read_res = read(handle<stream_socket>(), read_buffer_);
       if (read_res > 0) {
@@ -123,18 +123,18 @@ struct dummy_transport : transport {
           {read_buffer_.data(), static_cast<size_t>(read_res)});
       } else if ((read_res == 0)
                  || ((read_res < 0) && !last_socket_error_is_temporary())) {
-        return event_result::error;
+        return manager_result::error;
       }
     }
-    return event_result::ok;
+    return manager_result::ok;
   }
 
-  event_result handle_write_event() override {
-    event_result res;
+  manager_result handle_write_event() override {
+    manager_result res;
     do {
       res = next_layer_.produce();
-      EXPECT_NE(res, event_result::error);
-    } while (res != event_result::done);
+      EXPECT_NE(res, manager_result::error);
+    } while (res != manager_result::done);
 
     while (!write_buffer_.empty()) {
       auto res = write(handle<stream_socket>(), write_buffer_);
@@ -143,10 +143,10 @@ struct dummy_transport : transport {
     }
 
     auto done_writing = (!next_layer_.has_more_data() && write_buffer_.empty());
-    return done_writing ? event_result::done : event_result::ok;
+    return done_writing ? manager_result::done : manager_result::ok;
   }
 
-  event_result handle_timeout(uint64_t id) override {
+  manager_result handle_timeout(uint64_t id) override {
     return next_layer_.handle_timeout(id);
   }
 
@@ -171,26 +171,26 @@ struct dummy_application {
     return util::none;
   }
 
-  event_result produce() {
+  manager_result produce() {
     vars_.produce_called = true;
     if (vars_.data.empty()) {
-      return event_result::done;
+      return manager_result::done;
     }
     parent_.enqueue(vars_.data);
     vars_.data = vars_.data.subspan(vars_.data.size());
-    return event_result::ok;
+    return manager_result::ok;
   }
 
   bool has_more_data() const { return !vars_.data.empty(); }
 
-  event_result consume(util::const_byte_span bytes) {
+  manager_result consume(util::const_byte_span bytes) {
     vars_.received.insert(vars_.received.begin(), bytes.begin(), bytes.end());
-    return event_result::ok;
+    return manager_result::ok;
   }
 
-  event_result handle_timeout(uint64_t id) {
+  manager_result handle_timeout(uint64_t id) {
     vars_.handled_timeout = id;
-    return event_result::ok;
+    return manager_result::ok;
   }
 
 private:
@@ -229,8 +229,8 @@ struct tls_test : public testing::Test {
 
 template <class Stack>
 void transmit_between(Stack& lhs, Stack& rhs) {
-  EXPECT_NE(lhs.handle_write_event(), event_result::error);
-  EXPECT_NE(rhs.handle_read_event(), event_result::error);
+  EXPECT_NE(lhs.handle_write_event(), manager_result::error);
+  EXPECT_NE(rhs.handle_read_event(), manager_result::error);
 };
 
 template <class Stack>

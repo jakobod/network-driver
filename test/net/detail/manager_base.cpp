@@ -8,7 +8,7 @@
 
 #include "net/detail/manager_base.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 #include "net/socket/stream_socket.hpp"
 
 #include "util/byte_buffer.hpp"

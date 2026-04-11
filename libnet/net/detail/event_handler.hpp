@@ -11,7 +11,7 @@
 #include "net/fwd.hpp"
 #include "util/fwd.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 
 #include "net/detail/manager_base.hpp"
 
@@ -33,27 +33,35 @@ public:
   event_handler(net::socket handle, multiplexer_base* mpx)
     : manager_base{handle, mpx} {
     LOG_TRACE();
-    if (!nonblocking(handle, true)) {
-      throw util::exception{util::error_code::runtime_error,
-                            "Failed to set nonblocking"};
+  }
+
+  util::error init(const util::config& cfg) override {
+    LOG_TRACE();
+    if (auto err = manager_base::init(cfg)) {
+      return err;
     }
+    if (!nonblocking(handle(), true)) {
+      return util::error{util::error_code::runtime_error,
+                         "Failed to set nonblocking"};
+    }
+    return util::none;
   }
 
   // -- Event handling ---------------------------------------------------------
 
   /// @brief Handles a read event on the managed socket.
   /// Subclasses should override this to process incoming data.
-  /// @return event_result::ok if handling succeeded, event_result::error on
+  /// @return manager_result::ok if handling succeeded, manager_result::error on
   /// failure,
-  ///         event_result::done if the handler is finished.
-  virtual event_result handle_read_event() { return event_result::error; }
+  ///         manager_result::done if the handler is finished.
+  virtual manager_result handle_read_event() { return manager_result::error; }
 
   /// @brief Handles a write event on the managed socket.
   /// Subclasses should override this to process outgoing data.
-  /// @return event_result::ok if handling succeeded, event_result::error on
+  /// @return manager_result::ok if handling succeeded, manager_result::error on
   /// failure,
-  ///         event_result::done if the handler is finished.
-  virtual event_result handle_write_event() { return event_result::error; }
+  ///         manager_result::done if the handler is finished.
+  virtual manager_result handle_write_event() { return manager_result::error; }
 };
 
 /// @brief Shared pointer type for event handlers.

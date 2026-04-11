@@ -89,8 +89,7 @@ void kqueue_multiplexer::add(manager_base_ptr mgr, operation initial) {
     LOG_DEBUG("Requesting to add socket_manager with ",
               NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
     mgr->ref();
-    write_to_pipe(pollset_updater<event_handler>::opcode::add, mgr.get(),
-                  initial);
+    write_to_pipe(pollset_opcode::add, mgr.get(), initial);
   }
 }
 
@@ -217,14 +216,14 @@ util::error kqueue_multiplexer::poll_once(bool blocking) {
 void kqueue_multiplexer::handle_events(event_span events) {
   LOG_TRACE();
   LOG_DEBUG("Handling ", events.size(), " I/O events");
-  auto handle_result = [this](manager_base& mgr, event_result res,
+  auto handle_result = [this](manager_base& mgr, manager_result res,
                               operation op) {
     LOG_DEBUG(NET_ARG2("res", to_string(res)));
     switch (res) {
-      case event_result::done:
+      case manager_result::done:
         disable(mgr, op, true);
         break;
-      case event_result::error:
+      case manager_result::error:
         del(mgr.handle());
         break;
       default:

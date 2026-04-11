@@ -6,6 +6,8 @@
  *             the GNU GPL3 License.
  */
 
+// TODO: Handle multiple operations at once?
+
 #pragma once
 
 #include "net/fwd.hpp"
@@ -17,19 +19,34 @@
 
 #include "net/detail/event_handler.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 #include "net/operation.hpp"
 
 #include "net/socket/pipe_socket.hpp"
 
 #include "util/binary_deserializer.hpp"
+#include "util/byte_buffer.hpp"
 #include "util/byte_span.hpp"
 #include "util/error.hpp"
 #include "util/logger.hpp"
 
 #include <cstdint>
+#include <sys/socket.h>
+#include <sys/uio.h>
 
 namespace net::detail {
+
+/// @brief Opcodes for commands sent through the pipe to the pollset updater.
+/// Used to signal different operations that need to be performed on the
+/// multiplexer's pollset.
+enum class pollset_opcode : std::uint8_t {
+  /// No operation (unused)
+  none = 0x00,
+  /// Opcode indicating a new socket manager should be added to the pollset.
+  add = 0x01,
+  /// Opcode indicating the multiplexer should be shut down.
+  shutdown = 0x02,
+};
 
 /// @brief Generic base for pollset updater implementations.
 /// Manages the pollset of the multiplexer from a separate thread. Handles
@@ -42,19 +59,8 @@ namespace net::detail {
 template <class ManagerBase>
 class pollset_updater_base : public ManagerBase {
 public:
-  // -- member types -----------------------------------------------------------
-
-  /// @brief Opcodes for commands sent through the pipe to the pollset updater.
-  /// Used to signal different operations that need to be performed on the
-  /// multiplexer's pollset.
-  enum class opcode : std::uint8_t {
-    /// No operation (unused)
-    none = 0x00,
-    /// Opcode indicating a new socket manager should be added to the pollset.
-    add = 0x01,
-    /// Opcode indicating the multiplexer should be shut down.
-    shutdown = 0x02,
-  };
+  static constexpr std::size_t message_size
+    = sizeof(pollset_opcode) + sizeof(uring_manager*) + sizeof(operation);
 
   // -- constructors, destructors, and assignment operators --------------------
 
@@ -71,11 +77,14 @@ protected:
 
   /// @brief Handles a pollset update operation received from the pipe.
   /// Processes the opcode and updates the pollset accordingly.
-  /// @param code The operation code (add manager or shutdown).
-  /// @param mgr The socket manager to add (if opcode is 'add').
-  /// @param op The operation type to register (read/write/accept).
   /// @return The result of the operation.
-  event_result handle_operation(opcode code, ManagerBase* mgr, operation op);
+  manager_result handle_operation();
+
+  pollset_opcode code_;
+  uring_manager* mgr_;
+  operation op_;
+  std::array<iovec, 3> iov_;
+  msghdr msg_;
 };
 
 template <class ManagerBase>
@@ -96,25 +105,7 @@ public:
   /// @brief Handles a read event from the pipe socket (epoll/kqueue).
   /// Reads commands from the pipe and processes pollset updates.
   /// @return The result of handling the read event.
-  event_result handle_read_event();
-
-private:
-  /// @brief Reads data from the pipe socket.
-  /// Helper method to safely read structured data from the pipe.
-  /// @tparam T The type of data to read.
-  /// @param t Reference to the data structure to read into.
-  /// @return An error if the read failed, util::none on success.
-  template <class T>
-  util::error read_from_pipe(T& t) {
-    if (const auto res = net::read(handle<pipe_socket>(),
-                                   util::as_bytes(&t, sizeof(T)));
-        res != sizeof(T)) {
-      LOG_ERROR("Could not read ", sizeof(T), " bytes from pipe socket: ",
-                net::last_socket_error_as_string());
-      return util::error_code::runtime_error;
-    }
-    return util::none;
-  }
+  manager_result handle_read_event();
 };
 
 #if defined(LIB_NET_URING)
@@ -129,14 +120,16 @@ class pollset_updater<uring_manager>
   using base = pollset_updater_base<uring_manager>;
 
 public:
-  using base::base;
+  pollset_updater(net::pipe_socket handle, multiplexer_base* mpx);
+
+  manager_result enable(operation op) override;
 
   /// @brief Handles a completion event from the pipe socket (io_uring).
   /// Reads commands from the pipe and processes pollset updates.
   /// @param op The operation that completed (should be read).
   /// @param res The result of the io_uring operation (bytes read).
   /// @return The result of handling the completion event.
-  event_result handle_completion(operation op, int res);
+  manager_result handle_completion(operation op, int res) override;
 };
 
 #endif // LIB_NET_URING

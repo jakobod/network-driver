@@ -16,6 +16,8 @@
 #include <cstddef>
 #include <utility>
 
+struct iovec;
+
 namespace net {
 
 /// @brief Stream-oriented socket for TCP connections.
@@ -55,5 +57,19 @@ ptrdiff_t read(stream_socket x, util::byte_span buf);
 /// @param buf The data to send.
 /// @return The number of bytes written, or -1 on error.
 ptrdiff_t write(stream_socket x, util::const_byte_span buf);
+
+/// @brief Receives data from a stream socket using scatter-gather I/O.
+/// Reads from the socket and distributes data across multiple buffers.
+/// @param x The stream socket to read from.
+/// @param iovs Array of iovec structures specifying buffer locations.
+/// @return The number of bytes read, or -1 on error.
+ptrdiff_t readv(stream_socket x, std::span<iovec> iovs);
+
+/// @brief Sends data to a stream socket using scatter-gather I/O.
+/// Gathers data from multiple buffers and sends it as a single operation.
+/// @param x The stream socket to write to.
+/// @param iovs Array of iovec structures specifying buffer locations.
+/// @return The number of bytes written, or -1 on error.
+ptrdiff_t writev(stream_socket x, std::span<iovec> iovs);
 
 } // namespace net

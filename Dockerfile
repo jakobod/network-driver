@@ -31,6 +31,7 @@ RUN apt-get update && apt-get upgrade -y \
     liburing-dev \
     vim \
     nano \
+    zsh \
     gdb \
     valgrind \
     curl \
@@ -39,6 +40,7 @@ RUN apt-get update && apt-get upgrade -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # # Add jenkins user
-# RUN useradd -ms /bin/bash jenkins
-# USER jenkins
-# WORKDIR /home/jenkins
+RUN useradd -ms /bin/zsh jenkins
+USER jenkins
+WORKDIR /home/jenkins
+RUN wget -O /home/jenkins/.zshrc https://grml.org/console/zshrc

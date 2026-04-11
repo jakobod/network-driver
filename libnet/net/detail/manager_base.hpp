@@ -94,6 +94,8 @@ public:
   /// @return true if the mask was modified, false otherwise
   bool mask_del(operation flag) noexcept;
 
+  bool mask_contains(operation flag) const noexcept;
+
   // -- Event handling ---------------------------------------------------------
 
   /// @brief Registers this manager for read events on its socket.
@@ -119,7 +121,11 @@ public:
   /// @brief Handles a timeout event for this manager.
   /// @param timeout_id The identifier of the timeout that fired
   /// @return The result of handling the timeout event
-  virtual event_result handle_timeout(uint64_t timeout_id);
+  virtual manager_result handle_timeout(uint64_t timeout_id);
+
+  // -- Error handling ---------------------------------------------------------
+
+  virtual void handle_error(util::error err) const;
 
 private:
   /// The managed socket handle

@@ -8,103 +8,100 @@
 
 #pragma once
 
+#include "net_test_macros.hpp"
+
+#include "net/detail/multiplexer_base.hpp"
+#include "net/manager_result.hpp"
+
+#include "net/socket/socket.hpp"
+#include "net/socket/tcp_stream_socket.hpp"
+
+#include "util/byte_span.hpp"
 #include "util/error_or.hpp"
 
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <functional>
 #include <iostream>
 #include <utility>
 
-namespace net::test::detail {
+using namespace std::chrono_literals;
 
-/// @brief Helper to extract and validate error_or values in tests.
-/// Unpacks an error_or<T> variant, asserting the value exists and fails
-/// the test if an error occurred. Implicit conversion allows natural usage.
-/// @tparam T The value type being unpacked.
-template <class T>
-struct unpacker {
-  /// @brief Constructs unpacker from an error_or<T> variant.
-  /// Fails the test if the variant contains an error, otherwise extracts value.
-  /// @param result The error_or<T> to unpack.
-  explicit unpacker(const util::error_or<T>& result) {
-    if (auto err = util::get_error(result)) {
-      ADD_FAILURE() << "Failed to unpack value: " << err;
+namespace net::test {
+
+template <class Socket>
+std::pair<manager_result, std::size_t>
+write(Socket handle, util::const_byte_span buf) {
+  auto ev_result = manager_result::ok;
+  std::size_t written = 0;
+
+  while (written != buf.size()) {
+    auto* data = buf.data() + written;
+    const auto size = buf.size() - written;
+    const auto res = net::write(handle, {data, size});
+
+    if (res >= 0) {
+      written += res;
     } else {
-      value_ = util::get_value(result);
+      ev_result = last_socket_error_is_temporary()
+                    ? manager_result::temporary_error
+                    : manager_result::error;
+      break;
     }
   }
 
-  /// @brief Move constructor form for rvalue error_or references.
-  explicit unpacker(util::error_or<T>&& result) {
-    if (auto err = util::get_error(result)) {
-      ADD_FAILURE() << "Failed to unpack value: " << err;
+  return std::make_pair(ev_result, written);
+}
+
+template <class Socket>
+std::pair<manager_result, std::size_t>
+read(Socket handle, util::byte_span buf) {
+  auto ev_result = manager_result::ok;
+  std::size_t received = 0;
+
+  while (received != buf.size()) {
+    auto* data = buf.data() + received;
+    const auto size = buf.size() - received;
+    const auto res = net::read(handle, std::span{data, size});
+
+    if (res > 0) {
+      received += res;
     } else {
-      value_ = std::move(util::get_value(result));
+      if (res == 0) {
+        ev_result = manager_result::done;
+      } else {
+        ev_result = last_socket_error_is_temporary()
+                      ? manager_result::temporary_error
+                      : manager_result::error;
+      }
+      break;
     }
   }
 
-  /// @brief Implicit conversion to the value type.
-  /// Allows the unpacker to be used directly as a T.
-  /// @return The unpacked value.
-  T unpack() && { return std::move(value_); }
+  return std::make_pair(ev_result, received);
+}
 
-private:
-  T value_;
-};
+template <class Pred>
+inline bool poll_until(Pred predicate, net::detail::multiplexer_base& mpx,
+                       bool blocking = false, std::size_t max_polls = 10) {
+  std::size_t num_polls = 0;
+  while (!predicate() && (num_polls++ < max_polls)) {
+    if (auto err = mpx.poll_once(blocking)) {
+      return false;
+    }
+  }
+  return predicate();
+}
 
-} // namespace net::test::detail
+template <class Pred>
+bool wait_for(Pred predicate, std::size_t max_retries = 10,
+              std::chrono::steady_clock::duration sleep_interval = 100ms) {
+  std::size_t num_retries = 0;
+  while (!predicate() && (num_retries++ < max_retries)) {
+    std::this_thread::sleep_for(sleep_interval);
+  }
+  return predicate();
+}
 
-// -- Helper macros for tests --------------------------------------------------
-
-/// @brief Streams a colored info message for test output.
-#define MESSAGE() std::cerr << "\033[0;33m" << "[   info   ] " << "\033[m"
-
-/// @brief Asserts an error_or result contains a value (not an error).
-/// Expects the expression to not have an error; fails with message if it does.
-/// @param expr The expression returning error_or<T> to check.
-#define EXPECT_NO_ERROR(expr)                                                  \
-  do {                                                                         \
-    auto err = (expr);                                                         \
-    EXPECT_FALSE(err.is_error())                                               \
-      << #expr << " returned an error: " << err << std::endl;                  \
-  } while (false)
-
-/// @brief Asserts an error_or result contains a value; fails entire test if
-/// error. Asserts (stronger than EXPECT) that the expression succeeds.
-/// @param expr The expression returning error_or<T> to check.
-#define ASSERT_NO_ERROR(expr)                                                  \
-  do {                                                                         \
-    auto err = (expr);                                                         \
-    ASSERT_FALSE(err.is_error())                                               \
-      << #expr << " returned an error: " << err << std::endl;                  \
-  } while (false)
-
-/// @brief Expects an error_or result contains an error (not a value).
-/// Expects the expression to have an error; fails with message if it doesn't.
-/// @param expr The expression returning error_or<T> to check.
-#define EXPECT_ERROR(expr)                                                     \
-  do {                                                                         \
-    auto err = (expr);                                                         \
-    EXPECT_TRUE(err.is_error())                                                \
-      << #expr << " did NOT return an error: " << err << std::endl;            \
-  } while (false)
-
-/// @brief Asserts an error_or result contains an error; fails entire test if
-/// value. Asserts (stronger than EXPECT) that the expression fails.
-/// @param expr The expression returning error_or<T> to check.
-#define ASSERT_ERROR(expr)                                                     \
-  do {                                                                         \
-    auto err = (expr);                                                         \
-    ASSERT_TRUE(err.is_error())                                                \
-      << #expr << " did NOT return an error: " << err << std::endl;            \
-  } while (false)
-
-/// @brief Unpacks an error_or variable, extracting the value and failing if
-/// error. Usage: `auto value = UNPACK_VARIABLE(error_or_result);` The unpacker
-/// validates the result and extracts the value implicitly.
-#define UNPACK_VARIABLE(var) net::test::detail::unpacker{var}.unpack()
-
-/// @brief Executes an expression and unpacks its error_or result.
-/// Convenience macro combining expression execution with unpacking.
-/// Usage: `auto value = UNPACK_EXPRESSION(some_function());`
-#define UNPACK_EXPRESSION(expr) net::test::detail::unpacker{expr}.unpack()
+} // namespace net::test

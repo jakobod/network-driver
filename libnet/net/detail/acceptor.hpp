@@ -16,7 +16,7 @@
 #  include "net/detail/uring_manager.hpp"
 #endif
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 
 #include "net/socket/tcp_accept_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
@@ -39,7 +39,7 @@ public:
 
 protected:
   /// @brief Common handler for accepted connections.
-  event_result handle_accepted(tcp_stream_socket accepted);
+  manager_result handle_accepted(tcp_stream_socket accepted);
 
 private:
   acceptor_factory factory_;
@@ -58,19 +58,7 @@ public:
   using base::base;
 
   /// @brief Handles incoming connection on read event (epoll/kqueue).
-  event_result handle_read_event() {
-    auto accept_handle = handle<tcp_accept_socket>();
-    LOG_TRACE();
-    LOG_DEBUG("event_acceptor handling read event ",
-              NET_ARG2("accept_handle", accept_handle.id));
-    const auto accepted = accept(accept_handle);
-    if (accepted == invalid_socket) {
-      return event_result::ok;
-    }
-    LOG_DEBUG("event_acceptor connection ",
-              NET_ARG2("new_handle", accepted.id));
-    return base::handle_accepted(accepted);
-  }
+  manager_result handle_read_event();
 };
 
 #if defined(LIB_NET_URING)
@@ -82,28 +70,14 @@ class acceptor<uring_manager> : public acceptor_base<uring_manager> {
 public:
   using base::base;
 
-  /// @brief Overrides the default operation for this acceptor
-  /// @returns operation::accept
   operation initial_operation() const noexcept override {
     return operation::accept;
   }
 
-  /// @brief Handles incoming connection on io_uring completion event.
-  event_result handle_completion(operation op, int res) {
-    if (op != operation::accept) {
-      LOG_ERROR("acceptor called for operation != accept");
-      return event_result::error;
-    }
-    LOG_DEBUG("acceptor handling accepted connection on ",
-              NET_ARG2("handle", uring_manager::handle().id),
-              NET_ARG2("new_handle", res));
+  manager_result enable(operation op) override;
 
-    if (res <= 0) {
-      LOG_ERROR("error with accepted connection");
-      return event_result::ok;
-    }
-    return base::handle_accepted(tcp_stream_socket{res});
-  }
+  /// @brief Handles incoming connection on io_uring completion event.
+  manager_result handle_completion(operation op, int res) override;
 };
 
 #endif // LIB_NET_URING
