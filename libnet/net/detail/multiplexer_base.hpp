@@ -93,6 +93,10 @@ public:
   template <class ManagerBase>
   util::error init(acceptor_factory factory, const util::config& cfg) {
     LOG_TRACE();
+    if (initialized_) {
+      return util::error{util::error_code::runtime_error,
+                         "multiplexer_base was already initialized"};
+    }
     cfg_ = std::addressof(cfg);
     // Create pollset updater
     auto pipe_res = make_pipe();
@@ -127,6 +131,7 @@ public:
       const auto initial = acc->initial_operation();
       add(std::move(acc), initial);
     }
+    initialized_ = true;
     return util::none;
   }
 
@@ -312,6 +317,7 @@ private:
 protected:
   bool shutting_down_{false}; ///< Shutdown flag
   bool running_{false};       ///< Running flag
+  bool initialized_{false};   ///< Whether the mpx has been initialized
 
 private:
   // pipe for synchronous access to mpx

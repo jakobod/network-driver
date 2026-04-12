@@ -44,11 +44,12 @@ void shutdown(socket hdl, operation how) {
         return SHUT_RDWR;
     }
   };
-  if ((hdl != invalid_socket) && (how != operation::read)
-      && (how != operation::write) && (how != operation::read_write)
-      && (how != operation::accept)) {
-    ::shutdown(hdl.id, to_shutdown_flag(how));
+  if ((hdl == invalid_socket)
+      && ((how != operation::read) && (how != operation::write)
+          && (how != operation::read_write) && (how != operation::accept))) {
+    return;
   }
+  ::shutdown(hdl.id, to_shutdown_flag(how));
 }
 
 util::error bind(socket hdl, ip::v4_endpoint ep) {

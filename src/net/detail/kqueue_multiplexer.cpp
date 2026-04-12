@@ -44,6 +44,10 @@ kqueue_multiplexer::~kqueue_multiplexer() {
 util::error kqueue_multiplexer::init(manager_factory factory,
                                      const util::config& cfg) {
   LOG_TRACE();
+  if (initialized_) {
+    return util::error{util::error_code::runtime_error,
+                       "multiplexer_base was already initialized"};
+  }
   LOG_DEBUG("initializing kqueue kqueue_multiplexer");
   set_thread_id(std::this_thread::get_id());
   mpx_fd_ = ::kqueue();

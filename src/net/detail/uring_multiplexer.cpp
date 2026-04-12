@@ -53,12 +53,18 @@ namespace net::detail {
 
 uring_multiplexer::~uring_multiplexer() {
   LOG_TRACE();
-  io_uring_queue_exit(&uring_);
+  if (initialized_) {
+    io_uring_queue_exit(&uring_);
+  }
 }
 
 util::error uring_multiplexer::init(manager_factory factory,
                                     const util::config& cfg) {
   LOG_TRACE();
+  if (initialized_) {
+    return util::error{util::error_code::runtime_error,
+                       "multiplexer_base was already initialized"};
+  }
   LOG_DEBUG("initializing uring_multiplexer");
   set_thread_id(std::this_thread::get_id());
 
@@ -127,7 +133,7 @@ uring_multiplexer::submit_poll_read(uring_manager& mgr, bool multishot) {
 std::pair<bool, uint64_t>
 uring_multiplexer::submit_poll_write(uring_manager& mgr, bool multishot) {
   if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr),
-                                     operation::poll_read, multishot)) {
+                                     operation::poll_write, multishot)) {
     if (multishot) [[unlikely]] {
       io_uring_prep_poll_multishot(sqe, mgr.handle().id, POLLOUT);
     } else [[likely]] {
@@ -255,7 +261,6 @@ void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
   if (!mgr.mask_del(op)) {
     return;
   }
-  ::net::shutdown(mgr.handle(), op);
   if (remove && (mgr.mask() == operation::none)) {
     multiplexer_base::del(mgr.handle());
   }
