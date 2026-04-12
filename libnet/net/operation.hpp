@@ -20,16 +20,21 @@ enum class operation : std::uint8_t {
   /// No operation (idle state).
   none = 0x00,
   /// Monitor for read/receive readiness.
-  read = 0x01,
+  read = (0x01 << 0),
   /// Monitor for write/send readiness.
-  write = 0x02,
+  write = (0x01 << 1),
   /// Monitor for both read and write readiness.
-  read_write = read | write,
+  read_write = (read | write),
   /// Monitor for incoming connections (accept).
-  accept = 0x04,
+  accept = (0x01 << 2),
   /// Monitor for read and accept readiness.
   read_accept = read | accept,
+  ///
+  poll_read = (0x01 << 3),
+  poll_write = (0x01 << 4)
 };
+
+bool contains(operation flag, operation op) noexcept;
 
 /// @brief Bitwise OR operator for combining operations with uint8_t.
 /// @relates operation

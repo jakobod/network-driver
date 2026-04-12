@@ -29,7 +29,7 @@ public:
 
   util::error poll_once(bool) override { return util::none; }
 
-  void handle_error(const util::error& err) override {
-    FAIL() << "There should be no errors! " << err << std::endl;
+  void handle_error(util::error err) override {
+    FAIL() << "There should be no errors! But got: " << err << std::endl;
   }
 };

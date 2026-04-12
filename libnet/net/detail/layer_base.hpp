@@ -15,14 +15,14 @@
 
 #include <chrono>
 
-namespace net {
+namespace net::detail {
 
 /// @brief Interface for protocol layers in a network stack.
 /// Defines the protocol contract between transport and application layers,
 /// supporting bidirectional data flow with timeout management.
-struct layer {
+struct layer_base {
   /// @brief Virtual destructor for proper cleanup in derived classes.
-  virtual ~layer() = default;
+  virtual ~layer_base() = default;
 
   // -- Upfacing interface (towards application) -------------------------------
 
@@ -82,4 +82,4 @@ struct layer {
     = 0;
 };
 
-} // namespace net
+} // namespace net::detail

@@ -14,17 +14,34 @@
 
 namespace net {
 
+bool contains(operation flag, operation op) noexcept {
+  return (flag & op) == op;
+}
+
 std::string to_string(operation op) {
   auto contains = [](operation mask, operation what) -> bool {
     return (mask & what) == what;
   };
-  if (op == operation::none)
+  if (op == operation::none) {
     return "operation::[none]";
+  }
   std::vector<std::string> parts;
-  if (contains(op, operation::read))
+  if (contains(op, operation::read)) {
     parts.emplace_back("read");
-  if (contains(op, operation::write))
+  }
+  if (contains(op, operation::write)) {
     parts.emplace_back("write");
+  }
+  if (contains(op, operation::accept)) {
+    parts.emplace_back("accept");
+  }
+  if (contains(op, operation::poll_read)) {
+    parts.emplace_back("poll_read");
+  }
+  if (contains(op, operation::poll_write)) {
+    parts.emplace_back("poll_write");
+  }
+
   return util::format("operation::[{0}]", util::join(parts, '|'));
 }
 

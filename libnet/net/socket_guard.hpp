@@ -43,6 +43,11 @@ public:
   /// @brief Copy assignment is deleted (sockets cannot be shared).
   socket_guard& operator=(const socket_guard& other) = delete;
 
+  socket_guard& operator=(Socket handle) {
+    reset(handle);
+    return *this;
+  }
+
   /// @brief Move assignment transfers ownership and closes the previous socket.
   /// @param other The guard to move from.
   /// @return Reference to this.
@@ -54,11 +59,7 @@ public:
 
   /// @brief Destructor closes the managed socket on scope exit.
   /// The socket is only closed if it has been assigned (not invalid).
-  ~socket_guard() {
-    if (sock_ != invalid_socket) {
-      close(sock_);
-    }
-  }
+  ~socket_guard() { reset(); }
 
   /// @brief Releases ownership of the managed socket.
   /// Marks the socket as invalid in this guard, preventing close on
@@ -68,6 +69,13 @@ public:
     const auto ret = sock_;
     sock_.id = invalid_socket_id;
     return ret;
+  }
+
+  void reset(Socket sock = Socket{invalid_socket_id}) noexcept {
+    if (sock_ != invalid_socket) {
+      close(sock_);
+    }
+    sock_ = sock;
   }
 
   /// @brief Returns the managed socket without releasing ownership.
@@ -91,7 +99,7 @@ public:
 
 private:
   /// @brief The managed socket object.
-  Socket sock_{invalid_socket};
+  Socket sock_{invalid_socket_id};
 };
 
 /// @brief Convenience factory function for creating a socket_guard.

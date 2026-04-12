@@ -12,7 +12,7 @@
 
 #  include "net/detail/event_handler.hpp"
 
-#  include "net/event_result.hpp"
+#  include "net/manager_result.hpp"
 #  include "net/operation.hpp"
 
 #  include "util/binary_serializer.hpp"
@@ -40,6 +40,10 @@ epoll_multiplexer::~epoll_multiplexer() {
 util::error epoll_multiplexer::init(manager_factory factory,
                                     const util::config& cfg) {
   LOG_TRACE();
+  if (initialized_) {
+    return util::error{util::error_code::runtime_error,
+                       "multiplexer_base was already initialized"};
+  }
   LOG_DEBUG("initializing epoll epoll_multiplexer");
   set_thread_id(std::this_thread::get_id());
   mpx_fd_ = epoll_create1(EPOLL_CLOEXEC);
@@ -166,11 +170,11 @@ util::error epoll_multiplexer::poll_once(bool blocking) {
 }
 
 void epoll_multiplexer::handle_events(event_span events) {
-  auto handle_result = [&](manager_base& mgr, event_result res,
+  auto handle_result = [&](manager_base& mgr, manager_result res,
                            operation op) -> bool {
-    if (res == event_result::done) {
+    if (res == manager_result::done) {
       disable(mgr, op, true);
-    } else if (res == event_result::error) {
+    } else if (res == manager_result::error) {
       del(mgr.handle());
       return false;
     }

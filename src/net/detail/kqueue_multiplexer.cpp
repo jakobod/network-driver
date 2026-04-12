@@ -13,9 +13,9 @@
 #  include "net/detail/acceptor.hpp"
 #  include "net/detail/pollset_updater.hpp"
 
-#  include "net/event_result.hpp"
 #  include "net/ip/v4_address.hpp"
 #  include "net/ip/v4_endpoint.hpp"
+#  include "net/manager_result.hpp"
 #  include "net/operation.hpp"
 #  include "net/socket/pipe_socket.hpp"
 #  include "net/socket/tcp_accept_socket.hpp"
@@ -44,6 +44,10 @@ kqueue_multiplexer::~kqueue_multiplexer() {
 util::error kqueue_multiplexer::init(manager_factory factory,
                                      const util::config& cfg) {
   LOG_TRACE();
+  if (initialized_) {
+    return util::error{util::error_code::runtime_error,
+                       "multiplexer_base was already initialized"};
+  }
   LOG_DEBUG("initializing kqueue kqueue_multiplexer");
   set_thread_id(std::this_thread::get_id());
   mpx_fd_ = ::kqueue();
@@ -89,8 +93,7 @@ void kqueue_multiplexer::add(manager_base_ptr mgr, operation initial) {
     LOG_DEBUG("Requesting to add socket_manager with ",
               NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
     mgr->ref();
-    write_to_pipe(pollset_updater<event_handler>::opcode::add, mgr.get(),
-                  initial);
+    write_to_pipe(pollset_opcode::add, mgr.get(), initial);
   }
 }
 
@@ -217,14 +220,14 @@ util::error kqueue_multiplexer::poll_once(bool blocking) {
 void kqueue_multiplexer::handle_events(event_span events) {
   LOG_TRACE();
   LOG_DEBUG("Handling ", events.size(), " I/O events");
-  auto handle_result = [this](manager_base& mgr, event_result res,
+  auto handle_result = [this](manager_base& mgr, manager_result res,
                               operation op) {
     LOG_DEBUG(NET_ARG2("res", to_string(res)));
     switch (res) {
-      case event_result::done:
+      case manager_result::done:
         disable(mgr, op, true);
         break;
-      case event_result::error:
+      case manager_result::error:
         del(mgr.handle());
         break;
       default:

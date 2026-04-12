@@ -11,7 +11,7 @@
 #include "net/ip/v4_address.hpp"
 #include "net/ip/v4_endpoint.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 #include "net/multiplexer.hpp"
 #include "net/socket/stream_socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
@@ -50,29 +50,29 @@ struct dummy_socket_manager : public detail::event_handler {
     // nop
   }
 
-  event_result handle_read_event() override {
+  manager_result handle_read_event() override {
     util::byte_array<1024> buf;
     state_.read_event_handled = true;
     if (state_.register_for_writing) {
       register_writing();
     }
-    return (read(handle<stream_socket>(), buf) > 0) ? event_result::ok
-                                                    : event_result::error;
+    return (read(handle<stream_socket>(), buf) > 0) ? manager_result::ok
+                                                    : manager_result::error;
   }
 
-  event_result handle_write_event() override {
+  manager_result handle_write_event() override {
     util::byte_array<1024> buf;
     state_.write_event_handled = true;
     EXPECT_EQ(write(handle<stream_socket>(), buf), buf.size());
-    return event_result::done;
+    return manager_result::done;
   }
 
-  event_result handle_timeout(uint64_t timeout_id) override {
+  manager_result handle_timeout(uint64_t timeout_id) override {
     state_.handled_timeouts.push_back(timeout_id);
     if (state_.reset_timeouts) {
       EXPECT_EQ(set_timeout_in(1ms), timeout_id + 1);
     }
-    return event_result::ok;
+    return manager_result::ok;
   }
 
 private:

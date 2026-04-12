@@ -55,7 +55,40 @@ public:
   /// @return An error on failure, none on success.
   util::error init(manager_factory factory, const util::config& cfg);
 
-  // -- Interface functions --------------------------------------------------
+  // -- IO Operation Submission ------------------------------------------------
+
+  io_uring_sqe* prepare_submission(uring_manager_ptr mgr, operation op,
+                                   bool multishot = false);
+
+  std::pair<bool, uint64_t> submit_accept(uring_manager& mgr,
+                                          bool multishot = false);
+
+  std::pair<bool, uint64_t> submit_poll_read(uring_manager& mgr,
+                                             bool multishot = false);
+
+  std::pair<bool, uint64_t> submit_poll_write(uring_manager& mgr,
+                                              bool multishot = false);
+
+  std::pair<bool, uint64_t> submit_read(uring_manager& mgr,
+                                        util::byte_span read_buffer);
+
+  std::pair<bool, uint64_t> submit_write(uring_manager& mgr,
+                                         util::byte_span write_buffer);
+
+  std::pair<bool, uint64_t> submit_readv(uring_manager& mgr,
+                                         std::span<iovec> read_vecs);
+
+  std::pair<bool, uint64_t> submit_writev(uring_manager& mgr,
+                                          std::span<iovec> write_vecs);
+
+  std::pair<bool, uint64_t> submit_recvmsg(uring_manager& mgr,
+                                           msghdr& read_msghdr,
+                                           bool multishot = false);
+
+  std::pair<bool, uint64_t> submit_sendmsg(uring_manager& mgr,
+                                           msghdr& write_msghdr);
+
+  // -- Interface functions ----------------------------------------------------
 
   /// @brief Registers a socket manager for io_uring event monitoring.
   /// @param mgr The manager to register.
@@ -92,7 +125,8 @@ private:
 
   // Multiplexing variables
   struct io_uring uring_ {}; ///< The io_uring instance
-  bool initialized_{false};  ///< Initialization flag
+
+  std::uint64_t current_submission_id_{0};
 };
 
 /// @brief Shared pointer type for uring multiplexers.

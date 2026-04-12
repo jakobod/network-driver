@@ -11,17 +11,15 @@
 
 #  include "net/detail/uring_multiplexer.hpp"
 
-#  include "net/detail/acceptor.hpp"
-#  include "net/detail/pollset_updater.hpp"
-
 #  include "net/socket/socket.hpp"
 #  include "net/socket/tcp_accept_socket.hpp"
 
-#  include "net/event_result.hpp"
 #  include "net/ip/v4_address.hpp"
 #  include "net/ip/v4_endpoint.hpp"
+#  include "net/manager_result.hpp"
 #  include "net/operation.hpp"
 
+#  include "util/assert.hpp"
 #  include "util/binary_serializer.hpp"
 #  include "util/byte_span.hpp"
 #  include "util/config.hpp"
@@ -35,6 +33,7 @@
 #  include <csignal>
 #  include <cstring>
 #  include <iostream>
+#  include <poll.h>
 #  include <sys/socket.h>
 #  include <unistd.h>
 #  include <utility>
@@ -44,55 +43,9 @@ namespace {
 struct submission_data {
   net::detail::uring_manager_ptr mgr;
   net::operation op;
+  std::uint64_t id;
+  bool multishot;
 };
-
-io_uring_sqe* prepare_sqe(io_uring& uring, net::detail::uring_manager& mgr,
-                          net::operation op) {
-  auto* sqe = io_uring_get_sqe(&uring);
-  if (!sqe) {
-    LOG_ERROR("SQ ring full, cannot submit read operation for fd=",
-              mgr.handle().id);
-    return nullptr;
-  }
-  switch (op) {
-    case net::operation::read: {
-      auto buf = mgr.data_to_read();
-      io_uring_prep_read(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
-      break;
-    }
-
-    case net::operation::write: {
-      auto buf = mgr.data_to_write();
-      io_uring_prep_write(sqe, mgr.handle().id, buf.data(), buf.size(), 0);
-      break;
-    }
-
-    case net::operation::accept: {
-      io_uring_prep_accept(sqe, mgr.handle().id, nullptr, nullptr, 0);
-      break;
-    }
-    default:
-      break;
-  }
-  return sqe;
-}
-
-void submit_operation(io_uring& uring, net::detail::uring_manager& mgr,
-                      net::operation op) {
-  if (!mgr.mask_add(op)) {
-    return;
-  }
-  if (auto* sqe = prepare_sqe(uring, mgr, op)) {
-    io_uring_sqe_set_data(sqe,
-                          new submission_data{util::intrusive_ptr(&mgr), op});
-  }
-}
-
-void resubmit_operation(io_uring& uring, submission_data* data) {
-  if (auto* sqe = prepare_sqe(uring, *data->mgr, data->op)) {
-    io_uring_sqe_set_data(sqe, data);
-  }
-}
 
 } // namespace
 
@@ -108,6 +61,10 @@ uring_multiplexer::~uring_multiplexer() {
 util::error uring_multiplexer::init(manager_factory factory,
                                     const util::config& cfg) {
   LOG_TRACE();
+  if (initialized_) {
+    return util::error{util::error_code::runtime_error,
+                       "multiplexer_base was already initialized"};
+  }
   LOG_DEBUG("initializing uring_multiplexer");
   set_thread_id(std::this_thread::get_id());
 
@@ -126,10 +83,138 @@ util::error uring_multiplexer::init(manager_factory factory,
     return err;
   }
 
-  initialized_ = true;
   set_thread_id();
   return util::none;
 }
+
+// -- IO Operation submission --------------------------------------------------
+
+io_uring_sqe* uring_multiplexer::prepare_submission(uring_manager_ptr mgr,
+                                                    operation op,
+                                                    bool multishot) {
+  if (auto* sqe = io_uring_get_sqe(&uring_)) {
+    mgr->mask_add(op);
+    io_uring_sqe_set_data(sqe, new submission_data{std::move(mgr), op,
+                                                   current_submission_id_,
+                                                   multishot});
+    return sqe;
+  }
+  return nullptr;
+}
+
+std::pair<bool, uint64_t> uring_multiplexer::submit_accept(uring_manager& mgr,
+                                                           bool multishot) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr), operation::accept,
+                                     multishot)) {
+    if (multishot) [[unlikely]] {
+      io_uring_prep_multishot_accept(sqe, mgr.handle().id, nullptr, nullptr, 0);
+    } else [[likely]] {
+      io_uring_prep_accept(sqe, mgr.handle().id, nullptr, nullptr, 0);
+    }
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t>
+uring_multiplexer::submit_poll_read(uring_manager& mgr, bool multishot) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr),
+                                     operation::poll_read, multishot)) {
+    if (multishot) [[unlikely]] {
+      io_uring_prep_poll_multishot(sqe, mgr.handle().id, POLLIN);
+    } else [[likely]] {
+      io_uring_prep_poll_add(sqe, mgr.handle().id, POLLIN);
+    }
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t>
+uring_multiplexer::submit_poll_write(uring_manager& mgr, bool multishot) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr),
+                                     operation::poll_write, multishot)) {
+    if (multishot) [[unlikely]] {
+      io_uring_prep_poll_multishot(sqe, mgr.handle().id, POLLOUT);
+    } else [[likely]] {
+      io_uring_prep_poll_add(sqe, mgr.handle().id, POLLOUT);
+    }
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t>
+uring_multiplexer::submit_read(uring_manager& mgr,
+                               util::byte_span read_buffer) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr), operation::read)) {
+    io_uring_prep_read(sqe, mgr.handle().id,
+                       static_cast<void*>(read_buffer.data()),
+                       read_buffer.size(), 0);
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t>
+uring_multiplexer::submit_write(uring_manager& mgr,
+                                util::byte_span write_buffer) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr), operation::write)) {
+    io_uring_prep_write(sqe, mgr.handle().id,
+                        static_cast<void*>(write_buffer.data()),
+                        write_buffer.size(), 0);
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t>
+uring_multiplexer::submit_readv(uring_manager& mgr,
+                                std::span<iovec> read_vecs) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr), operation::read)) {
+    io_uring_prep_readv(sqe, mgr.handle().id, read_vecs.data(),
+                        read_vecs.size(), 0);
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t>
+uring_multiplexer::submit_writev(uring_manager& mgr,
+                                 std::span<iovec> write_vecs) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr), operation::write)) {
+    io_uring_prep_writev(sqe, mgr.handle().id, write_vecs.data(),
+                         write_vecs.size(), 0);
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t> uring_multiplexer::submit_recvmsg(uring_manager& mgr,
+                                                            msghdr& read_msghdr,
+                                                            bool multishot) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr), operation::read,
+                                     multishot)) {
+    if (multishot) [[unlikely]] {
+      io_uring_prep_recvmsg_multishot(sqe, mgr.handle().id, &read_msghdr, 0);
+    } else [[likely]] {
+      io_uring_prep_recvmsg(sqe, mgr.handle().id, &read_msghdr, 0);
+    }
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+std::pair<bool, uint64_t>
+uring_multiplexer::submit_sendmsg(uring_manager& mgr, msghdr& write_msghdr) {
+  if (auto* sqe = prepare_submission(as_intrusive_ptr(mgr), operation::write)) {
+    io_uring_prep_sendmsg(sqe, mgr.handle().id, &write_msghdr, 0);
+    return {true, current_submission_id_++};
+  }
+  return {false, 0};
+}
+
+// -- Interface functions ------------------------------------------------------
 
 void uring_multiplexer::add(manager_base_ptr mgr, operation initial) {
   LOG_TRACE();
@@ -144,8 +229,7 @@ void uring_multiplexer::add(manager_base_ptr mgr, operation initial) {
   } else {
     LOG_DEBUG("Requesting to add socket_manager with ",
               NET_ARG2("id", mgr->handle().id), " for ", NET_ARG(initial));
-    write_to_pipe(pollset_updater<uring_manager>::opcode::add, mgr.release(),
-                  initial);
+    write_to_pipe(pollset_opcode::add, mgr.release(), initial);
   }
 }
 
@@ -166,39 +250,10 @@ void uring_multiplexer::enable(manager_base& mgr, operation op) {
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
             " for ", NET_ARG2("new_event", to_string(op)));
   auto& uring_mgr = static_cast<uring_manager&>(mgr);
-  if ((op & operation::read) == operation::read) {
-    submit_operation(uring_, uring_mgr, operation::read);
-  }
-
-  if ((op & operation::write) == operation::write) {
-    submit_operation(uring_, uring_mgr, operation::write);
-  }
-
-  if ((op & operation::accept) == operation::accept) {
-    submit_operation(uring_, uring_mgr, operation::accept);
-  }
+  uring_mgr.enable(op);
 }
 
 void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
-  static const auto to_shutdown_type = [](operation op) {
-    switch (op) {
-      case operation::read:
-      case operation::accept:
-      case operation::read_accept:
-        return SHUT_RD;
-
-      case operation::write:
-        return SHUT_WR;
-
-      case operation::read_write:
-        return SHUT_RDWR;
-
-      default:
-        std::abort();
-        return SHUT_RDWR;
-    }
-  };
-
   LOG_TRACE();
   LOG_DEBUG("Disabling mgr with ", NET_ARG2("id", mgr->handle().id),
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
@@ -206,7 +261,6 @@ void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
   if (!mgr.mask_del(op)) {
     return;
   }
-  ::net::shutdown(mgr.handle(), to_shutdown_type(op));
   if (remove && (mgr.mask() == operation::none)) {
     multiplexer_base::del(mgr.handle());
   }
@@ -215,12 +269,6 @@ void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
 util::error uring_multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   LOG_TRACE();
-
-  if (!initialized_) {
-    LOG_ERROR("uring_multiplexer not initialized, cannot poll");
-    return {util::error_code::runtime_error,
-            "[uring_multiplexer]: not initialized"};
-  }
 
   // Submit any pending operations
   int submit_res = io_uring_submit(&uring_);
@@ -282,28 +330,23 @@ void uring_multiplexer::handle_events() {
     LOG_DEBUG("Handling CQE for fd=", data->mgr->handle().id,
               " op=", to_string(data->op), " res=", cqe->res);
 
-    // Handle the completion based on operation type
-    if (cqe->res < 0) {
-      LOG_ERROR("I/O operation failed: ", util::last_error_as_string());
-      multiplexer_base::del(data->mgr->handle());
-    } else {
-      // Successful completion - pass to manager
-      auto result = data->mgr->handle_completion(data->op, cqe->res);
-      switch (result) {
-        case event_result::ok:
-          resubmit_operation(uring_, data);
-          break;
-        case event_result::done:
-          disable(*data->mgr, data->op, true);
-          delete data;
-          break;
-        case event_result::error:
-          multiplexer_base::del(data->mgr->handle());
-          delete data;
-          break;
-      }
+    auto result = data->mgr->handle_completion(data->op, cqe->res);
+    switch (result) {
+      case manager_result::ok:
+        break;
+      case manager_result::temporary_error:
+      case manager_result::done:
+        disable(*data->mgr, data->op, true);
+        break;
+      case manager_result::error:
+        multiplexer_base::del(data->mgr->handle());
+        delete data;
+        break;
     }
 
+    if (!data->multishot) {
+      delete data;
+    }
     count++;
   }
 

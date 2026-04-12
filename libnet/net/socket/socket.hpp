@@ -80,7 +80,7 @@ void close(socket x);
 /// Disables further communication on the socket.
 /// @param sock The socket to shutdown.
 /// @param how How to shutdown (SHUT_RD, SHUT_WR, or SHUT_RDWR).
-void shutdown(socket sock, int how);
+void shutdown(socket sock, operation how);
 
 /// @brief Binds a socket to the specified endpoint.
 /// @param sock The socket to bind.

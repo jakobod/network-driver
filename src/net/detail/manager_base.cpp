@@ -10,7 +10,7 @@
 
 #include "net/detail/multiplexer_base.hpp"
 
-#include "net/event_result.hpp"
+#include "net/manager_result.hpp"
 
 #include "util/assert.hpp"
 #include "util/error.hpp"
@@ -30,7 +30,7 @@ util::error manager_base::init(const util::config&) {
 
 manager_base::~manager_base() {
   LOG_TRACE();
-  shutdown(handle_, SHUT_RDWR);
+  shutdown(handle_, operation::read_write);
   close(handle_);
 }
 
@@ -48,6 +48,10 @@ bool manager_base::mask_del(operation flag) noexcept {
   }
   mask_set(mask() & ~flag);
   return true;
+}
+
+bool manager_base::mask_contains(operation flag) const noexcept {
+  return contains(mask(), flag);
 }
 
 void manager_base::register_reading() {
@@ -73,10 +77,14 @@ manager_base::set_timeout_at(std::chrono::steady_clock::time_point when) {
   return mpx()->set_timeout(*this, when);
 }
 
-event_result manager_base::handle_timeout(uint64_t) {
+manager_result manager_base::handle_timeout(uint64_t) {
   LOG_ERROR("Default implementation, should never be called");
   ASSERT(false, "Timeout set without overriding the default timeout handler");
-  return event_result::error;
+  return manager_result::error;
+}
+
+void manager_base::handle_error(util::error err) const {
+  mpx()->handle_error(std::move(err));
 }
 
 } // namespace net::detail

@@ -55,8 +55,16 @@ public:
     return fragments_;
   }
 
+  /// @brief Compares two uri instances
+  /// @param lhs const reference to the left hand side instance
+  /// @param rhs const reference to the right hand side instance
+  /// @returns true if both instances are equal, false otherwise
   friend bool operator==(const uri& lhs, const uri& rhs) noexcept = default;
 
+  /// @brief Compares two uri instances
+  /// @param lhs const reference to the left hand side instance
+  /// @param rhs const reference to the right hand side instance
+  /// @returns false if both instances are equal, true otherwise
   friend bool operator!=(const uri& lhs, const uri& rhs) noexcept = default;
 
 private:
