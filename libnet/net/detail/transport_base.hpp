@@ -59,13 +59,9 @@ public:
   /// @param policy The receive policy specifying min and max read sizes.
   virtual void configure_next_read(receive_policy policy) noexcept = 0;
 
-  virtual void enqueue(util::byte_buffer&&) {
-    ASSERT(false, "This is a default implementation");
-  }
+  virtual void enqueue(util::byte_buffer&&) = 0;
 
-  virtual void enqueue(util::const_byte_span) {
-    ASSERT(false, "This is a default implementation");
-  }
+  virtual void enqueue(util::const_byte_span) = 0;
 
 protected:
   util::byte_buffer get_buffer() {
@@ -79,9 +75,13 @@ protected:
 
   void return_buffer(util::byte_buffer&& buf) {
     DEBUG_ONLY_ASSERT(buf.empty());
-    if (buffer_cache_.size() < max_enqueued_bytes_) {
+    if (buffer_cache_has_space()) {
       buffer_cache_.push_back(std::move(buf));
     }
+  }
+
+  bool buffer_cache_has_space() const noexcept {
+    return buffer_cache_.size() < max_enqueued_bytes_;
   }
 
   size_t max_consecutive_fetches_ = 10;

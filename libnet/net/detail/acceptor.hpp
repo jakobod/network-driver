@@ -61,6 +61,8 @@ public:
   manager_result handle_read_event();
 };
 
+using event_handler_acceptor = acceptor<event_handler>;
+
 #if defined(LIB_NET_URING)
 
 template <>
@@ -79,6 +81,8 @@ public:
   /// @brief Handles incoming connection on io_uring completion event.
   manager_result handle_completion(operation op, int res) override;
 };
+
+using uring_acceptor = acceptor<uring_manager>;
 
 #endif // LIB_NET_URING
 

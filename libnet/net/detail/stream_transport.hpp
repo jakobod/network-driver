@@ -134,29 +134,45 @@ protected:
     }
     LOG_DEBUG("Wrote ", write_res, " bytes to ",
               NET_ARG2("socket", handle().id));
-    num_enqueued_bytes_ -= write_res;
+    remove_written_data_from_queue(write_res);
+    return manager_result::ok;
+  }
 
-    // Remove all written data, cycle the empty buffers
+private:
+  void remove_written_data_from_queue(std::size_t num_bytes) {
+    if (num_bytes == 0) {
+      return;
+    }
+    num_enqueued_bytes_ -= num_bytes;
     std::size_t num_empty_buffers = 0;
     for (auto& buf : write_queue_) {
-      if (write_res <= 0) {
-        break;
+      // Remove the bytes from the buffer
+      if (buf.size() <= num_bytes) {
+        num_bytes -= buf.size();
+        buf.clear();
+      } else {
+        buf.erase(buf.begin(), buf.begin() + num_bytes);
       }
-      const auto to_remove = std::min(buf.size(),
-                                      static_cast<size_t>(write_res));
-      buf.erase(buf.begin(), buf.begin() + to_remove);
-      write_res -= to_remove;
+
+      // Try to return the buffer to the cache for later use
       if (buf.empty()) {
         transport_base::return_buffer(std::move(buf));
         ++num_empty_buffers;
       }
+
+      // Break early if no more data must be removed
+      if (num_bytes <= 0) {
+        break;
+      }
     }
+    // Remove all empty buffers from the queue - These should be moved from
+    // anyways!
     write_queue_.erase(write_queue_.begin(),
                        write_queue_.begin() + num_empty_buffers);
     iovecs_.erase(iovecs_.begin(), iovecs_.begin() + num_empty_buffers);
-    return manager_result::ok;
   }
 
+public:
   bool done_writing() const noexcept {
     return (write_queue_.empty() && !next_layer_.has_more_data());
   }
@@ -175,6 +191,7 @@ protected:
     return done_writing() ? manager_result::done : manager_result::ok;
   }
 
+public:
   /// @brief Returns the buffer space available for reading.
   /// @return A span of the available buffer space.
   util::byte_span read_buffer() noexcept {
@@ -182,8 +199,13 @@ protected:
                      read_buffer_.size() - received_};
   }
 
-  std::span<iovec> write_buffer() const noexcept { return iovecs_; }
+  const std::deque<util::byte_buffer>& write_queue() const noexcept {
+    return write_queue_;
+  }
 
+  std::span<iovec> iovecs() const noexcept { return iovecs_; }
+
+protected:
   mutable NextLayer next_layer_; // The next protocol layer in the stack.
 
   size_t received_{0};
@@ -236,7 +258,7 @@ public:
         return manager_result::done;
       }
       const auto write_res = writev(manager_base::handle<stream_socket>(),
-                                    base::write_buffer());
+                                    base::iovecs());
       const auto verdict = base::handle_write_result(write_res);
       if ((verdict == manager_result::error)
           || (verdict == manager_result::temporary_error)) {
@@ -274,7 +296,7 @@ public:
         manager_base::mask_add(operation::write);
         auto [success, submission_id]
           = manager_base::mpx<uring_multiplexer>()->submit_writev(
-            *this, base::write_buffer());
+            *this, base::iovecs());
         return success ? manager_result::ok : manager_result::error;
       }
 
@@ -320,8 +342,8 @@ public:
         if (base::done_writing()) {
           return manager_result::done;
         }
-        manager_base::mpx<uring_multiplexer>()->submit_writev(
-          *this, base::write_buffer());
+        manager_base::mpx<uring_multiplexer>()->submit_writev(*this,
+                                                              base::iovecs());
         return manager_result::ok;
 
       default:
