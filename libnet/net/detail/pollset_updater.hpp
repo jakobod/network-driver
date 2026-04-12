@@ -60,7 +60,7 @@ template <class ManagerBase>
 class pollset_updater_base : public ManagerBase {
 public:
   static constexpr std::size_t message_size
-    = sizeof(pollset_opcode) + sizeof(uring_manager*) + sizeof(operation);
+    = sizeof(pollset_opcode) + sizeof(manager_base*) + sizeof(operation);
 
   // -- constructors, destructors, and assignment operators --------------------
 
@@ -81,7 +81,7 @@ protected:
   manager_result handle_operation();
 
   pollset_opcode code_;
-  uring_manager* mgr_;
+  manager_base* mgr_;
   operation op_;
   std::array<iovec, 3> iov_;
   msghdr msg_;

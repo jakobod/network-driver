@@ -24,7 +24,6 @@
 
 #include "multiplexer_mock.hpp"
 #include "net_test.hpp"
-#include <gmock/gmock.h>
 
 #include <algorithm>
 #include <cstring>

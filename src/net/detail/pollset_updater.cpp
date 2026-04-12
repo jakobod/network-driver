@@ -7,15 +7,17 @@
  */
 
 #include "net/detail/pollset_updater.hpp"
+
 #include "net/detail/event_handler.hpp"
-#include "net/socket/pipe_socket.hpp"
-
-#include "util/logger.hpp"
-
+#include "net/detail/multiplexer_base.hpp"
 #if defined(LIB_NET_URING)
 #  include "net/detail/uring_manager.hpp"
 #  include "net/detail/uring_multiplexer.hpp"
 #endif
+
+#include "net/socket/pipe_socket.hpp"
+
+#include "util/logger.hpp"
 
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -45,12 +47,12 @@ manager_result pollset_updater_base<ManagerBase>::handle_operation() {
     case pollset_opcode::add:
       LOG_DEBUG("Received opcode::add for mgr with ",
                 NET_ARG2("id", mgr->handle().id), " with ", NET_ARG(op_));
-      ManagerBase::mpx()->add(util::make_intrusive(mgr_, false), op_);
+      manager_base::mpx()->add(util::make_intrusive(mgr_, false), op_);
       return manager_result::ok;
 
     case pollset_opcode::shutdown:
       LOG_DEBUG("Received opcode::shutdown");
-      ManagerBase::mpx()->shutdown();
+      manager_base::mpx()->shutdown();
       return manager_result::done;
 
     default:

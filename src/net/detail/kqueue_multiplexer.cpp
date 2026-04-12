@@ -13,9 +13,9 @@
 #  include "net/detail/acceptor.hpp"
 #  include "net/detail/pollset_updater.hpp"
 
-#  include "net/event_result.hpp"
 #  include "net/ip/v4_address.hpp"
 #  include "net/ip/v4_endpoint.hpp"
+#  include "net/manager_result.hpp"
 #  include "net/operation.hpp"
 #  include "net/socket/pipe_socket.hpp"
 #  include "net/socket/tcp_accept_socket.hpp"

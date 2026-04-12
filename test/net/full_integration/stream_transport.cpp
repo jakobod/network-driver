@@ -46,7 +46,6 @@ namespace {
 struct mirror_application {
   static constexpr std::size_t min_read_size = 1_KB;
   static constexpr std::size_t max_read_size = 8_KB;
-  static constexpr std::size_t max_write_size = 8_KB;
 
   mirror_application(detail::transport_base& parent) : parent_{parent} {
     // nop

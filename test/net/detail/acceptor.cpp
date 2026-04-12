@@ -9,6 +9,9 @@
 #include "net/detail/acceptor.hpp"
 
 #include "net/detail/multiplexer_base.hpp"
+#if defined(LIB_NET_URING)
+#  include "net/detail/multiplexer_base.hpp"
+#endif
 
 #include "net/manager_result.hpp"
 #include "net/operation.hpp"
@@ -46,14 +49,6 @@ public:
   MOCK_METHOD(void, shutdown, (), (override));
 };
 
-class uring_manager_mock : public detail::uring_manager {
-public:
-  using detail::uring_manager::uring_manager;
-
-  MOCK_METHOD(manager_result, enable, (operation), (override));
-  MOCK_METHOD(manager_result, handle_completion, (operation, int), (override));
-};
-
 } // namespace
 
 TEST(event_handler_acceptor_test, handle_read_event) {
@@ -81,6 +76,14 @@ TEST(event_handler_acceptor_test, handle_read_event) {
 }
 
 #if defined(LIB_NET_URING)
+
+class uring_manager_mock : public detail::uring_manager {
+public:
+  using detail::uring_manager::uring_manager;
+
+  MOCK_METHOD(manager_result, enable, (operation), (override));
+  MOCK_METHOD(manager_result, handle_completion, (operation, int), (override));
+};
 
 TEST(uring_acceptor_test, handle_completion_rejects_invalid_operations) {
   multiplexer_mock mpx;

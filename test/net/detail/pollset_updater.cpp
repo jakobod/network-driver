@@ -25,8 +25,6 @@
 
 #include "net_test.hpp"
 
-#include <gmock/gmock.h>
-
 #include "net/detail/uring_manager.hpp"
 using event_pollset_updater
   = net::detail::pollset_updater<net::detail::event_handler>;
