@@ -52,10 +52,11 @@ TEST_F(udp_datagram_socket_test, write) {
   auto recv_guard = net::make_socket_guard(recv_sock);
   const v4_endpoint dst_ep{localhost, recv_port};
   // Write the testdata
-  ASSERT_EQ(data.size(), write(send_sock, dst_ep, data));
+  ASSERT_EQ(data.size(), write(send_sock, data, dst_ep));
   // receive and check the testdata
   util::byte_array<1024> recv_buffer;
   auto [ep, res] = read(recv_sock, recv_buffer);
   ASSERT_EQ(recv_buffer.size(), res);
   ASSERT_TRUE(std::equal(recv_buffer.begin(), recv_buffer.end(), data.begin()));
+  EXPECT_EQ(ep, src_ep);
 }

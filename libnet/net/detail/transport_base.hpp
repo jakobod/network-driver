@@ -23,6 +23,8 @@
 
 #include <deque>
 
+using namespace util::byte_literals;
+
 namespace net::detail {
 
 /// @brief Base class for layered transport protocols.
@@ -87,7 +89,7 @@ protected:
   size_t max_consecutive_fetches_ = 10;
   size_t max_consecutive_reads_ = 20;
   size_t max_consecutive_writes_ = 20;
-  size_t max_enqueued_bytes_ = 10'000; // 10kB
+  size_t max_enqueued_bytes_ = 10_KB;
   size_t max_cached_write_buffers_ = 10;
 
   mutable std::deque<util::byte_buffer> buffer_cache_;

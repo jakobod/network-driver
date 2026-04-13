@@ -168,34 +168,17 @@ TYPED_TEST_SUITE(stream_transport_full_integration, FactoryCreators);
 TYPED_TEST(stream_transport_full_integration, mirror) {
   // Send 10kB
   {
-    std::size_t written = 0;
-    for (std::size_t i = 0; (i < 10) && written < this->data.size(); ++i) {
-      const auto [event_res, num_bytes_written]
-        = test::write(*this->socket, std::span{(this->data.data() + written),
-                                               (this->data.size() - written)});
-      ASSERT_NE(event_res, manager_result::error);
-      if (event_res == manager_result::temporary_error) {
-        std::this_thread::sleep_for(10ms);
-      }
-      written += num_bytes_written;
+    const auto event_res = test::write_all(*this->socket, this->data);
+    ASSERT_EQ(event_res, manager_result::done);
+    if (event_res == manager_result::temporary_error) {
+      std::this_thread::sleep_for(10ms);
     }
-    ASSERT_EQ(written, this->data.size());
   }
   // receive it all
   util::byte_array<10_KB> receive_buffer = {};
   {
-    std::size_t received = 0;
-    for (std::size_t i = 0; (i < 10) && (received < 10_KB); ++i) {
-      const auto [event_res, num_bytes_received] = test::read(
-        *this->socket, std::span{(receive_buffer.data() + received),
-                                 (receive_buffer.size() - received)});
-      ASSERT_NE(event_res, manager_result::error);
-      if (event_res == manager_result::temporary_error) {
-        std::this_thread::sleep_for(10ms);
-      }
-      received += num_bytes_received;
-    }
-    ASSERT_EQ(received, 10_KB);
+    const auto event_res = test::read_all(*this->socket, receive_buffer);
+    ASSERT_EQ(event_res, manager_result::ok);
   }
   EXPECT_EQ(this->data, receive_buffer);
 }

@@ -112,7 +112,7 @@ struct event_stream_transport_test : public testing::Test, public test_data {
 } // namespace
 
 TEST_F(event_stream_transport_test, handle_read_event) {
-  std::thread writer{[this] { test::write(sockets.second, data); }};
+  std::thread writer{[this] { test::write_all(sockets.second, data); }};
   while (received.size() < data.size()) {
     data = data.subspan(dummy_application::min_read_size);
     const auto read_res = mgr.handle_read_event();
@@ -128,13 +128,12 @@ TEST_F(event_stream_transport_test, handle_read_event) {
 
 TEST_F(event_stream_transport_test, partial_read) {
   while (received.size() < data.size()) {
-    const auto [ev_res, written] = test::write(
+    const auto ev_res = test::write_all(
       sockets.second,
       data.subspan(0, std::min(data.size(),
                                (dummy_application::min_read_size / 2))));
-    EXPECT_NE(ev_res, manager_result::done);
-    EXPECT_NE(ev_res, manager_result::error);
-    data = data.subspan(written);
+    EXPECT_EQ(ev_res, manager_result::done);
+    data = data.subspan(dummy_application::min_read_size / 2);
     const auto read_res = mgr.handle_read_event();
     ASSERT_NE(read_res, manager_result::done);
     ASSERT_NE(read_res, manager_result::error);
@@ -150,11 +149,10 @@ TEST_F(event_stream_transport_test, handle_write_event) {
   while (received < buf.size()) {
     while (mgr.handle_write_event() == manager_result::ok)
       ;
-    const auto [ev_res, read_bytes] = test::read(
+    const auto read_res = read(
       sockets.second, std::span{buf.data() + received, buf.size() - received});
-    EXPECT_NE(ev_res, manager_result::done);
-    EXPECT_NE(ev_res, manager_result::error);
-    received += read_bytes;
+    ASSERT_GT(read_res, 0);
+    received += read_res;
   }
   ASSERT_EQ(received, data_buffer.size());
   EXPECT_EQ(memcmp(data_buffer.data(), this->received.data(),

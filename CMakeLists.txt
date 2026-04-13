@@ -48,6 +48,7 @@ endif()
 if(LIB_NET_ENABLE_URING)
   if(LINUX)
     find_package(IoUring REQUIRED)
+    add_compile_definitions(LIB_NET_URING)
   else()
     message(FATAL_ERROR "io_uring support is only available on Linux")
   endif()
@@ -108,7 +109,6 @@ target_link_libraries(net Threads::Threads)
 
 if(LIB_NET_ENABLE_URING)
   target_link_libraries(net IoUring::IoUring)
-  add_compile_definitions(LIB_NET_URING)
 endif()
 
 # Copy Dummy certs to build folder and set preprocessor definition to the folder
@@ -195,7 +195,6 @@ if (LIB_NET_ENABLE_TESTS)
   target_link_libraries(
     lib_net_test
     net
-    gtest
     gmock
   )
 

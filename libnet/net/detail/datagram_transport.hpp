@@ -20,22 +20,40 @@
 
 #include "net/manager_result.hpp"
 #include "net/receive_policy.hpp"
-#include "net/socket/datagram_socket.hpp"
 
+#include "net/socket/datagram_socket.hpp"
+#include "net/socket/udp_datagram_socket.hpp"
+
+#include "net/ip/v4_endpoint.hpp"
+
+#include "util/assert.hpp"
 #include "util/config.hpp"
 #include "util/error.hpp"
 #include "util/format.hpp"
 #include "util/logger.hpp"
 
+#include <ranges>
 #include <sys/uio.h>
 #include <utility>
 
 namespace net::detail {
 
+struct datagram {
+  datagram(util::byte_buffer buf, ip::v4_endpoint ep)
+    : buf_{std::move(buf)}, ep_{std::move(ep)} {
+    // nop
+  }
+
+  util::byte_buffer buf_;
+  ip::v4_endpoint ep_;
+  std::uint64_t id_{0};
+  bool currently_enqueued_{false};
+};
+
 // -- datagram_transport_base implementation -----------------------------------
 
-/// @brief Layered stream (TCP) transport implementation.
-/// Provides a transport layer for stream-based protocols (TCP) with
+/// @brief Layered datagram (UDP) transport implementation.
+/// Provides a transport layer for datagram-based protocols (UDP) with
 /// buffer management for reading and writing. Supports layering other
 /// protocol handlers on top through the NextLayer template parameter.
 /// @tparam NextLayer The upper protocol layer to stack on this transport.
@@ -51,9 +69,9 @@ public:
   /// @param mpx The multiplexer managing this socket.
   /// @param xs Constructor arguments forwarded to NextLayer.
   template <class... Ts>
-  datagram_transport_base(datagram_socket handle, detail::multiplexer_base* mpx,
-                          Ts&&... xs)
-    : ManagerBase{handle, mpx}, next_layer_(*this, std::forward<Ts>(xs)...) {
+  datagram_transport_base(udp_datagram_socket handle,
+                          detail::multiplexer_base* mpx, Ts&&... xs)
+    : ManagerBase{handle, mpx}, next_layer_(std::forward<Ts>(xs)...) {
     LOG_DEBUG("Creating datagram_transport with ", NET_ARG2("id", handle.id));
   }
 
@@ -69,13 +87,13 @@ public:
     if (auto err = transport_base::init(cfg)) {
       return err;
     }
-    return next_layer_.init(cfg);
+    return next_layer_.init(*this, cfg);
   }
 
   // -- manager_base API -------------------------------------------------------
 
   manager_result handle_timeout(uint64_t id) override {
-    return next_layer_.handle_timeout(id);
+    return next_layer_.handle_timeout(*this, id);
   }
 
   // -- transport_base API -----------------------------------------------------
@@ -91,22 +109,25 @@ public:
 
   // -- datagram_transport specific API ----------------------------------------
 
-  void enqueue(util::byte_buffer&& datagram) override {
-    write_queue_.push_back(std::move(bytes));
-    auto& buf = write_queue_.back();
-    iovecs_.emplace_back(buf.data(), buf.size());
-    num_enqueued_bytes_ += buf.size();
+  void enqueue(util::byte_buffer&&) override { ASSERT(false); }
+
+  void enqueue(util::const_byte_span) override { ASSERT(false); }
+
+  void enqueue(util::byte_buffer&& datagram, ip::v4_endpoint ep) {
+    // Warn about datagrams that are too big?
+    write_queue_.emplace_back(std::move(datagram), std::move(ep));
     manager_base::register_writing();
   }
 
-  void enqueue(util::const_byte_span datagram) override {
+  void enqueue(util::const_byte_span datagram, ip::v4_endpoint ep) {
     auto buf = transport_base::get_buffer();
-    buf.assign(bytes.begin(), bytes.end());
-    enqueue(std::move(buf));
+    buf.assign(datagram.begin(), datagram.end());
+    enqueue(std::move(buf), std::move(ep));
   }
 
 protected:
-  manager_result handle_read_result(int read_res) {
+  manager_result handle_read_result(const udp_read_result res) {
+    const auto [ep, read_res] = res;
     if (read_res < 0) {
       // Check whether the error is temporary, i.e., EAGAIN
       return last_socket_error_is_temporary() ? manager_result::temporary_error
@@ -119,7 +140,7 @@ protected:
       received_ += read_res;
       if (received_ >= min_read_size_) {
         const auto consume_result = next_layer_.consume(
-          util::const_byte_span{read_buffer_.data(), received_});
+          *this, util::const_byte_span{read_buffer_.data(), received_}, ep);
         if (consume_result == manager_result::error) {
           return manager_result::error;
         }
@@ -129,9 +150,19 @@ protected:
     }
   }
 
-  manager_result handle_write_result(int write_res) {
+  manager_result handle_write_result(int write_res, std::uint64_t id) {
+    auto it = std::ranges::find_if(write_queue_, [id](const auto& datagram) {
+      return datagram.id_ == id;
+    });
+    if (it == write_queue_.end()) {
+      LOG_ERROR("Datagram with ", NET_ARG(id), " was not found in write_queue");
+      return manager_result::error;
+    }
+    auto& datagram = *it;
+
     if (write_res < 0) {
       if (last_socket_error_is_temporary()) {
+        datagram.currently_enqueued_ = false;
         return manager_result::temporary_error;
       } else {
         return manager_result::error;
@@ -139,26 +170,14 @@ protected:
     }
     LOG_DEBUG("Wrote ", write_res, " bytes to ",
               NET_ARG2("socket", handle().id));
-    num_enqueued_bytes_ -= write_res;
 
-    // Remove all written data, cycle the empty buffers
-    std::size_t num_empty_buffers = 0;
-    for (auto& buf : write_queue_) {
-      if (write_res <= 0) {
-        break;
-      }
-      const auto to_remove = std::min(buf.size(),
-                                      static_cast<size_t>(write_res));
-      buf.erase(buf.begin(), buf.begin() + to_remove);
-      write_res -= to_remove;
-      if (buf.empty()) {
-        transport_base::return_buffer(std::move(buf));
-        ++num_empty_buffers;
-      }
+    if (static_cast<std::size_t>(write_res) < datagram.buf_.size()) {
+      LOG_ERROR("Datagram with ", NET_ARG(id), " was not written completely");
+      return manager_result::error;
     }
-    write_queue_.erase(write_queue_.begin(),
-                       write_queue_.begin() + num_empty_buffers);
-    iovecs_.erase(iovecs_.begin(), iovecs_.begin() + num_empty_buffers);
+    datagram.buf_.clear();
+    transport_base::return_buffer(std::move(datagram.buf_));
+    write_queue_.erase(it);
     return manager_result::ok;
   }
 
@@ -166,12 +185,12 @@ protected:
     return (write_queue_.empty() && !next_layer_.has_more_data());
   }
 
-  manager_result fetch_more_data() const {
+  manager_result fetch_more_data() {
     size_t i = 0;
     while ((num_enqueued_bytes_ < transport_base::max_enqueued_bytes_)
            && (i < transport_base::max_consecutive_fetches_)) {
       if (next_layer_.has_more_data()) {
-        next_layer_.produce();
+        next_layer_.produce(*this);
         ++i;
       } else {
         break;
@@ -182,6 +201,14 @@ protected:
 
   std::span<iovec> iovecs() const noexcept { return iovecs_; }
 
+  /// @brief Returns the buffer space available for reading.
+  /// @return A span of the available buffer space.
+  util::byte_span read_buffer() noexcept {
+    return std::span{read_buffer_.data() + received_,
+                     read_buffer_.size() - received_};
+  }
+
+protected:
   mutable NextLayer next_layer_; // The next protocol layer in the stack.
 
   size_t received_{0};
@@ -191,7 +218,7 @@ protected:
   size_t num_enqueued_bytes_{0};
 
   util::byte_buffer read_buffer_;
-  mutable std::deque<util::byte_buffer> write_queue_;
+  mutable std::deque<datagram> write_queue_;
   mutable std::vector<iovec> iovecs_;
 };
 
@@ -212,10 +239,8 @@ public:
     LOG_TRACE();
     LOG_DEBUG("handle read_event on ", NET_ARG2("socket", handle().id));
     for (size_t i = 0; i < base::max_consecutive_reads_; ++i) {
-      auto* data = base::read_buffer_.data() + base::received_;
-      const auto size = base::read_buffer_.size() - base::received_;
-      const auto read_res = read(base::template handle<stream_socket>(),
-                                 std::span(data, size));
+      const auto read_res = read(base::template handle<udp_datagram_socket>(),
+                                 base::read_buffer());
       const auto verdict = base::handle_read_result(read_res);
       if (verdict != manager_result::ok) {
         return verdict;
@@ -235,13 +260,16 @@ public:
       if (base::fetch_more_data() == manager_result::done) {
         return manager_result::done;
       }
-      const auto iovs = base::iovecs();
-      const auto write_res = writev(base::template handle<stream_socket>(),
-                                    iovs);
-      const auto verdict = base::handle_write_result(write_res);
-      if ((verdict == manager_result::error)
-          || (verdict == manager_result::temporary_error)) {
-        return verdict;
+      for (auto& datagram : base::write_queue_) {
+        datagram.id_ = 42069;
+        const auto write_res
+          = write(manager_base::handle<udp_datagram_socket>(), datagram.buf_,
+                  datagram.ep_);
+        const auto verdict = base::handle_write_result(write_res, 42069);
+        if ((verdict == manager_result::error)
+            || (verdict == manager_result::temporary_error)) {
+          return verdict;
+        }
       }
     } while (num_consecutive_writes++ < base::max_consecutive_writes_);
     return base::done_writing() ? manager_result::done : manager_result::ok;

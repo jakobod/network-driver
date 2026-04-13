@@ -13,8 +13,11 @@
 #include "net/detail/multiplexer_base.hpp"
 #include "net/manager_result.hpp"
 
+#include "net/ip/v4_endpoint.hpp"
+
 #include "net/socket/socket.hpp"
 #include "net/socket/tcp_stream_socket.hpp"
+#include "net/socket/udp_datagram_socket.hpp"
 
 #include "util/byte_span.hpp"
 #include "util/error_or.hpp"
@@ -25,6 +28,7 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <tuple>
 #include <utility>
 
 using namespace std::chrono_literals;
@@ -70,58 +74,95 @@ private:
   Action action_;
 };
 
-} // namespace detail
-
-template <class Socket>
-std::pair<manager_result, std::size_t>
-write(Socket handle, util::const_byte_span buf) {
-  auto ev_result = manager_result::ok;
+inline manager_result
+write_all_impl(std::function<std::ptrdiff_t(util::const_byte_span)> write_func,
+               util::const_byte_span buf) {
   std::size_t written = 0;
-
   while (written != buf.size()) {
-    auto* data = buf.data() + written;
-    const auto size = buf.size() - written;
-    const auto res = net::write(handle, {data, size});
-
+    const auto res = write_func(buf.subspan(written));
     if (res >= 0) {
       written += res;
     } else {
-      ev_result = last_socket_error_is_temporary()
-                    ? manager_result::temporary_error
-                    : manager_result::error;
-      break;
+      if (last_socket_error_is_temporary()) {
+        std::this_thread::sleep_for(10ms);
+      } else {
+        return manager_result::error;
+      }
     }
   }
-
-  return std::make_pair(ev_result, written);
+  return manager_result::done;
 }
 
-template <class Socket>
-std::pair<manager_result, std::size_t>
-read(Socket handle, util::byte_span buf) {
-  auto ev_result = manager_result::ok;
+} // namespace detail
+
+inline manager_result write_all(stream_socket handle,
+                                util::const_byte_span buf) {
+  return detail::write_all_impl(
+    [handle](util::const_byte_span buffer) {
+      return net::write(handle, buffer);
+    },
+    buf);
+}
+
+inline manager_result write_all(udp_datagram_socket handle,
+                                util::const_byte_span buf, ip::v4_endpoint ep) {
+  return detail::write_all_impl(
+    [handle, ep](util::const_byte_span buffer) {
+      static constexpr std::size_t max_datagram_size = 548;
+      const auto datagram_size = std::min(max_datagram_size, buffer.size());
+      return net::write(handle, buffer.subspan(0, datagram_size), ep);
+    },
+    buf);
+}
+
+inline manager_result read_all(stream_socket handle,
+                               util::byte_span receive_buffer) {
   std::size_t received = 0;
-
-  while (received != buf.size()) {
-    auto* data = buf.data() + received;
-    const auto size = buf.size() - received;
-    const auto res = net::read(handle, std::span{data, size});
-
+  while (received < receive_buffer.size()) {
+    const auto res = net::read(handle, receive_buffer.subspan(received));
     if (res > 0) {
       received += res;
     } else {
       if (res == 0) {
+        return manager_result::done;
+      } else {
+        if (last_socket_error_is_temporary()) {
+          std::this_thread::sleep_for(10ms);
+          continue;
+        } else {
+          return manager_result::error;
+        }
+      }
+    }
+  }
+  return manager_result::ok;
+}
+
+inline std::pair<manager_result, ip::v4_endpoint>
+read_all(udp_datagram_socket handle, util::byte_span receive_buffer) {
+  ip::v4_endpoint last_ep;
+  auto ev_result = manager_result::ok;
+  std::size_t received = 0;
+
+  while (!receive_buffer.empty()) {
+    const auto [ep, res] = net::read(handle, receive_buffer.subspan(received));
+    if (res > 0) {
+      receive_buffer = receive_buffer.subspan(res);
+      last_ep = ep;
+    } else {
+      if (res == 0) {
         ev_result = manager_result::done;
       } else {
-        ev_result = last_socket_error_is_temporary()
-                      ? manager_result::temporary_error
-                      : manager_result::error;
+        if (last_socket_error_is_temporary()) {
+          std::this_thread::sleep_for(10ms);
+        } else {
+          return {manager_result::error, last_ep};
+        }
       }
       break;
     }
   }
-
-  return std::make_pair(ev_result, received);
+  return {ev_result, last_ep};
 }
 
 template <std::invocable Action>
@@ -147,6 +188,16 @@ bool wait_for(Pred predicate, std::size_t max_retries = 10,
   return invoke(
            [sleep_interval] { std::this_thread::sleep_for(sleep_interval); })
     .until(std::move(predicate), max_retries);
+}
+
+template <std::size_t NumBytes>
+static constexpr util::byte_array<NumBytes> generate_test_data() noexcept {
+  util::byte_array<NumBytes> data;
+  uint8_t b = 0;
+  for (auto& val : data) {
+    val = std::byte{b++};
+  }
+  return data;
 }
 
 } // namespace net::test

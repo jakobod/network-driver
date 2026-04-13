@@ -215,7 +215,7 @@ protected:
   size_t num_enqueued_bytes_{0};
 
   util::byte_buffer read_buffer_;
-  mutable std::deque<util::byte_buffer> write_queue_;
+  mutable std::vector<util::byte_buffer> write_queue_;
   mutable std::vector<iovec> iovecs_;
 };
 
