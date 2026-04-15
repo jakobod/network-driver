@@ -44,38 +44,36 @@ struct test_data {
 struct dummy_application {
   static constexpr std::size_t min_read_size = 1024;
 
-  dummy_application(detail::transport_base& parent, test_data& data)
-    : parent_{parent}, data_(data) {
+  dummy_application(test_data& data) : data_(data) {
     // nop
   }
 
-  util::error init(const util::config&) {
-    parent_.configure_next_read(receive_policy::exactly(1024));
+  util::error init(auto& parent, const util::config&) {
+    parent.configure_next_read(receive_policy::exactly(1024));
     return util::none;
   }
 
-  manager_result produce() {
-    auto size = std::min(size_t{1024}, data_.data.size());
-    parent_.enqueue({data_.data.data(), size});
+  manager_result produce(auto& parent) {
+    const auto size = std::min(size_t{1024}, data_.data.size());
+    parent.enqueue(data_.data.first(size));
     data_.data = data_.data.subspan(size);
     return manager_result::ok;
   }
 
   bool has_more_data() const noexcept { return !data_.data.empty(); }
 
-  manager_result consume(util::const_byte_span data) {
+  manager_result consume(auto& parent, util::const_byte_span data) {
     data_.received.insert(data_.received.end(), data.begin(), data.end());
-    parent_.configure_next_read(receive_policy::exactly(min_read_size));
+    parent.configure_next_read(receive_policy::exactly(min_read_size));
     return manager_result::ok;
   }
 
-  manager_result handle_timeout(uint64_t id) {
+  manager_result handle_timeout(auto&, uint64_t id) {
     data_.last_timeout_id = id;
     return manager_result::ok;
   }
 
 private:
-  detail::transport_base& parent_;
   test_data& data_;
 };
 
@@ -114,7 +112,6 @@ struct event_stream_transport_test : public testing::Test, public test_data {
 TEST_F(event_stream_transport_test, handle_read_event) {
   std::thread writer{[this] { test::write_all(sockets.second, data); }};
   while (received.size() < data.size()) {
-    data = data.subspan(dummy_application::min_read_size);
     const auto read_res = mgr.handle_read_event();
     ASSERT_NE(read_res, manager_result::done);
     ASSERT_NE(read_res, manager_result::error);

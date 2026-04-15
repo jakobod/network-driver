@@ -32,6 +32,7 @@
 #include "util/format.hpp"
 #include "util/logger.hpp"
 
+#include <algorithm>
 #include <ranges>
 #include <sys/uio.h>
 #include <utility>
@@ -50,7 +51,7 @@ struct datagram {
   bool currently_enqueued_{false};
 };
 
-// -- datagram_transport_base implementation -----------------------------------
+// -- datagram_transport implementation ----------------------------------------
 
 /// @brief Layered datagram (UDP) transport implementation.
 /// Provides a transport layer for datagram-based protocols (UDP) with
@@ -58,7 +59,7 @@ struct datagram {
 /// protocol handlers on top through the NextLayer template parameter.
 /// @tparam NextLayer The upper protocol layer to stack on this transport.
 template <class ManagerBase, class NextLayer>
-class datagram_transport_base : public transport_base, public ManagerBase {
+class datagram_transport : public transport_base, public ManagerBase {
 protected:
   // TODO Possibly add querying the MTU from the socket?
   static constexpr std::size_t max_datagram_size = 548;
@@ -67,11 +68,11 @@ public:
   /// @brief Constructs a stream transport layer.
   /// @param handle The stream socket for this connection.
   /// @param mpx The multiplexer managing this socket.
-  /// @param xs Constructor arguments forwarded to NextLayer.
-  template <class... Ts>
-  datagram_transport_base(udp_datagram_socket handle,
-                          detail::multiplexer_base* mpx, Ts&&... xs)
-    : ManagerBase{handle, mpx}, next_layer_(std::forward<Ts>(xs)...) {
+  /// @param args Constructor arguments forwarded to NextLayer.
+  template <class... Args>
+  datagram_transport(udp_datagram_socket handle, detail::multiplexer_base* mpx,
+                     Args&&... args)
+    : ManagerBase{handle, mpx}, next_layer_{std::forward<Args>(args)...} {
     LOG_DEBUG("Creating datagram_transport with ", NET_ARG2("id", handle.id));
   }
 
@@ -108,10 +109,6 @@ public:
   }
 
   // -- datagram_transport specific API ----------------------------------------
-
-  void enqueue(util::byte_buffer&&) override { ASSERT(false); }
-
-  void enqueue(util::const_byte_span) override { ASSERT(false); }
 
   void enqueue(util::byte_buffer&& datagram, ip::v4_endpoint ep) {
     // Warn about datagrams that are too big?
@@ -151,6 +148,8 @@ protected:
   }
 
   manager_result handle_write_result(int write_res, std::uint64_t id) {
+    // Really necessary to search for packets with the id? They should be
+    // handled in order of submission, also with uring.
     auto it = std::ranges::find_if(write_queue_, [id](const auto& datagram) {
       return datagram.id_ == id;
     });
@@ -191,10 +190,10 @@ protected:
            && (i < transport_base::max_consecutive_fetches_)) {
       if (next_layer_.has_more_data()) {
         next_layer_.produce(*this);
-        ++i;
       } else {
         break;
       }
+      ++i;
     }
     return done_writing() ? manager_result::done : manager_result::ok;
   }
@@ -209,7 +208,7 @@ protected:
   }
 
 protected:
-  mutable NextLayer next_layer_; // The next protocol layer in the stack.
+  NextLayer next_layer_;
 
   size_t received_{0};
   size_t written_{0};
@@ -223,13 +222,13 @@ protected:
 };
 
 template <class ManagerBase, class NextLayer>
-class datagram_transport;
+class datagram_transport_impl;
 
 /// @brief Specialization for event_handler (epoll/kqueue).
 template <class NextLayer>
-class datagram_transport<event_handler, NextLayer>
-  : public datagram_transport_base<event_handler, NextLayer> {
-  using base = datagram_transport_base<event_handler, NextLayer>;
+class datagram_transport_impl<event_handler, NextLayer>
+  : public datagram_transport<event_handler, NextLayer> {
+  using base = datagram_transport<event_handler, NextLayer>;
 
 public:
   using base::base;
@@ -239,6 +238,11 @@ public:
     LOG_TRACE();
     LOG_DEBUG("handle read_event on ", NET_ARG2("socket", handle().id));
     for (size_t i = 0; i < base::max_consecutive_reads_; ++i) {
+      auto read_buffer = base::read_buffer();
+      if (read_buffer.size() == 0) {
+        LOG_WARNING("Datagram read_buffer has size 0");
+        return manager_result::ok;
+      }
       const auto read_res = read(base::template handle<udp_datagram_socket>(),
                                  base::read_buffer());
       const auto verdict = base::handle_read_result(read_res);
@@ -277,7 +281,8 @@ public:
 };
 
 template <class NextLayer>
-using event_datagram_transport = datagram_transport<event_handler, NextLayer>;
+using event_datagram_transport
+  = datagram_transport_impl<event_handler, NextLayer>;
 
 #if defined(LIB_NET_URING)
 

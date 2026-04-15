@@ -104,3 +104,16 @@ util::error_or<v4_endpoint> parse_v4_endpoint(std::string_view str);
 sockaddr_in to_sockaddr_in(const v4_endpoint& ep);
 
 } // namespace net::ip
+
+namespace std {
+
+template <>
+struct hash<net::ip::v4_endpoint> {
+  std::size_t operator()(const net::ip::v4_endpoint& ep) const noexcept {
+    std::size_t h1 = std::hash<net::ip::v4_address>{}(ep.address());
+    std::size_t h2 = std::hash<std::uint16_t>{}(ep.port());
+    return h1 ^ (h2 << 1); // Combine hashes
+  }
+};
+
+} // namespace std

@@ -155,7 +155,6 @@ if (LIB_NET_ENABLE_TESTS)
     lib_net_test
     test/net_test_main.cpp
     test/net/datagram_socket.cpp
-    test/net/datagram_transport.cpp
     test/net/multiplexer.cpp
     test/net/socket_guard.cpp
     test/net/tcp_socket.cpp
@@ -163,12 +162,13 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/uri.cpp
 
     test/net/detail/acceptor.cpp
+    test/net/detail/datagram_dispatcher.cpp
+    test/net/detail/datagram_transport.cpp
     test/net/detail/manager_base.cpp
     test/net/detail/pollset_updater.cpp
     test/net/detail/stream_transport.cpp
-    test/net/detail/datagram_transport.cpp
     test/net/detail/transport_adaptor.cpp
-    test/net/detail/uring_multiplexer.cpp
+    # test/net/detail/uring_multiplexer.cpp
 
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp

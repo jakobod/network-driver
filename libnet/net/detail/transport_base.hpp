@@ -34,11 +34,6 @@ namespace net::detail {
 /// protocol layers on top of this base.
 class transport_base {
 public:
-  /// @brief Constructs a transport_base with a socket and multiplexer.
-  /// @param handle The socket managed by this transport_base.
-  /// @param mpx The multiplexer managing I/O events for this socket.
-  transport_base() noexcept = default;
-
   /// @brief Initializes the transport_base layer with configuration.
   /// Sets up tuneable parameters from the configuration object.
   /// @param cfg The configuration object with transport_base settings.
@@ -61,11 +56,6 @@ public:
   /// @param policy The receive policy specifying min and max read sizes.
   virtual void configure_next_read(receive_policy policy) noexcept = 0;
 
-  virtual void enqueue(util::byte_buffer&&) = 0;
-
-  virtual void enqueue(util::const_byte_span) = 0;
-
-protected:
   util::byte_buffer get_buffer() {
     if (buffer_cache_.empty()) {
       return util::byte_buffer{};
@@ -82,6 +72,7 @@ protected:
     }
   }
 
+protected:
   bool buffer_cache_has_space() const noexcept {
     return buffer_cache_.size() < max_enqueued_bytes_;
   }
@@ -92,7 +83,7 @@ protected:
   size_t max_enqueued_bytes_ = 10_KB;
   size_t max_cached_write_buffers_ = 10;
 
-  mutable std::deque<util::byte_buffer> buffer_cache_;
+  std::deque<util::byte_buffer> buffer_cache_;
 };
 
 } // namespace net::detail

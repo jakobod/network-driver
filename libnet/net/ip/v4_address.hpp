@@ -12,6 +12,7 @@
 #include "util/fwd.hpp"
 
 #include <cstddef>
+#include <functional>
 #include <string>
 
 namespace net::ip {
@@ -116,3 +117,14 @@ std::string to_string(const v4_address& addr);
 util::error_or<v4_address> parse_v4_address(std::string_view str) noexcept;
 
 } // namespace net::ip
+
+namespace std {
+
+template <>
+struct hash<net::ip::v4_address> {
+  std::size_t operator()(const net::ip::v4_address& addr) const noexcept {
+    return std::hash<std::uint32_t>{}(addr.bits());
+  }
+};
+
+} // namespace std

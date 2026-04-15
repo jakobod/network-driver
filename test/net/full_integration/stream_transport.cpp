@@ -47,31 +47,24 @@ struct mirror_application {
   static constexpr std::size_t min_read_size = 1_KB;
   static constexpr std::size_t max_read_size = 8_KB;
 
-  mirror_application(detail::transport_base& parent) : parent_{parent} {
-    // nop
-  }
-
-  util::error init(const util::config&) {
-    parent_.configure_next_read(
+  util::error init(auto& parent, const util::config&) {
+    parent.configure_next_read(
       receive_policy::between(min_read_size, max_read_size));
     return util::none;
   }
 
-  manager_result produce() { return manager_result::ok; }
+  manager_result produce(auto&) { return manager_result::ok; }
 
   bool has_more_data() const noexcept { return false; }
 
-  manager_result consume(util::const_byte_span data) {
-    parent_.enqueue(data);
-    parent_.configure_next_read(
+  manager_result consume(auto& parent, util::const_byte_span data) {
+    parent.enqueue(data);
+    parent.configure_next_read(
       receive_policy::between(min_read_size, max_read_size));
     return manager_result::ok;
   }
 
-  manager_result handle_timeout(uint64_t) { return manager_result::ok; }
-
-private:
-  detail::transport_base& parent_;
+  manager_result handle_timeout(auto&, uint64_t) { return manager_result::ok; }
 };
 
 // -- Test fixture -------------------------------------------------------------

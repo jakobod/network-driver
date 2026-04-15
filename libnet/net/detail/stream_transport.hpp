@@ -49,7 +49,7 @@ public:
   template <class... Ts>
   stream_transport_base(stream_socket handle, detail::multiplexer_base* mpx,
                         Ts&&... xs)
-    : ManagerBase{handle, mpx}, next_layer_(*this, std::forward<Ts>(xs)...) {
+    : ManagerBase{handle, mpx}, next_layer_(std::forward<Ts>(xs)...) {
     LOG_DEBUG("Creating stream_transport with ", NET_ARG2("id", handle.id));
   }
 
@@ -65,13 +65,13 @@ public:
     if (auto err = transport_base::init(cfg)) {
       return err;
     }
-    return next_layer_.init(cfg);
+    return next_layer_.init(*this, cfg);
   }
 
   // -- manager_base API -------------------------------------------------------
 
   manager_result handle_timeout(uint64_t id) override {
-    return next_layer_.handle_timeout(id);
+    return next_layer_.handle_timeout(*this, id);
   }
 
   // -- transport_base API -----------------------------------------------------
@@ -87,14 +87,14 @@ public:
 
   // -- stream_transport specific API ------------------------------------------
 
-  void enqueue(util::byte_buffer&& bytes) override {
+  void enqueue(util::byte_buffer&& bytes) {
     iovecs_.emplace_back(bytes.data(), bytes.size());
     num_enqueued_bytes_ += bytes.size();
     write_queue_.push_back(std::move(bytes));
     manager_base::register_writing();
   }
 
-  void enqueue(util::const_byte_span bytes) override {
+  void enqueue(util::const_byte_span bytes) {
     auto buf = transport_base::get_buffer();
     buf.assign(bytes.begin(), bytes.end());
     enqueue(std::move(buf));
@@ -114,7 +114,7 @@ protected:
       received_ += read_res;
       if (received_ >= min_read_size_) {
         const auto consume_result = next_layer_.consume(
-          util::const_byte_span{read_buffer_.data(), received_});
+          *this, util::const_byte_span{read_buffer_.data(), received_});
         if (consume_result == manager_result::error) {
           return manager_result::error;
         }
@@ -177,12 +177,12 @@ public:
     return (write_queue_.empty() && !next_layer_.has_more_data());
   }
 
-  manager_result fetch_more_data() const {
+  manager_result fetch_more_data() {
     size_t i = 0;
     while ((num_enqueued_bytes_ < transport_base::max_enqueued_bytes_)
            && (i < transport_base::max_consecutive_fetches_)) {
       if (next_layer_.has_more_data()) {
-        next_layer_.produce();
+        next_layer_.produce(*this);
         ++i;
       } else {
         break;

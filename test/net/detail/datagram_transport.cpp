@@ -1,169 +1,175 @@
-// /**
-//  *  @author    Jakob Otto
-//  *  @file      stream_transport.cpp
-//  *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
-//  *             This file is part of the network-driver project, released
-//  under
-//  *             the GNU GPL3 License.
-//  */
+/**
+ *  @author    Jakob Otto
+ *  @file      stream_transport.cpp
+ *  @copyright Copyright 2023 Jakob Otto. All rights reserved.
+ *             This file is part of the network-driver project, released
+ under
+ *             the GNU GPL3 License.
+ */
 
-// #include "net/detail/datagram_transport.hpp"
+#include "net/detail/datagram_transport.hpp"
 
-// #include "net/detail/event_handler.hpp"
-// #if defined(LIB_NET_URING)
-// #  include "net/detail/uring_manager.hpp"
-// #endif
+#include "net/socket/udp_datagram_socket.hpp"
 
-// #include "net/receive_policy.hpp"
-// #include "net/socket/udp_datagram_socket.hpp"
+#include "net/receive_policy.hpp"
+#include "net/socket_guard.hpp"
 
-// #include "util/byte_span.hpp"
-// #include "util/config.hpp"
-// #include "util/error.hpp"
-// #include "util/error_or.hpp"
+#include "net/ip/v4_address.hpp"
+#include "net/ip/v4_endpoint.hpp"
 
-// #include "multiplexer_mock.hpp"
-// #include "net_test.hpp"
+#include "util/byte_literals.hpp"
+#include "util/byte_span.hpp"
+#include "util/config.hpp"
+#include "util/error.hpp"
+#include "util/error_or.hpp"
 
-// #include <algorithm>
-// #include <cstring>
-// #include <numeric>
-// #include <thread>
+#include "multiplexer_mock.hpp"
+#include "net_test.hpp"
 
-// using namespace net;
+#include <algorithm>
+#include <cstring>
+#include <numeric>
+#include <thread>
 
-// namespace {
+using namespace net;
+using namespace net::detail;
+using namespace util::byte_literals;
 
-// struct test_data {
-//   util::byte_buffer received;
-//   util::const_byte_span data;
-//   uint64_t last_timeout_id;
-// };
+namespace {
 
-// struct dummy_application {
-//   dummy_application(detail::transport_base& parent, test_data& data)
-//     : parent_{parent}, data_(data) {
-//     // nop
-//   }
+struct dummy_application {
+  dummy_application(util::const_byte_span data, net::ip::v4_endpoint ep,
+                    util::byte_buffer& received, uint64_t& last_timeout_id)
+    : received_(received),
+      data_(data),
+      ep_(ep),
+      last_timeout_id_(last_timeout_id) {
+    // nop
+  }
 
-//   util::error init(const util::config&) {
-//     parent_.configure_next_read(receive_policy::exactly(1024));
-//     return util::none;
-//   }
+  template <class Parent>
+  util::error init(Parent& parent, const util::config&) {
+    parent.configure_next_read(receive_policy::up_to(16_KB));
+    return util::none;
+  }
 
-//   manager_result produce() {
-//     auto size = std::min(size_t{1024}, data_.data.size());
-//     parent_.enqueue({data_.data.data(), size});
-//     data_.data = data_.data.subspan(size);
-//     return manager_result::ok;
-//   }
+  template <class Parent>
+  manager_result produce(Parent& parent) {
+    if (has_more_data()) {
+      const auto size = std::min(size_t{1_KB}, data_.size());
+      parent.enqueue(data_.subspan(0, size), ep_);
+      data_ = data_.subspan(size);
+      return manager_result::ok;
+    }
+    return manager_result::done;
+  }
 
-//   bool has_more_data() const noexcept { return !data_.data.empty(); }
+  bool has_more_data() const noexcept { return !data_.empty(); }
 
-//   manager_result consume(util::const_byte_span data) {
-//     data_.received.insert(data_.received.end(), data.begin(), data.end());
-//     parent_.configure_next_read(receive_policy::exactly(1024));
-//     return manager_result::ok;
-//   }
+  template <class Parent>
+  manager_result
+  consume(Parent& parent, util::const_byte_span data, net::ip::v4_endpoint) {
+    received_.insert(received_.end(), data.begin(), data.end());
+    parent.configure_next_read(receive_policy::up_to(16_KB));
+    return manager_result::ok;
+  }
 
-//   manager_result handle_timeout(uint64_t id) {
-//     data_.last_timeout_id = id;
-//     return manager_result::ok;
-//   }
+  template <class Parent>
+  manager_result handle_timeout(Parent&, uint64_t id) {
+    last_timeout_id_ = id;
+    return manager_result::ok;
+  }
 
-// private:
-//   detail::transport_base& parent_;
-//   test_data& data_;
-// };
+private:
+  util::byte_buffer& received_;
+  util::const_byte_span data_;
+  net::ip::v4_endpoint ep_;
+  uint64_t& last_timeout_id_;
+};
 
-// using event_datagram_transport
-//   = detail::datagram_transport<detail::event_handler, dummy_application>;
+using manager_type = event_datagram_transport<dummy_application>;
 
-// struct event_datagram_transport_test : public testing::Test, public test_data
-// {
-//   event_datagram_transport_test() {}
+struct datagram_transport_test : public testing::Test {
+  datagram_transport_test() {
+    {
+      auto [socket, port] = UNPACK_EXPRESSION(make_udp_datagram_socket(0));
+      reader = socket;
+      reader_port = port;
+    }
+    {
+      auto [socket, port] = UNPACK_EXPRESSION(make_udp_datagram_socket(0));
+      writer = socket;
+      writer_port = port;
+    }
+  }
 
-//   ~event_datagram_transport_test() {}
-// };
+  util::config cfg{};
+  socket_guard<udp_datagram_socket> reader;
+  std::uint16_t reader_port{0};
+  socket_guard<udp_datagram_socket> writer;
+  std::uint16_t writer_port{0};
 
-// } // namespace
+  multiplexer_mock mpx;
 
-// #if defined(LIB_NET_URING)
+  util::byte_buffer received_data;
+  uint64_t last_timeout_id;
+};
 
-// using uring_stream_transport
-//   = detail::stream_transport<detail::uring_manager, dummy_application>;
+} // namespace
 
-// struct uring_stream_transport_test : public testing::Test, public test_data {
-//   uring_stream_transport_test()
-//     : sockets{UNPACK_EXPRESSION(make_stream_socket_pair())},
-//       mgr{sockets.first, &mpx, *this} {
-//     for (size_t i = 0; i < data_buffer.size(); ++i) {
-//       data_buffer[i] = static_cast<std::byte>(i & 0xFF);
-//     }
-//     data = data_buffer;
-//   }
+TEST_F(datagram_transport_test, handle_read_event) {
+  static constexpr auto test_data = test::generate_test_data<16_KB>();
+  net::ip::v4_endpoint receiver_ep{net::ip::v4_address::localhost, reader_port};
+  manager_type mgr(*reader, &mpx, test_data, receiver_ep, received_data,
+                   last_timeout_id);
+  ASSERT_EQ(mgr.init(cfg), util::none);
 
-//   ~uring_stream_transport_test() {
-//     close(sockets.first);
-//     close(sockets.second);
-//   }
+  std::jthread write_thread([this] {
+    const auto res = test::write_all(
+      *writer, test_data,
+      net::ip::v4_endpoint{net::ip::v4_address::localhost, reader_port});
+    EXPECT_EQ(res, manager_result::done);
+  });
 
-//   void SetUp() override { ASSERT_EQ(mgr.init(cfg), util::none); }
+  const auto invoke_result
+    = test::invoke([&mgr] {
+        const auto read_res = mgr.handle_read_event();
+        EXPECT_NE(read_res, manager_result::done);
+        EXPECT_NE(read_res, manager_result::error);
+        if (read_res == manager_result::temporary_error) {
+          std::this_thread::sleep_for(10ms);
+        }
+      }).until([this] { return received_data.size() == test_data.size(); });
+  EXPECT_TRUE(invoke_result);
+  EXPECT_TRUE(
+    std::equal(received_data.begin(), received_data.end(), test_data.begin()));
+}
 
-//   util::byte_array<32768> data_buffer;
-//   util::config cfg;
-//   stream_socket_pair sockets;
-//   multiplexer_mock mpx;
-//   uring_stream_transport mgr;
-// };
+TEST_F(datagram_transport_test, handle_write_event) {
+  static constexpr auto test_data = test::generate_test_data<16_KB>();
+  util::byte_array<16_KB> receive_buffer;
+  net::ip::v4_endpoint receiver_ep{net::ip::v4_address::localhost, reader_port};
+  manager_type mgr(*writer, &mpx, test_data, receiver_ep, received_data,
+                   last_timeout_id);
+  ASSERT_EQ(mgr.init(cfg), util::none);
 
-// TEST_F(uring_stream_transport_test, handles_received_data) {
-//   // Continuously fill the buffer of the uring_manager with the desired
-//   number
-//   // of bytes and trigger handling
-//   while (!data.empty()) {
-//     auto read_buffer = mgr.read_buffer();
-//     const auto* ptr = data.data();
-//     const auto size = std::min(data.size(), read_buffer.size());
-//     std::memcpy(read_buffer.data(), ptr, size);
-//     data = data.subspan(size);
-//     ASSERT_EQ(mgr.handle_completion(operation::read, static_cast<int>(size)),
-//               manager_result::ok);
-//   }
-//   // After writing all data, the application should have consumed all data
-//   EXPECT_TRUE(
-//     std::equal(received.begin(), received.end(), data_buffer.begin()));
-// }
+  std::jthread read_thread([this, &receive_buffer] {
+    const auto [res, ep] = test::read_all(*reader, receive_buffer);
 
-// TEST_F(uring_stream_transport_test, prepares_data_to_write) {
-//   static constexpr std::size_t max_retries = 20;
-//   size_t received = 0;
-//   util::byte_buffer buf;
+    EXPECT_EQ(res, manager_result::ok);
+    net::ip::v4_endpoint expected_sender{net::ip::v4_address::localhost,
+                                         writer_port};
+    EXPECT_EQ(ep, expected_sender);
+  });
 
-//   mgr.register_writing();
-//   for (std::size_t i = 0; i < max_retries; ++i) {
-//     auto write_buffer = mgr.write_buffer();
-//     buf.insert(buf.begin(), write_buffer.begin(), write_buffer.end());
-//     received += write_buffer.size();
-//     const auto res = mgr.handle_completion(operation::write,
-//                                            write_buffer.size());
-//     ASSERT_NE(res, manager_result::error);
-//     ASSERT_NE(res, manager_result::temporary_error);
-//     if (res == manager_result::done) {
-//       break;
-//     }
-//   }
-//   EXPECT_EQ(received, data_buffer.size());
-//   EXPECT_TRUE(std::equal(buf.begin(), buf.end(), data_buffer.begin()));
-// }
+  manager_result res;
+  do {
+    res = mgr.handle_write_event();
+    ASSERT_NE(res, manager_result::error);
+    if (res == manager_result::temporary_error) {
+      std::this_thread::sleep_for(10ms);
+    }
+  } while (res != manager_result::done);
 
-// TEST_F(uring_stream_transport_test, disconnect) {
-//   EXPECT_EQ(mgr.handle_completion(operation::read, 0), manager_result::done);
-// }
-
-// TEST_F(uring_stream_transport_test, timeout_handling) {
-//   ASSERT_EQ(mgr.handle_timeout(42), manager_result::ok);
-//   EXPECT_EQ(last_timeout_id, 42);
-// }
-
-// #endif
+  EXPECT_EQ(receive_buffer, test_data);
+}
