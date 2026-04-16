@@ -168,7 +168,7 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/detail/pollset_updater.cpp
     test/net/detail/stream_transport.cpp
     test/net/detail/transport_adaptor.cpp
-    # test/net/detail/uring_multiplexer.cpp
+    test/net/detail/uring_multiplexer.cpp
 
     test/net/ip/v4_address.cpp
     test/net/ip/v4_endpoint.cpp
