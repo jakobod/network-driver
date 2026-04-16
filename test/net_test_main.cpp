@@ -14,7 +14,7 @@
 int main(int argc, char** argv) {
   // Disables logging alltogether
   util::config cfg;
-  cfg.add_config_entry("logger.terminal-output", false);
+  cfg.add_config_entry("logger.terminal-output", true);
   LOG_INIT(cfg);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

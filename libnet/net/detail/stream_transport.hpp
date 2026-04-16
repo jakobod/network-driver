@@ -199,7 +199,7 @@ public:
                      read_buffer_.size() - received_};
   }
 
-  const std::deque<util::byte_buffer>& write_queue() const noexcept {
+  const std::vector<util::byte_buffer>& write_queue() const noexcept {
     return write_queue_;
   }
 

@@ -147,7 +147,7 @@ TEST_F(datagram_transport_test, handle_read_event) {
 
 TEST_F(datagram_transport_test, handle_write_event) {
   static constexpr auto test_data = test::generate_test_data<16_KB>();
-  util::byte_array<16_KB> receive_buffer;
+  util::byte_array<16_KB> receive_buffer = {};
   net::ip::v4_endpoint receiver_ep{net::ip::v4_address::localhost, reader_port};
   manager_type mgr(*writer, &mpx, test_data, receiver_ep, received_data,
                    last_timeout_id);
@@ -170,6 +170,11 @@ TEST_F(datagram_transport_test, handle_write_event) {
       std::this_thread::sleep_for(10ms);
     }
   } while (res != manager_result::done);
+
+  // Wait for the reader to completely read all data
+  if (read_thread.joinable()) {
+    read_thread.join();
+  }
 
   EXPECT_EQ(receive_buffer, test_data);
 }

@@ -204,34 +204,34 @@ TEST_F(multiplexer_test, event_handling) {
   ASSERT_TRUE(read_all(guard.get(), buf));
 }
 
-TEST_F(multiplexer_test, resetting_timeout) {
+TEST_F(multiplexer_test, chained_timeouts) {
   const std::vector<uint64_t> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto sockets = UNPACK_EXPRESSION(make_stream_socket_pair());
   enable_reconfigure_timeouts();
   auto mgr = util::make_intrusive<dummy_socket_manager>(sockets.first, &mpx,
                                                         state);
   mpx.add(mgr, operation::read);
-  EXPECT_EQ(mgr->set_timeout_in(10ms), 0);
+  EXPECT_EQ(mgr->set_timeout_in(1ms), 0);
   ASSERT_TRUE(poll_until(
     [&] { return state.handled_timeouts.size() >= expected_result.size(); },
     true, 20));
   EXPECT_EQ(state.handled_timeouts, expected_result);
 }
 
-TEST_F(multiplexer_test, multiple_timeouts) {
+TEST_F(multiplexer_test, multiple_timeouts_at_once) {
   const std::vector<uint64_t> expected_result{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto sockets = UNPACK_EXPRESSION(make_stream_socket_pair());
   auto mgr = util::make_intrusive<dummy_socket_manager>(sockets.first, &mpx,
                                                         state);
   mpx.add(mgr, operation::read);
-  auto duration = 10ms;
+  auto when = std::chrono::steady_clock::now() + 1ms;
   for (size_t i = 0; i < expected_result.size(); ++i) {
-    EXPECT_EQ(mgr->set_timeout_in(duration), i);
-    duration += 10ms;
+    EXPECT_EQ(mgr->set_timeout_at(when), i);
+    when += 1ms;
   }
-  ASSERT_TRUE(poll_until(
+  EXPECT_TRUE(poll_until(
     [&] { return state.handled_timeouts.size() >= expected_result.size(); },
-    true, 20));
+    true, 100));
   EXPECT_EQ(state.handled_timeouts, expected_result);
 }
 

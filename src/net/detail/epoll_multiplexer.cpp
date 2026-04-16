@@ -141,17 +141,17 @@ void epoll_multiplexer::mod(int fd, int op, operation events) {
 }
 
 util::error epoll_multiplexer::poll_once(bool blocking) {
-  // Calculates the timeout value for the epoll_wait call
-  const auto now = time_point_cast<milliseconds>(steady_clock::now());
-  const auto timeout_passed = current_timeout_ ? (now > *current_timeout_)
-                                               : false;
-  const auto must_calculate_timeout = (blocking && current_timeout_.has_value()
-                                       && !timeout_passed);
-  int timeout = 0;
-  if (must_calculate_timeout) {
-    auto now = time_point_cast<milliseconds>(steady_clock::now());
-    auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
-    timeout = static_cast<int>((timeout_tp - now).count());
+  // Calculate the timeout value for the epoll call
+  int timeout = blocking ? -1 : 0;
+  if (blocking && current_timeout_.has_value()) {
+    const auto now = steady_clock::now();
+    if (now >= *current_timeout_) {
+      timeout = 0;
+    } else {
+      const auto diff = (*current_timeout_ - now);
+      const auto ms = std::chrono::ceil<std::chrono::milliseconds>(diff);
+      timeout = static_cast<int>(std::max(std::int64_t{0}, ms.count()));
+    }
   }
 
   // Poll for events on the reqistered sockets

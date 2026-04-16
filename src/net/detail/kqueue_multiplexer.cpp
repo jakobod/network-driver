@@ -177,19 +177,18 @@ void kqueue_multiplexer::mod(int fd, int op, operation events) {
 util::error kqueue_multiplexer::poll_once(bool blocking) {
   using namespace std::chrono;
   LOG_TRACE();
-  const auto now = time_point_cast<milliseconds>(steady_clock::now());
-  const auto timeout_passed = (current_timeout_ ? (now > *current_timeout_)
-                                                : false);
   // Calculate the timeout value for the kqueue call
-  const auto timeout = std::invoke(
-    [this, blocking, timeout_passed, now] -> timespec {
-      if (!blocking || !current_timeout_ || timeout_passed) {
-        return {0, 0};
-      }
-      const auto timeout_tp = time_point_cast<milliseconds>(*current_timeout_);
-      const auto diff_ms = (timeout_tp - now).count();
-      return {(diff_ms / 1000), ((diff_ms % 1000) * 1000000)};
-    });
+  timespec timeout{0, 0};
+  if (blocking && current_timeout_.has_value()) {
+    const auto now = steady_clock::now();
+    const auto timeout_passed
+      = (current_timeout_.has_value() ? (now > *current_timeout_) : false);
+    if (!timeout_passed) {
+      const auto diff = (*current_timeout_ - now);
+      const auto secs = duration_cast<seconds>(diff);
+      timeout = {secs.count(), duration_cast<nanoseconds>(diff - secs).count()};
+    }
+  }
 
   LOG_DEBUG("kevent ", NET_ARG(blocking), ", timeout={", timeout.tv_sec, "s,",
             timeout.tv_nsec, "ns}");

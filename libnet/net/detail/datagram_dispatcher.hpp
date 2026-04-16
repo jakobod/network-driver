@@ -105,12 +105,12 @@ public:
   }
 
   manager_result handle_timeout(auto& parent, uint64_t id) {
-    auto timeout_ep = std::ranges::find(timeouts_, id);
+    auto timeout_ep = timeouts_.find(id);
     if (timeout_ep == timeouts_.end()) {
       return manager_result::error;
     }
 
-    auto layer = std::ranges::find(layers_, *timeout_ep);
+    auto layer = layers_.find(*timeout_ep);
     if (layer == layers_.end()) {
       return manager_result::error;
     }

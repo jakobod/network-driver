@@ -286,74 +286,75 @@ using event_datagram_transport
 
 #if defined(LIB_NET_URING)
 
-/// @brief Specialization for uring_manager (io_uring).
-template <class NextLayer>
-class datagram_transport<uring_manager, NextLayer>
-  : public datagram_transport_base<uring_manager, NextLayer> {
-  using base = datagram_transport_base<uring_manager, NextLayer>;
+// /// @brief Specialization for uring_manager (io_uring).
+// template <class NextLayer>
+// class datagram_transport_impl<uring_manager, NextLayer>
+//   : public datagram_transport<uring_manager, NextLayer> {
+//   using base = datagram_transport<uring_manager, NextLayer>;
 
-public:
-  using base::base;
+// public:
+//   using base::base;
 
-  manager_result handle_completion(operation op, int res) override {
-    LOG_TRACE();
-    LOG_DEBUG("Handling ", NET_ARG(op), " with ", NET_ARG(res), " on ",
-              NET_ARG2("handle", handle().id));
-    switch (op) {
-      case operation::read: {
-        const auto verdict = base::handle_read_result(res);
-        if (verdict == manager_result::temporary_error) {
-          uring_manager::submit(operation::poll_read);
-        }
-        if (verdict != manager_result::ok) {
-          return verdict;
-        }
-      }
-        [[fallthrough]];
-      case operation::poll_read:
-        uring_manager::submit(operation::read);
-        return manager_result::ok;
+//   manager_result handle_completion(operation op, int res) override {
+//     LOG_TRACE();
+//     LOG_DEBUG("Handling ", NET_ARG(op), " with ", NET_ARG(res), " on ",
+//               NET_ARG2("handle", handle().id));
+//     switch (op) {
+//       case operation::read: {
+//         const auto verdict = base::handle_read_result(res);
+//         if (verdict == manager_result::temporary_error) {
+//           uring_manager::submit(operation::poll_read);
+//         }
+//         if (verdict != manager_result::ok) {
+//           return verdict;
+//         }
+//       }
+//         [[fallthrough]];
+//       case operation::poll_read:
+//         uring_manager::submit(operation::read);
+//         return manager_result::ok;
 
-      case operation::write: {
-        const auto verdict = base::handle_write_result(res);
-        if (verdict == manager_result::temporary_error) {
-          uring_manager::submit(operation::poll_write);
-          return manager_result::done;
-        } else if (verdict != manager_result::ok) {
-          return verdict;
-        }
-      }
-        [[fallthrough]];
-      case operation::poll_write:
-        base::fetch_more_data();
-        if (base::done_writing()) {
-          return manager_result::done;
-        }
-        uring_manager::submit(operation::write);
-        return manager_result::ok;
+//       case operation::write: {
+//         const auto verdict = base::handle_write_result(res);
+//         if (verdict == manager_result::temporary_error) {
+//           uring_manager::submit(operation::poll_write);
+//           return manager_result::done;
+//         } else if (verdict != manager_result::ok) {
+//           return verdict;
+//         }
+//       }
+//         [[fallthrough]];
+//       case operation::poll_write:
+//         base::fetch_more_data();
+//         if (base::done_writing()) {
+//           return manager_result::done;
+//         }
+//         uring_manager::submit(operation::write);
+//         return manager_result::ok;
 
-      default:
-        LOG_ERROR(NET_ARG(op), " not handled by uring_datagram_transport");
-        return manager_result::error;
-    }
-  }
+//       default:
+//         LOG_ERROR(NET_ARG(op), " not handled by uring_datagram_transport");
+//         return manager_result::error;
+//     }
+//   }
 
-  /// @brief Returns the buffer space available for reading.
-  /// @return A span of the available buffer space.
-  util::byte_span read_buffer() noexcept override {
-    return std::span{base::read_buffer_.data() + base::received_,
-                     base::read_buffer_.size() - base::received_};
-  }
+//   /// @brief Returns the buffer space available for reading.
+//   /// @return A span of the available buffer space.
+//   util::byte_span read_buffer() noexcept override {
+//     return std::span{base::read_buffer_.data() + base::received_,
+//                      base::read_buffer_.size() - base::received_};
+//   }
 
-  /// @brief Returns the buffer with the data currently queued for writing.
-  /// @return A span of the data queued for writing.
-  std::span<iovec> write_buffer() const noexcept override {
-    return base::iovecs();
-  }
-};
+//   /// @brief Returns the buffer with the data currently queued for writing.
+//   /// @return A span of the data queued for writing.
+//   std::span<iovec> write_buffer() const noexcept override {
+//     return base::iovecs();
+//   }
+// };
 
-template <class NextLayer>
-using uring_datagram_transport = datagram_transport<uring_manager, NextLayer>;
+// template <class NextLayer>
+// using uring_datagram_transport = datagram_transport_impl<uring_manager,
+// NextLayer>;
 
 #endif
 
