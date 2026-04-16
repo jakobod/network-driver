@@ -191,16 +191,20 @@ TEST_F(datagram_transport_test, uring_handle_read_completion) {
   ASSERT_EQ(mgr.init(cfg), util::none);
   mgr.enable(operation::read);
 
-  std::jthread write_thread([this] {
+  std::atomic_bool running = true;
+  std::jthread write_thread([this, &running] {
     const auto res = test::write_all(
       *writer, test_data,
       net::ip::v4_endpoint{net::ip::v4_address::localhost, reader_port});
     EXPECT_EQ(res, manager_result::done);
+    running = false;
   });
 
   EXPECT_TRUE(test::poll_until(
-    [this] { return received_data.size() == test_data.size(); }, *uring_mpx,
-    30));
+    [this, &running] {
+      return !running && (received_data.size() == test_data.size());
+    },
+    *uring_mpx, 100));
   EXPECT_EQ(received_data.size(), test_data.size());
   EXPECT_TRUE(
     std::equal(received_data.begin(), received_data.end(), test_data.begin()));
