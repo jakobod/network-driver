@@ -97,8 +97,9 @@ manager_result pollset_updater<uring_manager>::enable(operation op) {
   return success ? manager_result::ok : manager_result::error;
 }
 
-manager_result pollset_updater<uring_manager>::handle_completion(operation op,
-                                                                 int res) {
+manager_result
+pollset_updater<uring_manager>::handle_completion(operation op, int res,
+                                                  std::uint64_t) {
   if (op != operation::read) {
     LOG_ERROR("pollset_updater called for operation != read");
     return manager_result::error;

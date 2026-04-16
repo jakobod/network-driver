@@ -82,7 +82,8 @@ public:
   using detail::uring_manager::uring_manager;
 
   MOCK_METHOD(manager_result, enable, (operation), (override));
-  MOCK_METHOD(manager_result, handle_completion, (operation, int), (override));
+  MOCK_METHOD(manager_result, handle_completion,
+              (operation, int, std::uint64_t), (override));
 };
 
 TEST(uring_acceptor_test, handle_completion_rejects_invalid_operations) {
@@ -92,15 +93,15 @@ TEST(uring_acceptor_test, handle_completion_rejects_invalid_operations) {
                                   [](net::socket) -> detail::manager_base_ptr {
                                     return nullptr;
                                   }};
-  EXPECT_EQ(acceptor.handle_completion(operation::read, 42),
+  EXPECT_EQ(acceptor.handle_completion(operation::read, 42, 69),
             manager_result::error);
-  EXPECT_EQ(acceptor.handle_completion(operation::write, 42),
+  EXPECT_EQ(acceptor.handle_completion(operation::write, 42, 69),
             manager_result::error);
-  EXPECT_EQ(acceptor.handle_completion(operation::none, 42),
+  EXPECT_EQ(acceptor.handle_completion(operation::none, 42, 69),
             manager_result::error);
-  EXPECT_EQ(acceptor.handle_completion(operation::poll_read, 42),
+  EXPECT_EQ(acceptor.handle_completion(operation::poll_read, 42, 69),
             manager_result::error);
-  EXPECT_EQ(acceptor.handle_completion(operation::poll_write, 42),
+  EXPECT_EQ(acceptor.handle_completion(operation::poll_write, 42, 69),
             manager_result::error);
 }
 
@@ -111,9 +112,9 @@ TEST(uring_acceptor_test, handle_completion_handles_error) {
                                   [](net::socket) -> detail::manager_base_ptr {
                                     return nullptr;
                                   }};
-  EXPECT_EQ(acceptor.handle_completion(operation::read, -1),
+  EXPECT_EQ(acceptor.handle_completion(operation::read, -1, 69),
             manager_result::error);
-  EXPECT_EQ(acceptor.handle_completion(operation::write, 0),
+  EXPECT_EQ(acceptor.handle_completion(operation::write, 0, 69),
             manager_result::error);
 }
 
@@ -130,7 +131,7 @@ TEST(uring_acceptor_test, handle_completion) {
   };
 
   detail::uring_acceptor acceptor{accept_socket, &mpx, std::move(factory)};
-  EXPECT_EQ(acceptor.handle_completion(operation::accept, 42),
+  EXPECT_EQ(acceptor.handle_completion(operation::accept, 42, 69),
             manager_result::ok);
   EXPECT_TRUE(factory_called);
 }

@@ -79,7 +79,8 @@ public:
   manager_result enable(operation op) override;
 
   /// @brief Handles incoming connection on io_uring completion event.
-  manager_result handle_completion(operation op, int res) override;
+  manager_result handle_completion(operation op, int res,
+                                   std::uint64_t id) override;
 };
 
 using uring_acceptor = acceptor<uring_manager>;

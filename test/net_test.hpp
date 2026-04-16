@@ -172,7 +172,7 @@ detail::repeater<Action> invoke(Action action) {
 
 template <std::invocable Pred>
 inline bool poll_until(Pred predicate, net::detail::multiplexer_base& mpx,
-                       bool blocking = false, std::size_t max_polls = 10) {
+                       std::size_t max_polls = 10, bool blocking = false) {
   return invoke([&mpx, blocking] {
            if (auto err = mpx.poll_once(blocking)) {
              return false;

@@ -47,14 +47,12 @@ struct dummy_application {
     // nop
   }
 
-  template <class Parent>
-  util::error init(Parent& parent, const util::config&) {
+  util::error init(auto& parent, const util::config&) {
     parent.configure_next_read(receive_policy::up_to(16_KB));
     return util::none;
   }
 
-  template <class Parent>
-  manager_result produce(Parent& parent) {
+  manager_result produce(auto& parent) {
     if (has_more_data()) {
       const auto size = std::min(size_t{1_KB}, data_.size());
       parent.enqueue(data_.subspan(0, size), ep_);
@@ -66,16 +64,14 @@ struct dummy_application {
 
   bool has_more_data() const noexcept { return !data_.empty(); }
 
-  template <class Parent>
-  manager_result
-  consume(Parent& parent, util::const_byte_span data, net::ip::v4_endpoint) {
+  manager_result consume(auto& parent, util::const_byte_span data,
+                         net::ip::v4_endpoint) {
     received_.insert(received_.end(), data.begin(), data.end());
     parent.configure_next_read(receive_policy::up_to(16_KB));
     return manager_result::ok;
   }
 
-  template <class Parent>
-  manager_result handle_timeout(Parent&, uint64_t id) {
+  manager_result handle_timeout(auto&, uint64_t id) {
     last_timeout_id_ = id;
     return manager_result::ok;
   }
@@ -87,7 +83,10 @@ private:
   uint64_t& last_timeout_id_;
 };
 
-using manager_type = event_datagram_transport<dummy_application>;
+using event_manager_type = event_datagram_transport<dummy_application>;
+#if defined(LIB_NET_URING)
+using uring_manager_type = uring_datagram_transport<dummy_application>;
+#endif
 
 struct datagram_transport_test : public testing::Test {
   datagram_transport_test() {
@@ -120,8 +119,8 @@ struct datagram_transport_test : public testing::Test {
 TEST_F(datagram_transport_test, handle_read_event) {
   static constexpr auto test_data = test::generate_test_data<16_KB>();
   net::ip::v4_endpoint receiver_ep{net::ip::v4_address::localhost, reader_port};
-  manager_type mgr(*reader, &mpx, test_data, receiver_ep, received_data,
-                   last_timeout_id);
+  event_manager_type mgr(*reader, &mpx, test_data, receiver_ep, received_data,
+                         last_timeout_id);
   ASSERT_EQ(mgr.init(cfg), util::none);
 
   std::jthread write_thread([this] {
@@ -149,8 +148,8 @@ TEST_F(datagram_transport_test, handle_write_event) {
   static constexpr auto test_data = test::generate_test_data<16_KB>();
   util::byte_array<16_KB> receive_buffer = {};
   net::ip::v4_endpoint receiver_ep{net::ip::v4_address::localhost, reader_port};
-  manager_type mgr(*writer, &mpx, test_data, receiver_ep, received_data,
-                   last_timeout_id);
+  event_manager_type mgr(*writer, &mpx, test_data, receiver_ep, received_data,
+                         last_timeout_id);
   ASSERT_EQ(mgr.init(cfg), util::none);
 
   std::jthread read_thread([this, &receive_buffer] {
@@ -178,3 +177,61 @@ TEST_F(datagram_transport_test, handle_write_event) {
 
   EXPECT_EQ(receive_buffer, test_data);
 }
+
+#if defined(LIB_NET_URING)
+
+TEST_F(datagram_transport_test, uring_handle_read_completion) {
+  static constexpr auto test_data = test::generate_test_data<16_KB>();
+  net::ip::v4_endpoint receiver_ep{net::ip::v4_address::localhost, reader_port};
+  auto uring_mpx = UNPACK_EXPRESSION(detail::make_uring_multiplexer(
+    [](net::socket, multiplexer_base*) -> uring_manager_ptr { return nullptr; },
+    cfg));
+  uring_manager_type mgr(*reader, uring_mpx.get(), test_data, receiver_ep,
+                         received_data, last_timeout_id);
+  ASSERT_EQ(mgr.init(cfg), util::none);
+  mgr.enable(operation::read);
+
+  std::jthread write_thread([this] {
+    const auto res = test::write_all(
+      *writer, test_data,
+      net::ip::v4_endpoint{net::ip::v4_address::localhost, reader_port});
+    EXPECT_EQ(res, manager_result::done);
+  });
+
+  EXPECT_TRUE(test::poll_until(
+    [this] { return received_data.size() == test_data.size(); }, *uring_mpx,
+    30));
+  EXPECT_EQ(received_data.size(), test_data.size());
+  EXPECT_TRUE(
+    std::equal(received_data.begin(), received_data.end(), test_data.begin()));
+}
+
+TEST_F(datagram_transport_test, uring_handle_write_completion) {
+  static constexpr auto test_data = test::generate_test_data<16_KB>();
+  util::byte_array<16_KB> receive_buffer = {};
+  net::ip::v4_endpoint receiver_ep{net::ip::v4_address::localhost, reader_port};
+  auto uring_mpx = UNPACK_EXPRESSION(detail::make_uring_multiplexer(
+    [](net::socket, multiplexer_base*) -> uring_manager_ptr { return nullptr; },
+    cfg));
+  uring_manager_type mgr(*writer, uring_mpx.get(), test_data, receiver_ep,
+                         received_data, last_timeout_id);
+  ASSERT_EQ(mgr.init(cfg), util::none);
+  mgr.enable(operation::write);
+
+  std::atomic_bool running = true;
+  std::jthread read_thread([this, &receive_buffer, &running] {
+    const auto [res, ep] = test::read_all(*reader, receive_buffer);
+    EXPECT_EQ(res, manager_result::ok);
+    net::ip::v4_endpoint expected_sender{net::ip::v4_address::localhost,
+                                         writer_port};
+    EXPECT_EQ(ep, expected_sender);
+    running = false;
+  });
+
+  EXPECT_TRUE(
+    test::poll_until([&running] { return !running; }, *uring_mpx, 100));
+  read_thread.join();
+  EXPECT_EQ(receive_buffer, test_data);
+}
+
+#endif

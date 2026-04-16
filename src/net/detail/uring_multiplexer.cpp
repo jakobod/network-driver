@@ -330,7 +330,7 @@ void uring_multiplexer::handle_events() {
     LOG_DEBUG("Handling CQE for fd=", data->mgr->handle().id,
               " op=", to_string(data->op), " res=", cqe->res);
 
-    auto result = data->mgr->handle_completion(data->op, cqe->res);
+    auto result = data->mgr->handle_completion(data->op, cqe->res, data->id);
     switch (result) {
       case manager_result::ok:
         break;
@@ -340,7 +340,6 @@ void uring_multiplexer::handle_events() {
         break;
       case manager_result::error:
         multiplexer_base::del(data->mgr->handle());
-        delete data;
         break;
     }
 

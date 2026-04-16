@@ -307,7 +307,8 @@ public:
     }
   }
 
-  manager_result handle_completion(operation op, int res) override {
+  manager_result handle_completion(operation op, int res,
+                                   std::uint64_t) override {
     LOG_TRACE();
     LOG_DEBUG("Handling ", NET_ARG(op), " with ", NET_ARG(res), " on ",
               NET_ARG2("handle", handle().id));
