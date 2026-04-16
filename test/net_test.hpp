@@ -142,10 +142,9 @@ inline std::pair<manager_result, ip::v4_endpoint>
 read_all(udp_datagram_socket handle, util::byte_span receive_buffer) {
   ip::v4_endpoint last_ep;
   auto ev_result = manager_result::ok;
-  std::size_t received = 0;
 
   while (!receive_buffer.empty()) {
-    const auto [ep, res] = net::read(handle, receive_buffer.subspan(received));
+    const auto [ep, res] = net::read(handle, receive_buffer);
     if (res > 0) {
       receive_buffer = receive_buffer.subspan(res);
       last_ep = ep;

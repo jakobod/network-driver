@@ -48,8 +48,8 @@ struct datagram {
     : buf_{std::move(buf)},
       iov_{buf_.data(), buf_.size()},
       ep_{std::move(ep)},
-      dst_addr_{to_sockaddr_in(ep_)} {
-    msg_.msg_name = &dst_addr_;
+      addr_{to_sockaddr_in(ep_)} {
+    msg_.msg_name = &addr_;
     msg_.msg_namelen = sizeof(sockaddr_in);
     msg_.msg_iov = &iov_;
     msg_.msg_iovlen = 1;
@@ -66,7 +66,7 @@ struct datagram {
   iovec iov_{};
 
   ip::v4_endpoint ep_{};
-  sockaddr_in dst_addr_{};
+  sockaddr_in addr_{};
 
   msghdr msg_{};
 
@@ -88,6 +88,8 @@ protected:
   static constexpr std::size_t max_datagram_size = 548;
 
 public:
+  using write_queue_type = std::deque<datagram>;
+
   /// @brief Constructs a stream transport layer.
   /// @param handle The stream socket for this connection.
   /// @param mpx The multiplexer managing this socket.
@@ -135,6 +137,7 @@ public:
 
   void enqueue(util::byte_buffer&& datagram, ip::v4_endpoint ep) {
     // Warn about datagrams that are too big?
+    num_enqueued_bytes_ += datagram.size();
     write_queue_.emplace_back(std::move(datagram), std::move(ep));
     manager_base::register_writing();
   }
@@ -171,37 +174,29 @@ protected:
     }
   }
 
-  manager_result handle_write_result(int write_res, std::uint64_t id) {
-    // Really necessary to search for packets with the id? They should be
-    // handled in order of submission, also with uring.
-    auto it = std::ranges::find_if(write_queue_, [id](const auto& datagram) {
-      return datagram.id_ == id;
-    });
-    if (it == write_queue_.end()) {
-      LOG_ERROR("Datagram with ", NET_ARG(id), " was not found in write_queue");
-      return manager_result::error;
-    }
-    auto& datagram = *it;
-
+  std::pair<manager_result, write_queue_type::iterator>
+  handle_write_result(int write_res, write_queue_type::iterator it) {
     if (write_res < 0) {
       if (last_socket_error_is_temporary()) {
-        datagram.currently_submitted_ = false;
-        return manager_result::temporary_error;
+        it->currently_submitted_ = false;
+        return std::make_pair(manager_result::temporary_error,
+                              write_queue_.end());
       } else {
-        return manager_result::error;
+        return std::make_pair(manager_result::error, write_queue_.end());
       }
     }
     LOG_DEBUG("Wrote ", write_res, " bytes to ",
               NET_ARG2("socket", handle().id));
 
-    if (static_cast<std::size_t>(write_res) < datagram.buf_.size()) {
+    if (static_cast<std::size_t>(write_res) < it->buf_.size()) {
       LOG_ERROR("Datagram with ", NET_ARG(id), " was not written completely");
-      return manager_result::error;
+      return std::make_pair(manager_result::error, write_queue_.end());
     }
-    datagram.buf_.clear();
-    transport_base::return_buffer(std::move(datagram.buf_));
-    write_queue_.erase(it);
-    return manager_result::ok;
+    num_enqueued_bytes_ -= it->buf_.size();
+    it->buf_.clear();
+    transport_base::return_buffer(std::move(it->buf_));
+    it = write_queue_.erase(it);
+    return std::make_pair(manager_result::ok, it);
   }
 
   bool done_writing() const noexcept {
@@ -231,7 +226,7 @@ protected:
 
   datagram& dgram() noexcept { return read_buffer_; }
 
-  std::deque<datagram>& write_queue() noexcept { return write_queue_; }
+  write_queue_type& write_queue() noexcept { return write_queue_; }
 
 protected:
   NextLayer next_layer_;
@@ -283,24 +278,26 @@ public:
   manager_result handle_write_event() override {
     LOG_TRACE();
     LOG_DEBUG("handle write_event on ", NET_ARG2("socket", handle().id));
-
     size_t num_consecutive_writes = 0;
     do {
       // Trigger the next layers to generate some data to write
       if (base::fetch_more_data() == manager_result::done) {
         return manager_result::done;
       }
-      for (auto& datagram : base::write_queue_) {
-        datagram.id_ = 42069;
+      auto it = base::write_queue_.begin();
+      while (it != base::write_queue_.end()) {
+        auto& datagram = *it;
         const auto write_res
           = write(manager_base::handle<udp_datagram_socket>(), datagram.buf_,
                   datagram.ep_);
-        const auto verdict = base::handle_write_result(write_res, 42069);
+        auto [verdict, new_it] = base::handle_write_result(write_res, it);
         if ((verdict == manager_result::error)
             || (verdict == manager_result::temporary_error)) {
           return verdict;
         }
+        it = new_it;
       }
+      base::write_queue_.erase(base::write_queue_.begin(), it);
     } while (num_consecutive_writes++ < base::max_consecutive_writes_);
     return base::done_writing() ? manager_result::done : manager_result::ok;
   }
@@ -324,14 +321,12 @@ public:
   manager_result enable(operation op) override {
     switch (op) {
       case operation::read: {
-        manager_base::mask_add(operation::read);
         auto [success, submission_id]
           = manager_base::mpx<uring_multiplexer>()->submit_recvmsg(
             *this, base::dgram());
         return success ? manager_result::ok : manager_result::error;
       }
       case operation::write:
-        manager_base::mask_add(operation::write);
         return submit_datagrams();
 
       default:
@@ -348,8 +343,10 @@ public:
               NET_ARG2("handle", handle().id));
     switch (op) {
       case operation::read: {
-        const auto verdict = base::handle_read_result(base::dgram().dst_addr_,
-                                                      res);
+        // the recvmsg submission only submits the sockaddr_in struct in the
+        // datagram and does not directly decode the source addr - hence passing
+        // the addr_ directly, instead of the ep_.
+        const auto verdict = base::handle_read_result(base::dgram().addr_, res);
         if (verdict == manager_result::temporary_error) {
           manager_base::mpx<uring_multiplexer>()->submit_poll_read(*this);
           return manager_result::temporary_error;
@@ -364,11 +361,16 @@ public:
         return manager_result::ok;
 
       case operation::write: {
-        const auto verdict = base::handle_write_result(res, id);
+        auto it = std::ranges::find_if(base::write_queue_,
+                                       [id](const auto& dgram) {
+                                         return dgram.id_ == id;
+                                       });
+        const auto [verdict, _] = base::handle_write_result(res, it);
         if (verdict == manager_result::temporary_error) {
           manager_base::mpx<uring_multiplexer>()->submit_poll_write(*this);
-          return manager_result::done;
+          return manager_result::temporary_error;
         } else if (verdict != manager_result::ok) {
+          // Either actually an error or done
           return verdict;
         }
       }

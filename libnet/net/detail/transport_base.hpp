@@ -10,20 +10,14 @@
 
 #include "net/fwd.hpp"
 
-#include "net/detail/event_handler.hpp"
-
-#include "net/ip/v4_endpoint.hpp"
 #include "net/receive_policy.hpp"
 
 #include "util/assert.hpp"
 #include "util/byte_buffer.hpp"
-#include "util/byte_literals.hpp"
 #include "util/config.hpp"
 #include "util/error.hpp"
 
 #include <deque>
-
-using namespace util::byte_literals;
 
 namespace net::detail {
 
@@ -80,7 +74,7 @@ protected:
   size_t max_consecutive_fetches_ = 10;
   size_t max_consecutive_reads_ = 20;
   size_t max_consecutive_writes_ = 20;
-  size_t max_enqueued_bytes_ = 10_KB;
+  size_t max_enqueued_bytes_ = 16384;
   size_t max_cached_write_buffers_ = 10;
 
   std::deque<util::byte_buffer> buffer_cache_;

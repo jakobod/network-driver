@@ -95,7 +95,7 @@ public:
 
   bool has_more_data() const noexcept {
     return std::any_of(layers_.begin(), layers_.end(),
-                       [](const auto& layer) { return layer.has_more_data(); });
+                       [](const auto& p) { return p.second.has_more_data(); });
   }
 
   manager_result consume(auto& parent, util::const_byte_span data,
@@ -115,7 +115,7 @@ public:
       return manager_result::error;
     }
     parent_wrapper wrapper{parent, *this};
-    return layer->handle_timeout(wrapper, id);
+    return layer->second.handle_timeout(wrapper, id);
   }
 
 private:

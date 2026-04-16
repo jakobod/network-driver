@@ -11,6 +11,8 @@
 
 #include "net/ip/v4_endpoint.hpp"
 
+#include "util/byte_literals.hpp"
+
 #include "net_test.hpp"
 
 using namespace net;

@@ -119,8 +119,8 @@ private:
                              read_buffer_.begin() + res);
         manager_base::mpx<detail::uring_multiplexer>()->submit_write(
           *this, write_buffer_);
+        received_ = 0;
       }
-      read_buffer_.clear();
     }
     manager_base::mpx<detail::uring_multiplexer>()->submit_read(*this,
                                                                 read_buffer_);

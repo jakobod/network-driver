@@ -286,14 +286,16 @@ public:
   manager_result enable(operation op) override {
     switch (op) {
       case operation::read: {
-        manager_base::mask_add(operation::read);
         auto [success, submission_id]
           = manager_base::mpx<uring_multiplexer>()->submit_read(
             *this, base::read_buffer());
         return success ? manager_result::ok : manager_result::error;
       }
       case operation::write: {
-        manager_base::mask_add(operation::write);
+        base::fetch_more_data();
+        if (base::done_writing()) {
+          return manager_result::done;
+        }
         auto [success, submission_id]
           = manager_base::mpx<uring_multiplexer>()->submit_writev(
             *this, base::iovecs());
