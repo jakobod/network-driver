@@ -63,8 +63,11 @@ public:
   /// Subclasses override this to process completion results.
   /// @param op The operation that completed (read/write/accept).
   /// @param res The IO result (number of bytes or error code).
+  /// @param id The id of the submission.
   /// @return manager_result indicating handler status (ok/done/error).
-  virtual manager_result handle_completion(operation op, int res) = 0;
+  virtual manager_result
+  handle_completion(operation op, int res, std::uint64_t id)
+    = 0;
 };
 
 /// @brief Shared pointer type for uring managers.

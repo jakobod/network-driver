@@ -93,7 +93,6 @@ io_uring_sqe* uring_multiplexer::prepare_submission(uring_manager_ptr mgr,
                                                     operation op,
                                                     bool multishot) {
   if (auto* sqe = io_uring_get_sqe(&uring_)) {
-    mgr->mask_add(op);
     io_uring_sqe_set_data(sqe, new submission_data{std::move(mgr), op,
                                                    current_submission_id_,
                                                    multishot});
@@ -250,7 +249,13 @@ void uring_multiplexer::enable(manager_base& mgr, operation op) {
             " registered for ", NET_ARG2("mask", to_string(mgr->mask())),
             " for ", NET_ARG2("new_event", to_string(op)));
   auto& uring_mgr = static_cast<uring_manager&>(mgr);
-  uring_mgr.enable(op);
+  if (!uring_mgr.mask_add(op)) {
+    return;
+  }
+  const auto enable_res = uring_mgr.enable(op);
+  if (enable_res != manager_result::ok) {
+    uring_mgr.mask_del(op);
+  }
 }
 
 void uring_multiplexer::disable(manager_base& mgr, operation op, bool remove) {
@@ -330,7 +335,7 @@ void uring_multiplexer::handle_events() {
     LOG_DEBUG("Handling CQE for fd=", data->mgr->handle().id,
               " op=", to_string(data->op), " res=", cqe->res);
 
-    auto result = data->mgr->handle_completion(data->op, cqe->res);
+    auto result = data->mgr->handle_completion(data->op, cqe->res, data->id);
     switch (result) {
       case manager_result::ok:
         break;
@@ -340,7 +345,6 @@ void uring_multiplexer::handle_events() {
         break;
       case manager_result::error:
         multiplexer_base::del(data->mgr->handle());
-        delete data;
         break;
     }
 

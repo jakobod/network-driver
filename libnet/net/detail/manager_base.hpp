@@ -62,7 +62,7 @@ public:
   /// @brief Retrieves the managed handle
   /// @tparam Socket  The type to cast the handle to, net::socket by default
   /// @returns the managed handle
-  template <class Socket = socket>
+  template <std::derived_from<socket> Socket = socket>
   Socket handle() const noexcept {
     return socket_cast<Socket>(handle_);
   }
@@ -71,7 +71,8 @@ public:
   /// @tparam Multiplexer  The type to cast the multiplexer to,
   ///.                     detail::multiplexer_base by default
   /// @return a reference to the owning multiplexer
-  template <class Multiplexer = detail::multiplexer_base>
+  template <std::derived_from<multiplexer_base> Multiplexer
+            = detail::multiplexer_base>
   Multiplexer* mpx() const noexcept {
     return static_cast<Multiplexer*>(mpx_);
   }

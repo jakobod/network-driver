@@ -48,6 +48,7 @@ endif()
 if(LIB_NET_ENABLE_URING)
   if(LINUX)
     find_package(IoUring REQUIRED)
+    add_compile_definitions(LIB_NET_URING)
   else()
     message(FATAL_ERROR "io_uring support is only available on Linux")
   endif()
@@ -108,7 +109,6 @@ target_link_libraries(net Threads::Threads)
 
 if(LIB_NET_ENABLE_URING)
   target_link_libraries(net IoUring::IoUring)
-  add_compile_definitions(LIB_NET_URING)
 endif()
 
 # Copy Dummy certs to build folder and set preprocessor definition to the folder
@@ -155,7 +155,6 @@ if (LIB_NET_ENABLE_TESTS)
     lib_net_test
     test/net_test_main.cpp
     test/net/datagram_socket.cpp
-    test/net/datagram_transport.cpp
     test/net/multiplexer.cpp
     test/net/socket_guard.cpp
     test/net/tcp_socket.cpp
@@ -163,10 +162,11 @@ if (LIB_NET_ENABLE_TESTS)
     test/net/uri.cpp
 
     test/net/detail/acceptor.cpp
+    test/net/detail/datagram_dispatcher.cpp
+    test/net/detail/datagram_transport.cpp
     test/net/detail/manager_base.cpp
     test/net/detail/pollset_updater.cpp
     test/net/detail/stream_transport.cpp
-    test/net/detail/datagram_transport.cpp
     test/net/detail/transport_adaptor.cpp
     test/net/detail/uring_multiplexer.cpp
 
@@ -195,7 +195,6 @@ if (LIB_NET_ENABLE_TESTS)
   target_link_libraries(
     lib_net_test
     net
-    gtest
     gmock
   )
 

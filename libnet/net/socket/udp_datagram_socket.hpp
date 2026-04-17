@@ -45,11 +45,11 @@ make_udp_datagram_socket(std::uint16_t port);
 /// @brief Sends a UDP datagram to a remote endpoint.
 /// No connection is required; the datagram is sent directly to the target.
 /// @param x The UDP datagram socket to send from.
-/// @param ep The destination IPv4 endpoint (address and port).
 /// @param buf The data to send.
+/// @param ep The destination IPv4 endpoint (address and port).
 /// @return The number of bytes sent, or a negative value on error.
-std::ptrdiff_t write(udp_datagram_socket x, ip::v4_endpoint ep,
-                     util::const_byte_span buf);
+std::ptrdiff_t write(udp_datagram_socket x, util::const_byte_span buf,
+                     ip::v4_endpoint ep);
 
 /// @brief Receives a UDP datagram from any source.
 /// Returns both the source endpoint and the data received.

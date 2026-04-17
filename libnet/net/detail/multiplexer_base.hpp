@@ -326,6 +326,7 @@ private:
 
   // timeout handling
   timeout_entry_set timeouts_;          ///< Scheduled timeouts
+  timeout_entry_set cached_timeouts_;   ///< Cached set for processing
   std::uint64_t current_timeout_id_{0}; ///< Next timeout ID
 
 protected:

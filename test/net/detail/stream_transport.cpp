@@ -44,38 +44,36 @@ struct test_data {
 struct dummy_application {
   static constexpr std::size_t min_read_size = 1024;
 
-  dummy_application(detail::transport_base& parent, test_data& data)
-    : parent_{parent}, data_(data) {
+  dummy_application(test_data& data) : data_(data) {
     // nop
   }
 
-  util::error init(const util::config&) {
-    parent_.configure_next_read(receive_policy::exactly(1024));
+  util::error init(auto& parent, const util::config&) {
+    parent.configure_next_read(receive_policy::exactly(1024));
     return util::none;
   }
 
-  manager_result produce() {
-    auto size = std::min(size_t{1024}, data_.data.size());
-    parent_.enqueue({data_.data.data(), size});
+  manager_result produce(auto& parent) {
+    const auto size = std::min(size_t{1024}, data_.data.size());
+    parent.enqueue(data_.data.first(size));
     data_.data = data_.data.subspan(size);
     return manager_result::ok;
   }
 
   bool has_more_data() const noexcept { return !data_.data.empty(); }
 
-  manager_result consume(util::const_byte_span data) {
+  manager_result consume(auto& parent, util::const_byte_span data) {
     data_.received.insert(data_.received.end(), data.begin(), data.end());
-    parent_.configure_next_read(receive_policy::exactly(min_read_size));
+    parent.configure_next_read(receive_policy::exactly(min_read_size));
     return manager_result::ok;
   }
 
-  manager_result handle_timeout(uint64_t id) {
+  manager_result handle_timeout(auto&, uint64_t id) {
     data_.last_timeout_id = id;
     return manager_result::ok;
   }
 
 private:
-  detail::transport_base& parent_;
   test_data& data_;
 };
 
@@ -112,9 +110,8 @@ struct event_stream_transport_test : public testing::Test, public test_data {
 } // namespace
 
 TEST_F(event_stream_transport_test, handle_read_event) {
-  std::thread writer{[this] { test::write(sockets.second, data); }};
+  std::thread writer{[this] { test::write_all(sockets.second, data); }};
   while (received.size() < data.size()) {
-    data = data.subspan(dummy_application::min_read_size);
     const auto read_res = mgr.handle_read_event();
     ASSERT_NE(read_res, manager_result::done);
     ASSERT_NE(read_res, manager_result::error);
@@ -128,13 +125,12 @@ TEST_F(event_stream_transport_test, handle_read_event) {
 
 TEST_F(event_stream_transport_test, partial_read) {
   while (received.size() < data.size()) {
-    const auto [ev_res, written] = test::write(
+    const auto ev_res = test::write_all(
       sockets.second,
       data.subspan(0, std::min(data.size(),
                                (dummy_application::min_read_size / 2))));
-    EXPECT_NE(ev_res, manager_result::done);
-    EXPECT_NE(ev_res, manager_result::error);
-    data = data.subspan(written);
+    EXPECT_EQ(ev_res, manager_result::done);
+    data = data.subspan(dummy_application::min_read_size / 2);
     const auto read_res = mgr.handle_read_event();
     ASSERT_NE(read_res, manager_result::done);
     ASSERT_NE(read_res, manager_result::error);
@@ -150,11 +146,10 @@ TEST_F(event_stream_transport_test, handle_write_event) {
   while (received < buf.size()) {
     while (mgr.handle_write_event() == manager_result::ok)
       ;
-    const auto [ev_res, read_bytes] = test::read(
+    const auto read_res = read(
       sockets.second, std::span{buf.data() + received, buf.size() - received});
-    EXPECT_NE(ev_res, manager_result::done);
-    EXPECT_NE(ev_res, manager_result::error);
-    received += read_bytes;
+    ASSERT_GT(read_res, 0);
+    received += read_res;
   }
   ASSERT_EQ(received, data_buffer.size());
   EXPECT_EQ(memcmp(data_buffer.data(), this->received.data(),
@@ -210,7 +205,7 @@ TEST_F(uring_stream_transport_test, handles_received_data) {
     const auto size = std::min(data.size(), read_buffer.size());
     std::memcpy(read_buffer.data(), ptr, size);
     data = data.subspan(size);
-    ASSERT_EQ(mgr.handle_completion(operation::read, static_cast<int>(size)),
+    ASSERT_EQ(mgr.handle_completion(operation::read, static_cast<int>(size), 0),
               manager_result::ok);
   }
   // After writing all data, the application should have consumed all data
@@ -228,7 +223,7 @@ TEST_F(uring_stream_transport_test, partial_reads) {
                                (dummy_application::min_read_size / 2));
     std::memcpy(read_buffer.data(), ptr, size);
     data = data.subspan(size);
-    ASSERT_EQ(mgr.handle_completion(operation::read, static_cast<int>(size)),
+    ASSERT_EQ(mgr.handle_completion(operation::read, static_cast<int>(size), 0),
               manager_result::ok);
   }
   // After writing all data, the application should have consumed all data
@@ -236,34 +231,31 @@ TEST_F(uring_stream_transport_test, partial_reads) {
     std::equal(received.begin(), received.end(), data_buffer.begin()));
 }
 
-// TEST_F(uring_stream_transport_test, prepares_data_to_write) {
-//   static constexpr std::size_t max_retries = 20;
-//   size_t received = 0;
-//   util::byte_buffer buf;
+TEST_F(uring_stream_transport_test, prepares_data_to_write) {
+  static constexpr std::size_t max_retries = 20;
+  size_t received = 0;
+  util::byte_buffer buf;
 
-//   for (std::size_t i = 0; i < max_retries; ++i) {
-//     std::size_t num_bytes_this_try = 0;
-//     for (const auto& iov : mgr.write_buffer()) {
-//       util::const_byte_span rng{static_cast<const std::byte*>(iov.iov_base),
-//                                 iov.iov_len};
-//       buf.insert(buf.end(), rng.begin(), rng.end());
-//       num_bytes_this_try += iov.iov_len;
-//     }
-//     received += num_bytes_this_try;
-//     const auto res = mgr.handle_completion(operation::write,
-//                                            num_bytes_this_try);
-//     ASSERT_NE(res, manager_result::error);
-//     ASSERT_NE(res, manager_result::temporary_error);
-//     if (res == manager_result::done) {
-//       break;
-//     }
-//   }
-//   EXPECT_EQ(received, data_buffer.size());
-//   EXPECT_TRUE(std::equal(buf.begin(), buf.end(), data_buffer.begin()));
-// }
+  for (std::size_t i = 0; i < max_retries; ++i) {
+    auto& write_queue = mgr.write_queue();
+    const auto num_bytes_this_try = std::accumulate(
+      write_queue.begin(), write_queue.end(), std::size_t{0},
+      [](std::size_t sum, const auto& buf) { return sum + buf.size(); });
+    received += num_bytes_this_try;
+    const auto res = mgr.handle_completion(operation::write, num_bytes_this_try,
+                                           0);
+    ASSERT_NE(res, manager_result::error);
+    ASSERT_NE(res, manager_result::temporary_error);
+    if (res == manager_result::done) {
+      break;
+    }
+  }
+  EXPECT_EQ(received, data_buffer.size());
+  EXPECT_TRUE(std::equal(buf.begin(), buf.end(), data_buffer.begin()));
+}
 
 TEST_F(uring_stream_transport_test, disconnect) {
-  EXPECT_EQ(mgr.handle_completion(operation::read, 0), manager_result::done);
+  EXPECT_EQ(mgr.handle_completion(operation::read, 0, 0), manager_result::done);
 }
 
 TEST_F(uring_stream_transport_test, timeout_handling) {

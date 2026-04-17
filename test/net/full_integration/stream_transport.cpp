@@ -47,31 +47,24 @@ struct mirror_application {
   static constexpr std::size_t min_read_size = 1_KB;
   static constexpr std::size_t max_read_size = 8_KB;
 
-  mirror_application(detail::transport_base& parent) : parent_{parent} {
-    // nop
-  }
-
-  util::error init(const util::config&) {
-    parent_.configure_next_read(
+  util::error init(auto& parent, const util::config&) {
+    parent.configure_next_read(
       receive_policy::between(min_read_size, max_read_size));
     return util::none;
   }
 
-  manager_result produce() { return manager_result::ok; }
+  manager_result produce(auto&) { return manager_result::ok; }
 
   bool has_more_data() const noexcept { return false; }
 
-  manager_result consume(util::const_byte_span data) {
-    parent_.enqueue(data);
-    parent_.configure_next_read(
+  manager_result consume(auto& parent, util::const_byte_span data) {
+    parent.enqueue(data);
+    parent.configure_next_read(
       receive_policy::between(min_read_size, max_read_size));
     return manager_result::ok;
   }
 
-  manager_result handle_timeout(uint64_t) { return manager_result::ok; }
-
-private:
-  detail::transport_base& parent_;
+  manager_result handle_timeout(auto&, uint64_t) { return manager_result::ok; }
 };
 
 // -- Test fixture -------------------------------------------------------------
@@ -168,34 +161,14 @@ TYPED_TEST_SUITE(stream_transport_full_integration, FactoryCreators);
 TYPED_TEST(stream_transport_full_integration, mirror) {
   // Send 10kB
   {
-    std::size_t written = 0;
-    for (std::size_t i = 0; (i < 10) && written < this->data.size(); ++i) {
-      const auto [event_res, num_bytes_written]
-        = test::write(*this->socket, std::span{(this->data.data() + written),
-                                               (this->data.size() - written)});
-      ASSERT_NE(event_res, manager_result::error);
-      if (event_res == manager_result::temporary_error) {
-        std::this_thread::sleep_for(10ms);
-      }
-      written += num_bytes_written;
-    }
-    ASSERT_EQ(written, this->data.size());
+    const auto event_res = test::write_all(*this->socket, this->data);
+    ASSERT_EQ(event_res, manager_result::done);
   }
   // receive it all
   util::byte_array<10_KB> receive_buffer = {};
   {
-    std::size_t received = 0;
-    for (std::size_t i = 0; (i < 10) && (received < 10_KB); ++i) {
-      const auto [event_res, num_bytes_received] = test::read(
-        *this->socket, std::span{(receive_buffer.data() + received),
-                                 (receive_buffer.size() - received)});
-      ASSERT_NE(event_res, manager_result::error);
-      if (event_res == manager_result::temporary_error) {
-        std::this_thread::sleep_for(10ms);
-      }
-      received += num_bytes_received;
-    }
-    ASSERT_EQ(received, 10_KB);
+    const auto event_res = test::read_all(*this->socket, receive_buffer);
+    ASSERT_EQ(event_res, manager_result::ok);
   }
   EXPECT_EQ(this->data, receive_buffer);
 }

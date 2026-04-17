@@ -129,7 +129,8 @@ public:
   /// @param op The operation that completed (should be read).
   /// @param res The result of the io_uring operation (bytes read).
   /// @return The result of handling the completion event.
-  manager_result handle_completion(operation op, int res) override;
+  manager_result handle_completion(operation op, int res,
+                                   std::uint64_t id) override;
 };
 
 #endif // LIB_NET_URING

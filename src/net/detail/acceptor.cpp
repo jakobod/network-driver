@@ -77,8 +77,8 @@ manager_result acceptor<uring_manager>::enable(operation op) {
   return success ? manager_result::ok : manager_result::error;
 }
 
-manager_result acceptor<uring_manager>::handle_completion(operation op,
-                                                          int res) {
+manager_result acceptor<uring_manager>::handle_completion(operation op, int res,
+                                                          std::uint64_t) {
   if (op != operation::accept) {
     LOG_ERROR("Acceptor called for op other than operation::accept");
     return manager_result::error;

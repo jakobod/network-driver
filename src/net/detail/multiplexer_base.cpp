@@ -105,32 +105,40 @@ multiplexer_base::set_timeout(manager_base& mgr,
   LOG_DEBUG("Setting timeout ", current_timeout_id_, " on ",
             NET_ARG2("mgr", mgr.handle().id));
   timeouts_.emplace(mgr.handle().id, when, current_timeout_id_);
-  current_timeout_ = (current_timeout_ != std::nullopt)
-                       ? std::min(when, *current_timeout_)
-                       : when;
+  current_timeout_ = current_timeout_ ? std::min(when, *current_timeout_)
+                                      : when;
   return current_timeout_id_++;
 }
 
 void multiplexer_base::handle_timeouts() {
   LOG_TRACE();
-  for (auto it = timeouts_.begin(); it != timeouts_.end(); ++it) {
-    const auto& entry = *it;
-    if (entry.has_expired()) {
+  // Swap with cached set to reuse allocated memory
+  cached_timeouts_.swap(timeouts_);
+
+  // Process all expired timeouts and collect unhandled ones
+  auto it = cached_timeouts_.begin();
+  while (it != cached_timeouts_.end()) {
+    if (it->has_expired()) {
       // Registered timeout has expired
-      auto& mgr = managers_.at(entry.handle());
-      mgr->handle_timeout(entry.id());
+      auto& mgr = managers_.at(it->handle());
+      mgr->handle_timeout(it->id());
+      ++it;
     } else {
-      // Timeout not expired, delete handled entries and set the current timeout
-      timeouts_.erase(timeouts_.begin(), it);
-      if (timeouts_.empty()) {
-        LOG_DEBUG("No further timeouts registered");
-        current_timeout_ = std::nullopt;
-      } else {
-        LOG_DEBUG("Next timeout with ", NET_ARG2("id", entry.id()));
-        current_timeout_ = entry.when();
-      }
       break;
     }
+  }
+
+  // Move unhandled timeouts back with any newly added timeouts
+  timeouts_.insert(it, cached_timeouts_.end());
+  cached_timeouts_.clear();
+
+  // Update current timeout to the next expiring timeout, if any
+  if (timeouts_.empty()) {
+    LOG_DEBUG("No further timeouts registered");
+    current_timeout_ = std::nullopt;
+  } else {
+    LOG_DEBUG("Next timeout with ", NET_ARG2("id", timeouts_.begin()->id()));
+    current_timeout_ = timeouts_.begin()->when();
   }
 }
 
