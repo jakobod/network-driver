@@ -254,8 +254,6 @@ void uring_multiplexer::enable(manager_base& mgr, operation op) {
   }
   const auto enable_res = uring_mgr.enable(op);
   if (enable_res != manager_result::ok) {
-    LOG_ERROR("Failed to enable uring_manager with ",
-              NET_ARG2("hdl", mgr.handle().id));
     uring_mgr.mask_del(op);
   }
 }

@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <sys/socket.h>
 #include <sys/uio.h>
 #include <utility>
 
@@ -155,8 +156,6 @@ protected:
       // Check whether the error is temporary, i.e., EAGAIN
       return last_socket_error_is_temporary() ? manager_result::temporary_error
                                               : manager_result::error;
-    } else if (read_res == 0) {
-      return manager_result::done; // Disconnect
     } else {
       LOG_DEBUG("Read ", read_res, " bytes from ",
                 NET_ARG2("socket", handle().id));
@@ -189,7 +188,8 @@ protected:
               NET_ARG2("socket", handle().id));
 
     if (static_cast<std::size_t>(write_res) < it->buf_.size()) {
-      LOG_ERROR("Datagram with ", NET_ARG(id), " was not written completely");
+      LOG_ERROR("Datagram with ", NET_ARG(it->id_),
+                " was not written completely");
       return std::make_pair(manager_result::error, write_queue_.end());
     }
     num_enqueued_bytes_ -= it->buf_.size();
@@ -365,6 +365,9 @@ public:
                                        [id](const auto& dgram) {
                                          return dgram.id_ == id;
                                        });
+        if (it == base::write_queue_.end()) {
+          return manager_result::error;
+        }
         const auto [verdict, _] = base::handle_write_result(res, it);
         if (verdict == manager_result::temporary_error) {
           manager_base::mpx<uring_multiplexer>()->submit_poll_write(*this);

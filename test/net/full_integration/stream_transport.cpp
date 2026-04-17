@@ -163,9 +163,6 @@ TYPED_TEST(stream_transport_full_integration, mirror) {
   {
     const auto event_res = test::write_all(*this->socket, this->data);
     ASSERT_EQ(event_res, manager_result::done);
-    if (event_res == manager_result::temporary_error) {
-      std::this_thread::sleep_for(10ms);
-    }
   }
   // receive it all
   util::byte_array<10_KB> receive_buffer = {};

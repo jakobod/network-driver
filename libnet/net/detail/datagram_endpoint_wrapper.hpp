@@ -35,15 +35,15 @@ class datagram_endpoint_wrapper {
     }
 
     void configure_next_read(receive_policy pol) {
-      parent_.configure_next_read(pol);
+      parent_.configure_next_read(pol, self.ep_);
     }
 
     uint64_t set_timeout_in(std::chrono::steady_clock::duration in) {
-      return parent_.set_timeout_in(in);
+      return parent_.set_timeout_in(in, self.ep_);
     }
 
     uint64_t set_timeout_at(std::chrono::steady_clock::time_point when) {
-      return parent_.set_timeout_at(when);
+      return parent_.set_timeout_at(when, self.ep_);
     }
   };
   // explicit deduction guide
@@ -56,8 +56,9 @@ public:
     // nop
   }
 
-  util::error init(auto&, const util::config& cfg) {
-    return next_layer_.init(*this, cfg);
+  util::error init(auto& parent, const util::config& cfg) {
+    parent_wrapper wrapper{parent, *this};
+    return next_layer_.init(wrapper, cfg);
   }
 
   manager_result produce(auto& parent) {

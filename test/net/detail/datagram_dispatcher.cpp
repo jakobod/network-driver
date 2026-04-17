@@ -35,8 +35,10 @@ struct test_state {
 struct application_mock {
   application_mock(test_state& state) : state_{state} {}
 
-  util::error init(auto&, const util::config&) {
+  util::error init(auto& parent, const util::config&) {
     ++state_.init_calls;
+    parent.set_timeout_in(10ms);
+    parent.set_timeout_at(std::chrono::steady_clock::now() + 10ms);
     return util::none;
   }
 
@@ -74,7 +76,7 @@ struct datagram_dispatcher_test : public testing::Test {
       return application_mock{state};
     };
     dispatcher_type disp{std::move(factory)};
-    EXPECT_NO_ERROR(disp.init(std::placeholders::_1, cfg));
+    EXPECT_NO_ERROR(disp.init(*this, cfg));
     return disp;
   }
 
@@ -82,8 +84,18 @@ struct datagram_dispatcher_test : public testing::Test {
     state.enqueued_endpoints.push_back(ep);
   }
 
+  std::uint64_t set_timeout_in(std::chrono::steady_clock::duration) {
+    return timeout_in_id;
+  }
+
+  std::uint64_t set_timeout_at(std::chrono::steady_clock::time_point) {
+    return timeout_at_id;
+  }
+
   util::config cfg;
   test_state state;
+  static constexpr std::uint64_t timeout_in_id = 1;
+  static constexpr std::uint64_t timeout_at_id = 1;
 };
 
 } // namespace
@@ -126,4 +138,34 @@ TEST_F(datagram_dispatcher_test, produce) {
   EXPECT_EQ(state.consume_calls, 1ull);
   EXPECT_EQ(state.handle_timeout_calls, 0ull);
   EXPECT_EQ(state.enqueued_endpoints.size(), 1ull);
+}
+
+TEST_F(datagram_dispatcher_test, set_timeout_in) {
+  auto disp = make_dispatcher();
+  v4_endpoint ep{v4_address::localhost, 12345};
+  EXPECT_EQ(disp.consume(*this, util::byte_span{}, ep), manager_result::ok);
+  EXPECT_EQ(disp.handle_timeout(*this, timeout_in_id), manager_result::ok);
+
+  EXPECT_EQ(state.factory_calls, 1ull);
+  EXPECT_EQ(state.init_calls, 1ull);
+  EXPECT_EQ(state.produce_calls, 0ull);
+  EXPECT_EQ(state.has_more_data_calls, 0ull);
+  EXPECT_EQ(state.consume_calls, 1ull);
+  EXPECT_EQ(state.handle_timeout_calls, 1ull);
+  EXPECT_EQ(state.enqueued_endpoints.size(), 0ull);
+}
+
+TEST_F(datagram_dispatcher_test, set_timeout_at) {
+  auto disp = make_dispatcher();
+  v4_endpoint ep{v4_address::localhost, 12345};
+  EXPECT_EQ(disp.consume(*this, util::byte_span{}, ep), manager_result::ok);
+  EXPECT_EQ(disp.handle_timeout(*this, timeout_at_id), manager_result::ok);
+
+  EXPECT_EQ(state.factory_calls, 1ull);
+  EXPECT_EQ(state.init_calls, 1ull);
+  EXPECT_EQ(state.produce_calls, 0ull);
+  EXPECT_EQ(state.has_more_data_calls, 0ull);
+  EXPECT_EQ(state.consume_calls, 1ull);
+  EXPECT_EQ(state.handle_timeout_calls, 1ull);
+  EXPECT_EQ(state.enqueued_endpoints.size(), 0ull);
 }

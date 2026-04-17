@@ -12,7 +12,9 @@
 
 #include "net/detail/datagram_endpoint_wrapper.hpp"
 
+#include <functional>
 #include <ranges>
+#include <unordered_map>
 
 namespace net::detail {
 
@@ -33,7 +35,7 @@ class datagram_dispatcher {
       parent_.enqueue(buf, ep);
     }
 
-    void configure_next_read(receive_policy pol) {
+    void configure_next_read(receive_policy pol, net::ip::v4_endpoint) {
       parent_.configure_next_read(pol);
     }
 
@@ -41,8 +43,11 @@ class datagram_dispatcher {
     /// @param in The duration to wait before the timeout fires
     /// @return A unique timeout identifier that can be used to cancel or
     /// identify the timeout
-    uint64_t set_timeout_in(std::chrono::steady_clock::duration in) {
-      return parent_.set_timeout_in(in);
+    uint64_t set_timeout_in(std::chrono::steady_clock::duration in,
+                            net::ip::v4_endpoint ep) {
+      const auto id = parent_.set_timeout_in(in);
+      self.timeouts_.emplace(id, ep);
+      return id;
     }
 
     /// @brief Sets a timeout to trigger at the specified absolute time point.
@@ -50,8 +55,11 @@ class datagram_dispatcher {
     /// @return A unique timeout identifier that can be used to cancel or
     /// identify
     ///         the timeout
-    uint64_t set_timeout_at(std::chrono::steady_clock::time_point when) {
-      return parent_.set_timeout_at(when);
+    uint64_t set_timeout_at(std::chrono::steady_clock::time_point when,
+                            net::ip::v4_endpoint ep) {
+      const auto id = parent_.set_timeout_at(when);
+      self.timeouts_.emplace(id, ep);
+      return id;
     }
 
     // get_buffer()?
@@ -101,7 +109,10 @@ public:
   manager_result consume(auto& parent, util::const_byte_span data,
                          net::ip::v4_endpoint ep) {
     parent_wrapper wrapper{parent, *this};
-    return next_layer(wrapper, ep).consume(wrapper, data, ep);
+    if (auto* layer = next_layer(wrapper, ep)) {
+      return layer->consume(wrapper, data, ep);
+    }
+    return manager_result::error;
   }
 
   manager_result handle_timeout(auto& parent, uint64_t id) {
@@ -110,7 +121,7 @@ public:
       return manager_result::error;
     }
 
-    auto layer = layers_.find(*timeout_ep);
+    auto layer = layers_.find(timeout_ep->second);
     if (layer == layers_.end()) {
       return manager_result::error;
     }
@@ -119,13 +130,16 @@ public:
   }
 
 private:
-  datagram_endpoint_wrapper<NextLayer>& next_layer(auto& wrapper,
+  datagram_endpoint_wrapper<NextLayer>* next_layer(auto& wrapper,
                                                    net::ip::v4_endpoint ep) {
     auto [it, inserted] = layers_.try_emplace(ep, ep, factory_());
     if (inserted) {
-      ASSERT(!it->second.init(wrapper, *cfg_));
+      if ([[maybe_unused]] auto err = it->second.init(wrapper, *cfg_)) {
+        LOG_ERROR("Failed to initialize new endpoint ", NET_ARG(err));
+        return nullptr;
+      }
     }
-    return it->second;
+    return &it->second;
   }
 
   std::unordered_map<net::ip::v4_endpoint, datagram_endpoint_wrapper<NextLayer>>
